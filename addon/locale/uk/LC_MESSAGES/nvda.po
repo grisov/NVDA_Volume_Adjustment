@@ -1,0 +1,71 @@
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 'volumeAdjustment' '1.0'\n"
+"Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
+"POT-Creation-Date: 2020-11-02 14:28+0200\n"
+"PO-Revision-Date: 2020-11-02 14:46+0200\n"
+"Last-Translator: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
+"Language-Team: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
+"Language: uk_UA\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.4.1\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
+
+#. Translators: The message is announced during volume control
+msgid "Volume"
+msgstr "Гучність"
+
+#. Translators: The message is announced during volume control
+msgid "The sound is muted"
+msgstr "Звук вимкнено"
+
+#. Translators: Used as the prefix to default audio device name
+msgid "Default audio device"
+msgstr "Аудіо-пристрій за замовчуванням"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Increase the volume"
+msgstr "Збільшити гучність"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Decrease the volume"
+msgstr "Зменшити гучність"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set maximum volume level"
+msgstr "Встановити максимальний рівень гучності"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set minimum volume level"
+msgstr "Встановити мінімальний рівень гучності"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch to the next audio source"
+msgstr "Перейти до наступного джерела звуку"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch to the previous audio source"
+msgstr "Перейти до попереднього джерела звуку"
+
+#. Add-on summary, usually the user visible name of the addon.
+#. Translators: Summary for this add-on
+#. to be shown on installation and add-on information found in Add-ons Manager.
+msgid "Volume Adjustment"
+msgstr "Регулювання гучності"
+
+#. Add-on description
+#. Translators: Long description to be shown for this add-on on add-on information from add-ons manager
+msgid ""
+"Adjust the volume level of all audio devices installed in the system and "
+"each running program separately using simple keyboard shortcuts."
+msgstr ""
+"Відрегулюйте рівень гучності всіх аудіопристроїв, встановлених в "
+"системі, і кожної запущеної програми окремо за допомогою простих "
+"комбінацій клавіш."

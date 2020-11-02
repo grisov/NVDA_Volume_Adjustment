@@ -1,0 +1,45 @@
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 'volumeAdjustment' '1.0'\n"
+"Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
+"POT-Creation-Date: 2020-10-15 22:19+0300\n"
+"PO-Revision-Date: 2020-11-02 14:45+0200\n"
+"Last-Translator: Dang Manh Cuong <dangmanhcuong@gmail.com>\n"
+"Language-Team: Vietnamese <dangmanhcuong@gmail.com>\n"
+"Language: vi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.4.1\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#. Translators: Used as the default audio device name when the device name could not be determined
+msgid "Default audio device"
+msgstr "Thiết bị âm thanh mặc định"
+
+#. Translators: The message is announced during volume control
+msgid "Volume"
+msgstr "Âm lượng"
+
+#. Translators: The message is announced during volume control
+msgid "The sound is muted"
+msgstr "Âm thanh đã tắt"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Increase the volume"
+msgstr "Tăng âm lượng"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Decrease the volume"
+msgstr "Giảm âm lượng"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch to the next audio source"
+msgstr "Chuyển đến nguồn âm thanh kế tiếp"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch to the previous audio source"
+msgstr "Chuyển đến nguồn âm thanh trước"

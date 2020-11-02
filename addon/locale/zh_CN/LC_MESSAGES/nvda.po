@@ -1,0 +1,47 @@
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 'volumeAdjustment' '1.0'\n"
+"Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
+"POT-Creation-Date: 2020-10-16 13:56+0300\n"
+"PO-Revision-Date: 2020-11-02 14:44+0200\n"
+"Language-Team: Cary-rowen <manchen_0528@outlook.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.4.1\n"
+"Last-Translator: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Language: zh_CN\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+
+#. Translators: Used as the default audio device name when the device name could not be determined
+msgid "Default audio device"
+msgstr "默认音频设备"
+
+#. Translators: The message is announced during volume control
+msgid "Volume"
+msgstr "音量"
+
+#. Translators: The message is announced during volume control
+msgid "The sound is muted"
+msgstr "已静音"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Increase the volume"
+msgstr "增大音量"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Decrease the volume"
+msgstr "降低音量"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch to the next audio source"
+msgstr "切换到下一个音频源"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch to the previous audio source"
+msgstr "切换到上一个音频源"

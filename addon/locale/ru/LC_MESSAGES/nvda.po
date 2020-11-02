@@ -1,0 +1,69 @@
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 'volumeAdjustment' '1.0'\n"
+"Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
+"POT-Creation-Date: 2020-11-02 14:30+0200\n"
+"PO-Revision-Date: 2020-11-02 14:59+0200\n"
+"Last-Translator: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
+"Language-Team: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.4.1\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
+
+#. Translators: The message is announced during volume control
+msgid "Volume"
+msgstr "Громкость"
+
+#. Translators: The message is announced during volume control
+msgid "The sound is muted"
+msgstr "Звук отключен"
+
+#. Translators: Used as the prefix to default audio device name
+msgid "Default audio device"
+msgstr "Аудио-устройство по умолчанию"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Increase the volume"
+msgstr "Увеличить громкость"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Decrease the volume"
+msgstr "Уменьшить громкость"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set maximum volume level"
+msgstr "Установить максимальный уровень громкости"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set minimum volume level"
+msgstr "Установить минимальный уровень громкости"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch to the next audio source"
+msgstr "Перейти к следующему источнику звука"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch to the previous audio source"
+msgstr "Перейти к предыдущему источнику звука"
+
+#. Add-on summary, usually the user visible name of the addon.
+#. Translators: Summary for this add-on
+#. to be shown on installation and add-on information found in Add-ons Manager.
+msgid "Volume Adjustment"
+msgstr "Регулировка громкости"
+
+#. Add-on description
+#. Translators: Long description to be shown for this add-on on add-on information from add-ons manager
+msgid ""
+"Adjust the volume level of all audio devices installed in the system and "
+"each running program separately using simple keyboard shortcuts."
+msgstr ""
+"Отрегулируйте уровень громкости всех аудиоустройств, установленных в "
+"системе, и каждой запущенной программы отдельно, используя простые "
+"сочетания клавиш."
