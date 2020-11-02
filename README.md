@@ -5,7 +5,7 @@
 * Download [stable version][1]
 * Download [development version][2]
 
-## Adjust the volume level of all audio devices installed in the system and each running program separately using simple keyboard shortcuts.
+Adjust the volume level of all audio devices installed in the system and each running program separately using simple keyboard shortcuts.
 
 ## Contributions
 We are very grateful to everyone who made the effort to develop, translate and maintain this add-on:
