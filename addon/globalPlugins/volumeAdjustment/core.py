@@ -152,3 +152,7 @@ class AudioSession(object):
 				if session.Process and session.Process.name()==self.name:
 					self._volume = session.SimpleAudioVolume
 		return self._volume
+
+
+# global instance to avoid multiple scans of all audio devices
+devices = AudioDevices()

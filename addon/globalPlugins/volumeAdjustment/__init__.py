@@ -21,10 +21,13 @@ addonSummary = _curAddon.manifest['summary']
 
 import globalPluginHandler
 import ui
+import gui
+import config
 from scriptHandler import script
 from threading import Thread
-from .core import AudioDevices, AudioSession
+from .core import devices, AudioSession
 from .pycaw import AudioUtilities
+from .settings import VASettingsPanel
 
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
@@ -33,11 +36,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def __init__(self, *args, **kwargs):
 		"""Initializing initial configuration values ​​and other fields"""
+		confspec = {
+			"step": "integer(default=1,min=1,max=20)"
+		}
+		config.conf.spec[addonName] = confspec
 		super(GlobalPlugin, self).__init__(*args, **kwargs)
+		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(VASettingsPanel)
 		# Variables initialization for using Core Audio Windows API
-		self._devices = AudioDevices()
-		# Value for adjusting the volume of the system sound
-		self._stepChange = 0.01
+		self._devices = devices
 		# Switch between processes
 		self._index = 0
 		self._selectedProcess = ''
@@ -46,6 +52,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def terminate(self, *args, **kwargs):
 		"""This will be called when NVDA is finished with this global plugin"""
 		super().terminate(*args, **kwargs)
+		try:
+			gui.settingsDialogs.NVDASettingsDialog.categoryClasses.remove(VASettingsPanel)
+		except IndexError:
+			log.warning("Can't remove %s Settings panel from NVDA settings dialogs", _addonSummary)
+
+	@property
+	def step(self) -> float:
+		"""***
+		"""
+		return float(config.conf[addonName]['step'])/100.
 
 	def announceVolumeLevel(self, volumeLevel: float) -> None:
 		"""Announce the current volume level.
@@ -69,9 +85,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		session = AudioSession(name)
 		volumeLevel = session.volume.GetMasterVolume()
-		if volumeLevel<=self._stepChange and session.volume.GetMute():
+		if volumeLevel<=self.step and session.volume.GetMute():
 			session.volume.SetMute(False, None)
-		volumeLevel = min(1.0, volumeLevel + self._stepChange)
+		volumeLevel = min(1.0, volumeLevel + self.step)
 		session.volume.SetMasterVolume(volumeLevel, None)
 		return volumeLevel
 
@@ -84,7 +100,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		session = AudioSession(name)
 		volumeLevel = session.volume.GetMasterVolume()
-		volumeLevel = max(0.0, volumeLevel - self._stepChange)
+		volumeLevel = max(0.0, volumeLevel - self.step)
 		if volumeLevel > 0.0:
 			session.volume.SetMasterVolume(volumeLevel, None)
 			self.announceVolumeLevel(volumeLevel)
@@ -100,9 +116,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		device = self._devices[self._index]
 		volumeLevel = device.volume.GetMasterVolumeLevelScalar()
-		if volumeLevel<=self._stepChange and device.volume.GetMute():
+		if volumeLevel<=self.step and device.volume.GetMute():
 			device.volume.SetMute(False, None)
-		volumeLevel = min(1.0, volumeLevel + self._stepChange)
+		volumeLevel = min(1.0, volumeLevel + self.step)
 		device.volume.SetMasterVolumeLevelScalar(volumeLevel, None)
 		return volumeLevel
 
@@ -113,7 +129,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		device = self._devices[self._index]
 		volumeLevel = device.volume.GetMasterVolumeLevelScalar()
-		volumeLevel = max(0.0, volumeLevel - self._stepChange)
+		volumeLevel = max(0.0, volumeLevel - self.step)
 		if volumeLevel > 0.0:
 			device.volume.SetMasterVolumeLevelScalar(volumeLevel, None)
 			self.announceVolumeLevel(volumeLevel)
