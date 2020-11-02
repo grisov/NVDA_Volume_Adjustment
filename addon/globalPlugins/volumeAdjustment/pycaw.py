@@ -1,4 +1,4 @@
-﻿"""
+"""
 Python wrapper around the Core Audio Windows API.
 """
 from ctypes import (HRESULT, POINTER, Structure, Union, c_float, c_longlong,
@@ -701,12 +701,15 @@ class AudioUtilities(object):
             propCount = store.GetCount()
             for j in range(propCount):
                 pk = store.GetAt(j)
-                value = store.GetValue(pk)
-                v = value.GetValue()
-                # TODO
-                # PropVariantClear(byref(value))
-                name = str(pk)
-                properties[name] = v
+                try:
+                    value = store.GetValue(pk)
+                    v = value.GetValue()
+                    # TODO
+                    # PropVariantClear(byref(value))
+                    name = str(pk)
+                    properties[name] = v
+                except:
+                    pass
         audioState = AudioDeviceState(state)
         return AudioDevice(id, audioState, properties)
 

@@ -47,9 +47,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""This will be called when NVDA is finished with this global plugin"""
 		super().terminate(*args, **kwargs)
 
-		# Translators: Used as the default audio device name when the device name could not be determined
-		# _("Default audio device")
-
 	def announceVolumeLevel(self, volumeLevel: float) -> None:
 		"""Announce the current volume level.
 		@param volumeLevel: value of volume level
@@ -64,6 +61,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		ui.message(_("The sound is muted"))
 
 	def increaseSession(self, name:str) -> float:
+		"""Increase the volume level for a running process with a given name.
+		@param name: the full name of the running process
+		@type name: str
+		@return: current volume level
+		@rtype: float
+		"""
 		session = AudioSession(name)
 		volumeLevel = session.volume.GetMasterVolume()
 		if volumeLevel<=self._stepChange and session.volume.GetMute():
@@ -73,6 +76,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		return volumeLevel
 
 	def decreaseSession(self, name:str) -> float:
+		"""Decrease the volume level for a running process with a given name.
+		@param name: the full name of the running process
+		@type name: str
+		@return: current volume level
+		@rtype: float
+		"""
 		session = AudioSession(name)
 		volumeLevel = session.volume.GetMasterVolume()
 		volumeLevel = max(0.0, volumeLevel - self._stepChange)
@@ -85,6 +94,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		return volumeLevel
 
 	def increaseDevice(self) -> float:
+		"""Increase the volume level for selected audio device.
+		@return: current volume level
+		@rtype: float
+		"""
 		device = self._devices[self._index]
 		volumeLevel = device.volume.GetMasterVolumeLevelScalar()
 		if volumeLevel<=self._stepChange and device.volume.GetMute():
@@ -94,6 +107,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		return volumeLevel
 
 	def decreaseDevice(self) -> float:
+		"""Decrease the volume level for selected audio device.
+		@return: current volume level
+		@rtype: float
+		"""
 		device = self._devices[self._index]
 		volumeLevel = device.volume.GetMasterVolumeLevelScalar()
 		volumeLevel = max(0.0, volumeLevel - self._stepChange)
@@ -106,11 +123,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		return volumeLevel
 
 	def selectAudioSource(self, sessions:list) -> None:
+		"""Select audio source to adjust its volume level.
+		This can be a physical audio device or a running process.
+		@param sessions: list of all running processes, changes dynamically
+		@type sessions: list
+		"""
 		if self._index < len(self._devices):
 			title = self._devices[self._index].name
 			if self._devices[self._index].default:
-				# Translators: The prefix that will be added when announcing the default audio device name
-				title = "{default}: {title}".format(default=_("default"), title=title)
+		# Translators: Used as the prefix to default audio device name
+				title = "{default}: {title}".format(default=_("Default audio device"), title=title)
 		else:
 			try:
 				self._selectedProcess = sessions[self._index-len(self._devices)].Process.name()
@@ -122,7 +144,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Increase the volume"))
 	def script_volumeUp(self, gesture) -> None:
-		"""Increase the volume of the selected sound source.
+		"""Increase the volume of the selected audio source.
 		@param gesture: the input gesture in question
 		@type gesture: L{inputCore.InputGesture}
 		"""
@@ -135,7 +157,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Decrease the volume"))
 	def script_volumeDown(self, gesture) -> None:
-		"""Decrease the volume of the selected sound source.
+		"""Decrease the volume of the selected audio source.
 		@param gesture: the input gesture in question
 		@type gesture: L{inputCore.InputGesture}
 		"""
