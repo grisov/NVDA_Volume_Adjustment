@@ -23,7 +23,7 @@ We are very grateful to everyone who made the effort to develop, translate and m
 * Added keyboard shortcuts to quickly set the maximum and minimum volume levels for the selected audio source.
 
 ## Altering NVDA Volume Adjustment
-You may clone this repo to make alteration to NVDA Quick Dictionary.
+You may clone this repo to make alteration to NVDA Volume Adjustment.
 
 ### Third Party dependencies
 These can be installed with pip:
