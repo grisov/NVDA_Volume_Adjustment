@@ -25,7 +25,7 @@ import gui
 import config
 from scriptHandler import script
 from threading import Thread
-from .core import devices, AudioSession
+from .core import devices, hidden, AudioSession
 from .pycaw import AudioUtilities
 from .settings import VASettingsPanel
 
@@ -47,7 +47,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Switch between processes
 		self._index = 0
 		self._selectedProcess = ''
-		Thread(target=self._devices.initialize).start()
+		Thread(target=self._devices.initialize, args=[hidden.devices]).start()
 
 	def terminate(self, *args, **kwargs):
 		"""This will be called when NVDA is finished with this global plugin"""
@@ -59,9 +59,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	@property
 	def step(self) -> float:
-		"""***
+		"""Volume changing step.
+		@return: the value by which the volume level will change during one iteration of the adjustment
+		@rtype: float, 0.0 < step <= 0.2
 		"""
-		return float(config.conf[addonName]['step'])/100.
+		return float(config.conf[addonName]['step'])/100.0
 
 	def announceVolumeLevel(self, volumeLevel: float) -> None:
 		"""Announce the current volume level.
@@ -225,7 +227,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: L{inputCore.InputGesture}
 		"""
-		sessions = [s for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name]
+		sessions = [s for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name() and s.Process.name() not in hidden.processes]
 		self._index = self._index+1 if self._index<(len(self._devices)+len(sessions)-1) else 0
 		self.selectAudioSource(sessions)
 
@@ -236,7 +238,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: L{inputCore.InputGesture}
 		"""
-		sessions = [s for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name]
+		sessions = [s for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name() and s.Process.name() not in hidden.processes]
 		self._index = self._index-1 if self._index>0 else len(self._devices)+len(sessions)-1
 		self.selectAudioSource(sessions)
 

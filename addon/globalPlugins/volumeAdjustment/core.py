@@ -5,6 +5,9 @@
 # See the file COPYING for more details.
 # Copyright (C) 2020 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
 
+import json
+from os import path
+from globalVars import appArgs
 from ctypes import cast, POINTER
 from comtypes import CoCreateInstance, CLSCTX_ALL, CLSCTX_INPROC_SERVER
 from .pycaw import AudioUtilities, IAudioEndpointVolume, CLSID_MMDeviceEnumerator, IMMDeviceEnumerator, EDataFlow, ERole
@@ -70,11 +73,14 @@ class AudioDevices(object):
 		self._defaultDevice = AudioDevice()
 		self._devices = []
 
-	def initialize(self) -> None:
+	def initialize(self, hide:list=[]) -> None:
 		"""Detect audio devices and save them in the list.
 		Should running in a separate thread to avoid blocking NVDA.
+		@param hide: a list of device IDs that needs to hide
+		@type hide: list
 		"""
 		self._defaultDevice = AudioUtilities.GetSpeakers()
+		self._devices = []
 		try:
 			mixers = ExtendedAudioUtilities.GetAllDevices()
 		except Exception:
@@ -91,11 +97,12 @@ class AudioDevices(object):
 				name = mixer.FriendlyName,
 				volume = cast(interface, POINTER(IAudioEndpointVolume))
 			)
-			if device.id==self._defaultDevice.GetId():
-				device._default = True
-				self._devices.insert(0, device)
-			else:
-				self._devices.append(device)
+			if device.id not in hide:
+				if device.id==self._defaultDevice.GetId():
+					device._default = True
+					self._devices.insert(0, device)
+				else:
+					self._devices.append(device)
 
 	def __len__(self) -> int:
 		"""The number of audio devices detected in the system.
@@ -154,5 +161,78 @@ class AudioSession(object):
 		return self._volume
 
 
-# global instance to avoid multiple scans of all audio devices
+class HiddenSources(object):
+	"""Lists of devices and processes that need to be hidden."""
+
+	def __init__(self):
+		"""File name for saving data and loading previously saved data."""
+		self._file = path.join(appArgs.configPath, path.basename(path.dirname(__file__)) + '.json')
+		self._data = {}
+		self.load()
+
+	def load(self):
+		"""Load previously saved data.
+		@return: updated self object
+		@rtype: core.HiddenSources
+		"""
+		try:
+			with open(self._file, 'r', encoding='utf-8') as f:
+				self._data = json.load(f)
+		except Exception:
+			pass
+		return self
+
+	def save(self) -> bool:
+		"""Save the data to an external file.
+		@return: whether the data has been successfully saved
+		@rtype: bool
+		"""
+		try:
+			with open(self._file, 'w', encoding='utf-8') as f:
+				f.write(json.dumps(self._data, skipkeys=True, ensure_ascii=False, indent=4))
+		except Exception:
+			return False
+		return True
+
+	@property
+	def devices(self) -> dict:
+		"""Return a set of audio devices that need to be hidden.
+		@return: dict, in which the key is the device ID and value is its name
+		@rtype: dict
+		"""
+		return self._data.get("devices", {})
+
+	@devices.setter
+	def devices(self, devices:dict):
+		"""Update a list of devices that needs to hide.
+		@param devices: dict with devices in which the key is the ID and the value is the device name
+		@type devices: dict
+		@return: updated self object
+		@rtype: core.HiddenSources
+		"""
+		self._data['devices'] = devices
+		return self
+
+	@property
+	def processes(self) -> list:
+		"""List of processes that need to be hidden.
+		@return: list of full names of processes
+		@rtype: list
+		"""
+		return self._data.get("processes", [])
+
+	@processes.setter
+	def processes(self, processes:list):
+		"""Update the list of processes to hide.
+		@param processes: list of the full names of processes
+		@type processes: list
+		@return: updated self object
+		@rtype: core.HiddenSources
+		"""
+		self._data['processes'] = list(processes)
+		return self
+
+
+# global instances to avoid multiple scans of all audio devices
 devices = AudioDevices()
+hidden = HiddenSources()
