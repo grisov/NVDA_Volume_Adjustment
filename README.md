@@ -34,7 +34,7 @@ When the sound source is selected you can change its volume level using the foll
 Note: The volume changes by one percent per one keypress by default. This value can be changed in the settings panel in the range from 1 to 20.
 
 ## Add-on settings panel
-The following options allows to flexibly adjust the behavior of the application and the list of audio resources to switch between them.
+The following options allows to flexibly adjust the behavior of the add-on and the list of audio resources to switch between them.
 
 ### Step to change the volume level
 The minimum value to which the volume level will be changed with a one keypress. You can set value from 1 to 20 points.
