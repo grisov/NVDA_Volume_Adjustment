@@ -1,11 +1,10 @@
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: 'volumeAdjustment' '1.0'\n"
 "Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
-"POT-Creation-Date: 2020-11-02 14:30+0200\n"
-"PO-Revision-Date: 2020-11-02 14:59+0200\n"
+"POT-Creation-Date: 2020-11-04 09:35+0200\n"
+"PO-Revision-Date: 2020-11-04 09:44+0200\n"
 "Last-Translator: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
 "Language-Team: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
 "Language: ru\n"
@@ -52,6 +51,30 @@ msgstr "Перейти к следующему источнику звука"
 msgid "Switch to the previous audio source"
 msgstr "Перейти к предыдущему источнику звука"
 
+#. Translators: The label of the component in the settings panel
+msgid "Volume level change &step:"
+msgstr "&Шаг изменения уровня громкости:"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "Change the volume of the current &application"
+msgstr "Изменить громкость &текущего  приложения"
+
+#. Translators: The label of the Checkable list in the settings panel
+msgid "Hide audio &devices:"
+msgstr "Скрыть аудио &устройства:"
+
+#. Translators: The label of the button in the settings panel
+msgid "Update"
+msgstr "Обновить"
+
+#. Translators: The label of the button in the settings panel
+msgid "Clear"
+msgstr "Очистить"
+
+#. Translators: The label of the Checkable list in the settings panel
+msgid "Hide &processes:"
+msgstr "Скрыть &процессы:"
+
 #. Add-on summary, usually the user visible name of the addon.
 #. Translators: Summary for this add-on
 #. to be shown on installation and add-on information found in Add-ons Manager.
@@ -65,5 +88,5 @@ msgid ""
 "each running program separately using simple keyboard shortcuts."
 msgstr ""
 "Отрегулируйте уровень громкости всех аудиоустройств, установленных в "
-"системе, и каждой запущенной программы отдельно, используя простые "
-"сочетания клавиш."
+"системе, и каждой запущенной программы отдельно, используя простые сочетания "
+"клавиш."

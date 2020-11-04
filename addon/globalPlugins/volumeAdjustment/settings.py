@@ -35,7 +35,7 @@ class VASettingsPanel(SettingsPanel):
 		"""
 		addonHelper = guiHelper.BoxSizerHelper(self, sizer=sizer)
 		# Translators: The label of the component in the settings panel
-		self.volumeStep = addonHelper.addLabeledControl(_("&Step to change the volume level:"), nvdaControls.SelectOnFocusSpinCtrl,
+		self.volumeStep = addonHelper.addLabeledControl(_("Volume level change &step:"), nvdaControls.SelectOnFocusSpinCtrl,
 			value=str(config.conf[addonName]['step']), min=1, max=20)
 		self.followFocusChk = addonHelper.addItem(
 		# Translators: This is the label for a checkbox in the settings panel.

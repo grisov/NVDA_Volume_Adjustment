@@ -38,7 +38,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""Initializing initial configuration values ​​and other fields"""
 		confspec = {
 			"step": "integer(default=1,min=1,max=20)",
-			"focus": "boolean(default=false)"
+			"focus": "boolean(default=true)"
 		}
 		config.conf.spec[addonName] = confspec
 		super(GlobalPlugin, self).__init__(*args, **kwargs)
