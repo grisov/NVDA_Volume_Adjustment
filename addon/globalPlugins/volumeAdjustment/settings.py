@@ -34,7 +34,7 @@ class VASettingsPanel(SettingsPanel):
 		@type sizer: wx._core.BoxSizer
 		"""
 		sHelper = guiHelper.BoxSizerHelper(self, sizer=sizer)
-		# Translators:
+		# Translators: The label of the component in the settings panel
 		self.hideDevices = sHelper.addLabeledControl(_("Hide audio &devices:"), nvdaControls.CustomCheckListBox, choices=[])
 		self.devs = dict(hidden.devices)
 		self.devs.update({devices[i].id: devices[i].name for i in range(len(devices))})
@@ -45,40 +45,44 @@ class VASettingsPanel(SettingsPanel):
 			self.hideDevices.SetSelection(0)
 
 		devButtons = wx.BoxSizer(wx.HORIZONTAL)
-		# Translators:
-		self.updateDevicesButton = wx.Button(self, label=_("Update"))
+		# Translators: The label of the button in the settings panel
+		self.updateDevicesButton = wx.Button(self, label=_("&Update"))
 		self.updateDevicesButton.Bind(wx.EVT_BUTTON, self.onUpdateDevicesButton)
 		devButtons.Add(self.updateDevicesButton)
-		# Translators:
-		self.clearDevicesButton = wx.Button(self, label=_("Clear"))
+		# Translators: The label of the button in the settings panel
+		self.clearDevicesButton = wx.Button(self, label=_("&Clear"))
 		self.clearDevicesButton.Bind(wx.EVT_BUTTON, self.onClearDevicesButton)
 		devButtons.Add(self.clearDevicesButton)
 		sizer.Add(devButtons, flag=wx.RIGHT)
 
 		self.procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
 		self.procs.extend([proc for proc in hidden.processes if proc not in self.procs])
-		# Translators:
+		# Translators: The label of the component in the settings panel
 		self.hideProcesses = sHelper.addLabeledControl(_("Hide &processes:"), nvdaControls.CustomCheckListBox, choices=self.procs)
 		if len(self.procs)>0:
 			self.hideProcesses.SetCheckedStrings(hidden.processes)
 			self.hideProcesses.SetSelection(0)
 
 		procButtons = wx.BoxSizer(wx.HORIZONTAL)
-		# Translators:
-		self.updateProcessesButton = wx.Button(self, label=_("Update"))
+		# Translators: The label of the button in the settings panel
+		self.updateProcessesButton = wx.Button(self, label=_("&Update"))
 		self.updateProcessesButton.Bind(wx.EVT_BUTTON, self.onUpdateProcessesButton)
 		procButtons.Add(self.updateProcessesButton)
-		# Translators:
-		self.clearProcessesButton = wx.Button(self, label=_("Clear"))
+		# Translators: The label of the button in the settings panel
+		self.clearProcessesButton = wx.Button(self, label=_("&Clear"))
 		self.clearProcessesButton.Bind(wx.EVT_BUTTON, self.onClearProcessesButton)
 		procButtons.Add(self.clearProcessesButton)
 		sizer.Add(procButtons, flag=wx.RIGHT)
 
-		# Translators:
-		self.volumeStep = sHelper.addLabeledControl(_("Step to change the &volume level:"), nvdaControls.SelectOnFocusSpinCtrl,
+		# Translators: The label of the component in the settings panel
+		self.volumeStep = sHelper.addLabeledControl(_("&Step to change the volume level:"), nvdaControls.SelectOnFocusSpinCtrl,
 			value=str(config.conf[addonName]['step']), min=1, max=20)
 
-	def onUpdateDevicesButton(self, event):
+	def onUpdateDevicesButton(self, event) -> None:
+		"""Update the list of connected audio devices when the appropriate button is pressed.
+		@param event: event that occurs when a wx.Button is pressed
+		@type event: wx.core.PyEventBinder
+		"""
 		devices.initialize()
 		self.hideDevices.Clear()
 		self.devs = dict(hidden.devices)
@@ -90,7 +94,11 @@ class VASettingsPanel(SettingsPanel):
 			self.hideDevices.SetSelection(0)
 		self.hideDevices.SetFocus()
 
-	def onClearDevicesButton(self, event):
+	def onClearDevicesButton(self, event) -> None:
+		"""Uncheck all installed checkboxes and remove unnecessary audio devices.
+		@param event: event that occurs when a wx.Button is pressed
+		@type event: wx.core.PyEventBinder
+		"""
 		self.hideDevices.Clear()
 		for dev in devices:
 			self.hideDevices.Append(dev.name, dev.id)
@@ -98,7 +106,11 @@ class VASettingsPanel(SettingsPanel):
 			self.hideDevices.SetSelection(0)
 		self.hideDevices.SetFocus()
 
-	def onUpdateProcessesButton(self, event):
+	def onUpdateProcessesButton(self, event) -> None:
+		"""Update the list of currently running processes when the appropriate button is pressed.
+		@param event: event that occurs when a wx.Button is pressed
+		@type event: wx.core.PyEventBinder
+		"""
 		self.procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
 		self.procs.extend([proc for proc in hidden.processes if proc not in self.procs])
 		self.hideProcesses.Clear()
@@ -108,7 +120,11 @@ class VASettingsPanel(SettingsPanel):
 			self.hideProcesses.SetSelection(0)
 		self.hideProcesses.SetFocus()
 
-	def onClearProcessesButton(self, event):
+	def onClearProcessesButton(self, event) -> None:
+		"""Uncheck all installed checkboxes and remove unnecessary processes.
+		@param event: event that occurs when a wx.Button is pressed
+		@type event: wx.core.PyEventBinder
+		"""
 		self.procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
 		self.hideProcesses.Clear()
 		self.hideProcesses.SetItems(self.procs)
@@ -116,11 +132,11 @@ class VASettingsPanel(SettingsPanel):
 			self.hideProcesses.SetSelection(0)
 		self.hideProcesses.SetFocus()
 
-	def postInit(self):
-		"""Set system focus to source language selection dropdown list."""
+	def postInit(self) -> None:
+		"""Set system focus to the first component in the settings panel."""
 		self.hideDevices.SetFocus()
 
-	def onSave(self):
+	def onSave(self) -> None:
 		"""Update Configuration when clicking OK."""
 		config.conf[addonName]['step'] = self.volumeStep.GetValue()
 		devs = {}
@@ -130,4 +146,5 @@ class VASettingsPanel(SettingsPanel):
 		hidden.devices = devs
 		hidden.processes = self.hideProcesses.GetCheckedStrings()
 		hidden.save()
+		# Re-initialize the list of devices for the new settings to take effect
 		Thread(target=devices.initialize, args=[hidden.devices]).start()

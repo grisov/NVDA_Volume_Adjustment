@@ -58,12 +58,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			log.warning("Can't remove %s Settings panel from NVDA settings dialogs", _addonSummary)
 
 	@property
-	def step(self) -> float:
+	def step(self) -> int:
 		"""Volume changing step.
 		@return: the value by which the volume level will change during one iteration of the adjustment
-		@rtype: float, 0.0 < step <= 0.2
+		@rtype: int, 1<step<=20
 		"""
-		return float(config.conf[addonName]['step'])/100.0
+		return config.conf[addonName]['step']
 
 	def announceVolumeLevel(self, volumeLevel: float) -> None:
 		"""Announce the current volume level.
@@ -87,9 +87,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		session = AudioSession(name)
 		volumeLevel = session.volume.GetMasterVolume()
-		if volumeLevel<=self.step and session.volume.GetMute():
+		if volumeLevel<=self.step/100.0 and session.volume.GetMute():
 			session.volume.SetMute(False, None)
-		volumeLevel = min(1.0, volumeLevel + self.step)
+		volumeLevel = min(1.0, float(round(volumeLevel*100) + self.step)/100.0)
 		session.volume.SetMasterVolume(volumeLevel, None)
 		return volumeLevel
 
@@ -102,7 +102,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		session = AudioSession(name)
 		volumeLevel = session.volume.GetMasterVolume()
-		volumeLevel = max(0.0, volumeLevel - self.step)
+		volumeLevel = max(0.0, float(round(volumeLevel*100) - self.step)/100.0)
 		if volumeLevel > 0.0:
 			session.volume.SetMasterVolume(volumeLevel, None)
 			self.announceVolumeLevel(volumeLevel)
@@ -118,9 +118,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		device = self._devices[self._index]
 		volumeLevel = device.volume.GetMasterVolumeLevelScalar()
-		if volumeLevel<=self.step and device.volume.GetMute():
+		if volumeLevel<=self.step/100.0 and device.volume.GetMute():
 			device.volume.SetMute(False, None)
-		volumeLevel = min(1.0, volumeLevel + self.step)
+		volumeLevel = min(1.0, float(round(volumeLevel*100) + self.step)/100.0)
 		device.volume.SetMasterVolumeLevelScalar(volumeLevel, None)
 		return volumeLevel
 
@@ -131,7 +131,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		device = self._devices[self._index]
 		volumeLevel = device.volume.GetMasterVolumeLevelScalar()
-		volumeLevel = max(0.0, volumeLevel - self.step)
+		volumeLevel = max(0.0, float(round(volumeLevel*100) - self.step)/100.0)
 		if volumeLevel > 0.0:
 			device.volume.SetMasterVolumeLevelScalar(volumeLevel, None)
 			self.announceVolumeLevel(volumeLevel)
