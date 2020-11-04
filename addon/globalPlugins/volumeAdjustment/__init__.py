@@ -65,7 +65,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			sessions = self.getAllSessions()
 			index = lenDevs
 			for session in sessions:
-				if obj.appModule.appName in session.Process.name():
+				try:
+					appName = obj.appModule.appName
+				except Exception:
+					appName = ''
+				if appName in session.Process.name():
 					self._process = session.Process.name()
 					self._index = index
 				index = index+1 if index<(lenDevs+len(sessions)-1) else lenDevs

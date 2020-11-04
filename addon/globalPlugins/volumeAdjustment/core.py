@@ -94,10 +94,10 @@ class AudioDevices(object):
 				continue
 			device = AudioDevice(
 				id = mixer.id,
-				name = mixer.FriendlyName,
+				name = mixer.FriendlyName or mixer.id,
 				volume = cast(interface, POINTER(IAudioEndpointVolume))
 			)
-			if device.id not in hide:
+			if device.id and device.name and device.id not in hide:
 				if device.id==self._defaultDevice.GetId():
 					device._default = True
 					self._devices.insert(0, device)
