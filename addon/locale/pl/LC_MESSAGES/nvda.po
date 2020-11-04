@@ -1,12 +1,13 @@
-# This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: 'volumeAdjustment' '1.0'\n"
 "Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
-"POT-Creation-Date: 2020-10-16 13:56+0300\n"
-"PO-Revision-Date: 2020-11-02 14:51+0200\n"
+"POT-Creation-Date: 2020-11-02 23:11+0100\n"
+"PO-Revision-Date: 2020-11-04 10:16+0200\n"
 "Language-Team: Stefan Banita\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -16,10 +17,6 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n"
 "%100<12 || n%100>14) ? 1 : 2);\n"
 "Language: pl\n"
-
-#. Translators: Used as the default audio device name when the device name could not be determined
-msgid "Default audio device"
-msgstr "Domyślne urządzenie audio"
 
 #. Translators: The message is announced during volume control
 msgid "Volume"
@@ -29,113 +26,25 @@ msgstr "Głośność"
 msgid "The sound is muted"
 msgstr "Dźwięk jest wyciszony"
 
-#. Translators: The name of the method that displayed in the NVDA input gestures dialog
-msgid "Increase the volume"
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the 'volumeAdjustment' package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
-msgid ""
-msgstr ""
-"Project-Id-Version: 'volumeAdjustment' '1.0'\n"
-"Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
-"POT-Creation-Date: 2020-11-02 23:11+0100\n"
-"PO-Revision-Date: 2020-11-02 23:32+0100\n"
-"Language-Team: Stefan Banita\n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 2.4.1\n"
-"Last-Translator: Stefan Banita\n"
-"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n"
-"%100<12 || n%100>14) ? 1 : 2);\n"
-"Language: pl\n"
-
-#. Translators: The message is announced during volume control
-#: addon\globalPlugins\volumeAdjustment\__init__.py:72
-msgid "Volume"
-msgstr "GłośnośćГучність"
-
-#. Translators: The message is announced during volume control
-#: addon\globalPlugins\volumeAdjustment\__init__.py:77
-msgid "The sound is muted"
-msgstr "Dźwięk jest wyciszony"
-
 #. Translators: Used as the prefix to default audio device name
-#: addon\globalPlugins\volumeAdjustment\__init__.py:151
 msgid "Default audio device"
 msgstr "Domyślne urządzenie audio"
 
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
-#: addon\globalPlugins\volumeAdjustment\__init__.py:161
 msgid "Increase the volume"
-msgstr "Zwiększenie głośnośćiЗбільшити гучність"
-
-#. Translators: The name of the method that displayed in the NVDA input gestures dialog
-#: addon\globalPlugins\volumeAdjustment\__init__.py:174
-msgid "Decrease the volume"
-msgstr "Zmniejszenie głośności"
-
-#. Translators: The name of the method that displayed in the NVDA input gestures dialog
-#: addon\globalPlugins\volumeAdjustment\__init__.py:186
-msgid "Set maximum volume level"
-msgstr "Ustaw maksymalny poziom głośności"
-
-#. Translators: The name of the method that displayed in the NVDA input gestures dialog
-#: addon\globalPlugins\volumeAdjustment\__init__.py:206
-msgid "Set minimum volume level"
-msgstr "Ustaw minimalny poziom głośności"
-
-#. Translators: The name of the method that displayed in the NVDA input gestures dialog
-#: addon\globalPlugins\volumeAdjustment\__init__.py:222
-msgid "Switch to the next audio source"
-msgstr "Przełączenie na kolejne źródło dźwięku"
-
-#. Translators: The name of the method that displayed in the NVDA input gestures dialog
-#: addon\globalPlugins\volumeAdjustment\__init__.py:233
-msgid "Switch to the previous audio source"
-msgstr ""
-"Przełączenie na poprzednie źródło dźwiękuПерейти до попереднього джерела "
-"звуку"
-
-#. Translators:
-#: addon\globalPlugins\volumeAdjustment\settings.py:36
-msgid "Hide audio &devices:"
-msgstr "Ukryj &urządzenia audio:"
-
-#. Translators:
-#: addon\globalPlugins\volumeAdjustment\settings.py:45
-msgid "Hide &processes:"
-msgstr "Ukryj &procesy:"
-
-#. Translators:
-#: addon\globalPlugins\volumeAdjustment\settings.py:51
-msgid "Step to change the &volume level:"
-msgstr "Krok do zmiany poziomu &głośności:"
-
-#. Add-on summary, usually the user visible name of the addon.
-#. Translators: Summary for this add-on
-#. to be shown on installation and add-on information found in Add-ons Manager.
-#: buildVars.py:23
-msgid "Volume Adjustment"
-msgstr "Volume Adjustment"
-
-#. Add-on description
-#. Translators: Long description to be shown for this add-on on add-on information from add-ons manager
-#: buildVars.py:26
-msgid ""
-"Adjust the volume level of all audio devices installed in the system and "
-"each running program separately using simple keyboard shortcuts."
-msgstr ""
-"Dostosowuje poziom głośności wszystkich urządzeń audio zainstalowanych w "
-"systemie i każdego uruchomionego programu oddzielnie za pomocą prostych "
-"skrótów klawiszowych."
 msgstr "Zwiększenie głośnośći"
 
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
 msgid "Decrease the volume"
 msgstr "Zmniejszenie głośności"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set maximum volume level"
+msgstr "Ustaw maksymalny poziom głośności"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set minimum volume level"
+msgstr "Ustaw minimalny poziom głośności"
 
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
 msgid "Switch to the next audio source"
@@ -144,3 +53,31 @@ msgstr "Przełączenie na kolejne źródło dźwięku"
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
 msgid "Switch to the previous audio source"
 msgstr "Przełączenie na poprzednie źródło dźwięku"
+
+#. Translators:
+msgid "Hide audio &devices:"
+msgstr "Ukryj &urządzenia audio:"
+
+#. Translators:
+msgid "Hide &processes:"
+msgstr "Ukryj &procesy:"
+
+#. Translators:
+msgid "Step to change the &volume level:"
+msgstr "Krok do zmiany poziomu &głośności:"
+
+#. Add-on summary, usually the user visible name of the addon.
+#. Translators: Summary for this add-on
+#. to be shown on installation and add-on information found in Add-ons Manager.
+msgid "Volume Adjustment"
+msgstr "Volume Adjustment"
+
+#. Add-on description
+#. Translators: Long description to be shown for this add-on on add-on information from add-ons manager
+msgid ""
+"Adjust the volume level of all audio devices installed in the system and "
+"each running program separately using simple keyboard shortcuts."
+msgstr ""
+"Dostosowuje poziom głośności wszystkich urządzeń audio zainstalowanych w "
+"systemie i każdego uruchomionego programu oddzielnie za pomocą prostych "
+"skrótów klawiszowych."
