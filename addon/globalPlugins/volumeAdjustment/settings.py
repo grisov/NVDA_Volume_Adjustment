@@ -33,9 +33,17 @@ class VASettingsPanel(SettingsPanel):
 		@param sizer: The sizer to which to add the settings controls.
 		@type sizer: wx._core.BoxSizer
 		"""
-		sHelper = guiHelper.BoxSizerHelper(self, sizer=sizer)
+		addonHelper = guiHelper.BoxSizerHelper(self, sizer=sizer)
 		# Translators: The label of the component in the settings panel
-		self.hideDevices = sHelper.addLabeledControl(_("Hide audio &devices:"), nvdaControls.CustomCheckListBox, choices=[])
+		self.volumeStep = addonHelper.addLabeledControl(_("&Step to change the volume level:"), nvdaControls.SelectOnFocusSpinCtrl,
+			value=str(config.conf[addonName]['step']), min=1, max=20)
+		self.followFocusChk = addonHelper.addItem(
+		# Translators: This is the label for a checkbox in the settings panel.
+			wx.CheckBox(self, label=_("Change the volume of the current &application"))
+		)
+		self.followFocusChk.SetValue(config.conf[addonName]['focus'])
+		# Translators: The label of the Checkable list in the settings panel
+		self.hideDevices = addonHelper.addLabeledControl(_("Hide audio &devices:"), nvdaControls.CustomCheckListBox, choices=[])
 		self.devs = dict(hidden.devices)
 		self.devs.update({devices[i].id: devices[i].name for i in range(len(devices))})
 		for id,name in self.devs.items():
@@ -46,37 +54,33 @@ class VASettingsPanel(SettingsPanel):
 
 		devButtons = wx.BoxSizer(wx.HORIZONTAL)
 		# Translators: The label of the button in the settings panel
-		self.updateDevicesButton = wx.Button(self, label=_("&Update"))
+		self.updateDevicesButton = wx.Button(self, label=_("Update"))
 		self.updateDevicesButton.Bind(wx.EVT_BUTTON, self.onUpdateDevicesButton)
 		devButtons.Add(self.updateDevicesButton)
 		# Translators: The label of the button in the settings panel
-		self.clearDevicesButton = wx.Button(self, label=_("&Clear"))
+		self.clearDevicesButton = wx.Button(self, label=_("Clear"))
 		self.clearDevicesButton.Bind(wx.EVT_BUTTON, self.onClearDevicesButton)
 		devButtons.Add(self.clearDevicesButton)
 		sizer.Add(devButtons, flag=wx.RIGHT)
 
 		self.procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
 		self.procs.extend([proc for proc in hidden.processes if proc not in self.procs])
-		# Translators: The label of the component in the settings panel
-		self.hideProcesses = sHelper.addLabeledControl(_("Hide &processes:"), nvdaControls.CustomCheckListBox, choices=self.procs)
+		# Translators: The label of the Checkable list in the settings panel
+		self.hideProcesses = addonHelper.addLabeledControl(_("Hide &processes:"), nvdaControls.CustomCheckListBox, choices=self.procs)
 		if len(self.procs)>0:
 			self.hideProcesses.SetCheckedStrings(hidden.processes)
 			self.hideProcesses.SetSelection(0)
 
 		procButtons = wx.BoxSizer(wx.HORIZONTAL)
 		# Translators: The label of the button in the settings panel
-		self.updateProcessesButton = wx.Button(self, label=_("&Update"))
+		self.updateProcessesButton = wx.Button(self, label=_("Update"))
 		self.updateProcessesButton.Bind(wx.EVT_BUTTON, self.onUpdateProcessesButton)
 		procButtons.Add(self.updateProcessesButton)
 		# Translators: The label of the button in the settings panel
-		self.clearProcessesButton = wx.Button(self, label=_("&Clear"))
+		self.clearProcessesButton = wx.Button(self, label=_("Clear"))
 		self.clearProcessesButton.Bind(wx.EVT_BUTTON, self.onClearProcessesButton)
 		procButtons.Add(self.clearProcessesButton)
 		sizer.Add(procButtons, flag=wx.RIGHT)
-
-		# Translators: The label of the component in the settings panel
-		self.volumeStep = sHelper.addLabeledControl(_("&Step to change the volume level:"), nvdaControls.SelectOnFocusSpinCtrl,
-			value=str(config.conf[addonName]['step']), min=1, max=20)
 
 	def onUpdateDevicesButton(self, event) -> None:
 		"""Update the list of connected audio devices when the appropriate button is pressed.
@@ -134,17 +138,20 @@ class VASettingsPanel(SettingsPanel):
 
 	def postInit(self) -> None:
 		"""Set system focus to the first component in the settings panel."""
-		self.hideDevices.SetFocus()
+		self.volumeStep.SetFocus()
 
 	def onSave(self) -> None:
 		"""Update Configuration when clicking OK."""
 		config.conf[addonName]['step'] = self.volumeStep.GetValue()
+		config.conf[addonName]['focus'] = self.followFocusChk.GetValue()
 		devs = {}
 		for checked in self.hideDevices.GetCheckedItems():
 			id = self.hideDevices.GetClientData(checked)
 			devs[id] = self.devs[id]
-		hidden.devices = devs
-		hidden.processes = self.hideProcesses.GetCheckedStrings()
-		hidden.save()
-		# Re-initialize the list of devices for the new settings to take effect
-		Thread(target=devices.initialize, args=[hidden.devices]).start()
+		procs = self.hideProcesses.GetCheckedStrings()
+		if hidden.isChanged(devs, procs):
+			hidden.devices = devs
+			hidden.processes = procs
+			hidden.save()
+			# Re-initialize the list of devices for the new settings to take effect
+			Thread(target=devices.initialize, args=[hidden.devices]).start()

@@ -232,6 +232,17 @@ class HiddenSources(object):
 		self._data['processes'] = list(processes)
 		return self
 
+	def isChanged(self, devices:dict, processes:list) -> bool:
+		"""Determine whether new data differs from existing data.
+		@param devices: dict with devices in which the key is the ID and the value is the device name
+		@type devices: dict
+		@param processes: list of the full names of processes
+		@type processes: list
+		@return: indication of whether the data are different
+		@rtype: bool
+		"""
+		return set(self.devices)^set(devices) or set(self.processes)^set(processes)
+
 
 # global instances to avoid multiple scans of all audio devices
 devices = AudioDevices()
