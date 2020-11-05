@@ -68,7 +68,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				try:
 					appName = obj.appModule.appName
 				except Exception:
-					appName = ''
+					appName = "UndefinedApplicationName"
 				if appName in session.Process.name():
 					self._process = session.Process.name()
 					self._index = index
