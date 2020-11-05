@@ -6,74 +6,105 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 'volumeAdjustment' '1.0'\n"
 "Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
-"POT-Creation-Date: 2020-11-02 23:11+0100\n"
-"PO-Revision-Date: 2020-11-04 10:16+0200\n"
+"POT-Creation-Date: 2020-11-04 10:45+0100\n"
+"PO-Revision-Date: 2020-11-04 23:12+0100\n"
+"Last-Translator: Stefan Banita\n"
 "Language-Team: Stefan Banita\n"
+"Language: pl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 2.4.1\n"
-"Last-Translator: Stefan Banita\n"
-"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n"
-"%100<12 || n%100>14) ? 1 : 2);\n"
-"Language: pl\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 "
+"|| n%100>14) ? 1 : 2);\n"
 
 #. Translators: The message is announced during volume control
+#: addon\globalPlugins\volumeAdjustment\__init__.py:88
 msgid "Volume"
 msgstr "Głośność"
 
 #. Translators: The message is announced during volume control
+#: addon\globalPlugins\volumeAdjustment\__init__.py:93
 msgid "The sound is muted"
 msgstr "Dźwięk jest wyciszony"
 
 #. Translators: Used as the prefix to default audio device name
+#: addon\globalPlugins\volumeAdjustment\__init__.py:174
 msgid "Default audio device"
 msgstr "Domyślne urządzenie audio"
 
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
+#: addon\globalPlugins\volumeAdjustment\__init__.py:184
 msgid "Increase the volume"
 msgstr "Zwiększenie głośnośći"
 
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
+#: addon\globalPlugins\volumeAdjustment\__init__.py:197
 msgid "Decrease the volume"
 msgstr "Zmniejszenie głośności"
 
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
+#: addon\globalPlugins\volumeAdjustment\__init__.py:209
 msgid "Set maximum volume level"
 msgstr "Ustaw maksymalny poziom głośności"
 
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
+#: addon\globalPlugins\volumeAdjustment\__init__.py:229
 msgid "Set minimum volume level"
 msgstr "Ustaw minimalny poziom głośności"
 
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
+#: addon\globalPlugins\volumeAdjustment\__init__.py:245
 msgid "Switch to the next audio source"
 msgstr "Przełączenie na kolejne źródło dźwięku"
 
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
+#: addon\globalPlugins\volumeAdjustment\__init__.py:256
 msgid "Switch to the previous audio source"
 msgstr "Przełączenie na poprzednie źródło dźwięku"
 
-#. Translators:
+#. Translators: The label of the component in the settings panel
+#: addon\globalPlugins\volumeAdjustment\settings.py:38
+msgid "Volume level change &step:"
+msgstr "&Krok zmiany poziomu głośności:"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+#: addon\globalPlugins\volumeAdjustment\settings.py:42
+msgid "Change the volume of the current &application"
+msgstr "Zmień głośność bieżącej &aplikacji"
+
+#. Translators: The label of the Checkable list in the settings panel
+#: addon\globalPlugins\volumeAdjustment\settings.py:46
 msgid "Hide audio &devices:"
 msgstr "Ukryj &urządzenia audio:"
 
-#. Translators:
+#. Translators: The label of the button in the settings panel
+#: addon\globalPlugins\volumeAdjustment\settings.py:57
+#: addon\globalPlugins\volumeAdjustment\settings.py:76
+msgid "Update"
+msgstr "Aktualizuj"
+
+#. Translators: The label of the button in the settings panel
+#: addon\globalPlugins\volumeAdjustment\settings.py:61
+#: addon\globalPlugins\volumeAdjustment\settings.py:80
+msgid "Clear"
+msgstr "Wyczyść"
+
+#. Translators: The label of the Checkable list in the settings panel
+#: addon\globalPlugins\volumeAdjustment\settings.py:69
 msgid "Hide &processes:"
 msgstr "Ukryj &procesy:"
-
-#. Translators:
-msgid "Step to change the &volume level:"
-msgstr "Krok do zmiany poziomu &głośności:"
 
 #. Add-on summary, usually the user visible name of the addon.
 #. Translators: Summary for this add-on
 #. to be shown on installation and add-on information found in Add-ons Manager.
+#: buildVars.py:23
 msgid "Volume Adjustment"
-msgstr "Volume Adjustment"
+msgstr "Volume Adjustment (Regulacja głośności)"
 
 #. Add-on description
 #. Translators: Long description to be shown for this add-on on add-on information from add-ons manager
+#: buildVars.py:26
 msgid ""
 "Adjust the volume level of all audio devices installed in the system and "
 "each running program separately using simple keyboard shortcuts."
@@ -81,3 +112,6 @@ msgstr ""
 "Dostosowuje poziom głośności wszystkich urządzeń audio zainstalowanych w "
 "systemie i każdego uruchomionego programu oddzielnie za pomocą prostych "
 "skrótów klawiszowych."
+
+#~ msgid "Step to change the &volume level:"
+#~ msgstr "Krok do zmiany poziomu &głośności:"
