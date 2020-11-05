@@ -1,4 +1,3 @@
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 #
@@ -6,17 +5,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 'volumeAdjustment' '1.0'\n"
 "Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
-"POT-Creation-Date: 2020-11-02 23:11+0100\n"
-"PO-Revision-Date: 2020-11-04 10:16+0200\n"
+"POT-Creation-Date: 2020-11-04 10:45+0100\n"
+"PO-Revision-Date: 2020-11-06 01:39+0200\n"
+"Last-Translator: Stefan Banita\n"
 "Language-Team: Stefan Banita\n"
+"Language: pl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 2.4.1\n"
-"Last-Translator: Stefan Banita\n"
-"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n"
-"%100<12 || n%100>14) ? 1 : 2);\n"
-"Language: pl\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 "
+"|| n%100>14) ? 1 : 2);\n"
 
 #. Translators: The message is announced during volume control
 msgid "Volume"
@@ -54,23 +53,35 @@ msgstr "Przełączenie na kolejne źródło dźwięku"
 msgid "Switch to the previous audio source"
 msgstr "Przełączenie na poprzednie źródło dźwięku"
 
-#. Translators:
+#. Translators: The label of the component in the settings panel
+msgid "Volume level change &step:"
+msgstr "&Krok zmiany poziomu głośności:"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "Change the volume of the current &application"
+msgstr "Zmień głośność bieżącej &aplikacji"
+
+#. Translators: The label of the Checkable list in the settings panel
 msgid "Hide audio &devices:"
 msgstr "Ukryj &urządzenia audio:"
 
-#. Translators:
+#. Translators: The label of the button in the settings panel
+msgid "Update"
+msgstr "Aktualizuj"
+
+#. Translators: The label of the button in the settings panel
+msgid "Clear"
+msgstr "Wyczyść"
+
+#. Translators: The label of the Checkable list in the settings panel
 msgid "Hide &processes:"
 msgstr "Ukryj &procesy:"
-
-#. Translators:
-msgid "Step to change the &volume level:"
-msgstr "Krok do zmiany poziomu &głośności:"
 
 #. Add-on summary, usually the user visible name of the addon.
 #. Translators: Summary for this add-on
 #. to be shown on installation and add-on information found in Add-ons Manager.
 msgid "Volume Adjustment"
-msgstr "Volume Adjustment"
+msgstr "Volume Adjustment (Regulacja głośności)"
 
 #. Add-on description
 #. Translators: Long description to be shown for this add-on on add-on information from add-ons manager
