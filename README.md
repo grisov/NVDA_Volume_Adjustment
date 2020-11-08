@@ -1,7 +1,7 @@
 # NVDA Volume Adjustment
 
 * Author: Oleksandr Gryshchenko
-* Version: 1.0
+* Version: 1.1
 * Download [stable version][1]
 * Download [development version][2]
 
@@ -63,6 +63,14 @@ We are very grateful to everyone who made the effort to develop, translate and m
 
 ## Change log
 
+### Version 1.1
+* fixed bug duplication of audio sessions for one running process;
+* fixed the method of  detecting current audio session;
+* improved the method for determining the name of the current process;
+* the list of audio devices is scanned the first time user access them, not at the NVDA startup;
+* overriding the default output device in another way if the first attempt was unsuccessful;
+* improved add-on settings panel.
+
 ### Version 1.0: features of implementation
 * This add-on is based on the advanced features of NVDA Unmute add-on, which were removed from the original add-on due to inconsistency with its main task.
 * Added the ability to adjust the volume level of all audio devices detected in the system.
@@ -82,5 +90,5 @@ These can be installed with pip:
 1. Open a command line, change to the root of this repo
 2. Run the **scons** command. The created add-on, if there were no errors, is placed in the current directory.
 
-[1]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/v1.0/volumeAdjustment-1.0.nvda-addon
-[2]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/v1.0/volumeAdjustment-1.0.nvda-addon
+[1]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/v1.1/volumeAdjustment-1.1.nvda-addon
+[2]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/v1.1/volumeAdjustment-1.1.nvda-addon

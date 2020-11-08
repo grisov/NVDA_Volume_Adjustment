@@ -1,12 +1,13 @@
-#core.py
+#audiocore.py
 # The main components for working with system audio devices and audio sessions of running processes
-# A part of NonVisual Desktop Access (NVDA)
+# A part of the NVDA Volume Adjustment add-on
 # This file is covered by the GNU General Public License.
 # See the file COPYING for more details.
 # Copyright (C) 2020 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
 
 import json
 from os import path
+from threading import Thread
 from globalVars import appArgs
 from ctypes import cast, POINTER
 from comtypes import CoCreateInstance, CLSCTX_ALL, CLSCTX_INPROC_SERVER
@@ -103,6 +104,25 @@ class AudioDevices(object):
 					self._devices.insert(0, device)
 				else:
 					self._devices.append(device)
+		# Insert to the list the default audio output device if it is not listed
+		# for some reason on some systems it is not determined in the standard way
+		if not next(filter(lambda d: d.default, self._devices), None):
+			default = AudioUtilities.GetSpeakers()
+			device = AudioDevice(
+				id = default.GetId(),
+				name = ' ',
+				volume = cast(default.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None), POINTER(IAudioEndpointVolume))
+			)
+			device._default = True
+			self._devices.insert(0, device)
+
+	def scan(self, hide:list=[]) -> None:
+		"""Search for available audio devices in the system and save them in the current object.
+		@param hide: a list of device IDs that needs to hide
+		@type hide: list
+		"""
+		scan = Thread(target=self.initialize, args=[hide])
+		scan.start()
 
 	def __len__(self) -> int:
 		"""The number of audio devices detected in the system.
@@ -129,8 +149,19 @@ class AudioSession(object):
 		@param name: the name of the running process
 		@type name: str
 		"""
-		self._name = name
+		self._sessions = [session for session in AudioUtilities.GetAllSessions() if session.Process and session.Process.name()]
+		self._current = self.selectAudioSession(name)
+		self._name = ''
 		self._volume = None
+
+	def selectAudioSession(self, name:str):
+		"""Find and return an audio session by its specified name.
+		@param name: full name or part of the process name
+		@type name: str
+		@return: an audio session related to a given process
+		@rtype: pycaw.AudioSession
+		"""
+		return next(filter(lambda s: name.lower() in s.Process.name().lower(), self._sessions), None)
 
 	@property
 	def name(self) -> str:
@@ -138,6 +169,11 @@ class AudioSession(object):
 		@return: name of the current running process
 		@rtype: str
 		"""
+		if not self._name:
+			try:
+				self._name = self._current.Process.name()
+			except AttributeError:
+				self._name = None
 		return self._name
 
 	@property
@@ -146,7 +182,11 @@ class AudioSession(object):
 		@return: human friendly name of the current running process
 		@rtype: str
 		"""
-		return ' '.join(self.name.split('.')[:-1])
+		try:
+			name = self._current.DisplayName
+		except AttributeError:
+			name = None
+		return name or self.name.replace('.exe', '')
 
 	@property
 	def volume(self):
@@ -155,9 +195,7 @@ class AudioSession(object):
 		@rtype: ISimpleAudioVolume
 		"""
 		if not self._volume:
-			for session in AudioUtilities.GetAllSessions():
-				if session.Process and session.Process.name()==self.name:
-					self._volume = session.SimpleAudioVolume
+			self._volume = self._current.SimpleAudioVolume
 		return self._volume
 
 
@@ -232,16 +270,23 @@ class HiddenSources(object):
 		self._data['processes'] = list(processes)
 		return self
 
-	def isChanged(self, devices:dict, processes:list) -> bool:
-		"""Determine whether new data differs from existing data.
+	def isChangedDevices(self, devices:dict) -> bool:
+		"""Determine if the new list of audio devices differs from the existing one.
 		@param devices: dict with devices in which the key is the ID and the value is the device name
 		@type devices: dict
+		@return: indication of whether the data are different
+		@rtype: bool
+		"""
+		return set(self.devices)^set(devices)
+
+	def isChangedProcesses(self, processes:list) -> bool:
+		"""Determine if the new processes list differs from the existing one.
 		@param processes: list of the full names of processes
 		@type processes: list
 		@return: indication of whether the data are different
 		@rtype: bool
 		"""
-		return set(self.devices)^set(devices) or set(self.processes)^set(processes)
+		return set(self.processes)^set(processes)
 
 
 # global instances to avoid multiple scans of all audio devices

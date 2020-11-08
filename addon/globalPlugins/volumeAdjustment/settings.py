@@ -1,6 +1,6 @@
 #settings.py
 # Add-on settings panel
-# A part of NonVisual Desktop Access (NVDA)
+# A part of the NVDA Volume Adjustment add-on
 # This file is covered by the GNU General Public License.
 # See the file COPYING for more details.
 # Copyright (C) 2020 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
@@ -15,9 +15,8 @@ except addonHandler.AddonError:
 import wx
 from gui import SettingsPanel, guiHelper, nvdaControls
 import config
-from threading import Thread
 from . import addonName, addonSummary
-from .core import devices, hidden, AudioUtilities
+from .audiocore import devices, hidden, AudioUtilities
 
 
 class VASettingsPanel(SettingsPanel):
@@ -149,9 +148,11 @@ class VASettingsPanel(SettingsPanel):
 			id = self.hideDevices.GetClientData(checked)
 			devs[id] = self.devs[id]
 		procs = self.hideProcesses.GetCheckedStrings()
-		if hidden.isChanged(devs, procs):
+		isChangedDevices = hidden.isChangedDevices(devs)
+		if hidden.isChangedProcesses(procs) or isChangedDevices:
 			hidden.devices = devs
 			hidden.processes = procs
 			hidden.save()
-			# Re-initialize the list of devices for the new settings to take effect
-			Thread(target=devices.initialize, args=[hidden.devices]).start()
+			if isChangedDevices:
+				# Re-initialize the list of devices for the new settings to take effect
+				devices.scan(hidden.devices)

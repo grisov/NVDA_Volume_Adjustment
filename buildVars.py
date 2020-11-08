@@ -25,7 +25,7 @@ addon_info = {
 	# Translators: Long description to be shown for this add-on on add-on information from add-ons manager
 	"addon_description": _("""Adjust the volume level of all audio devices installed in the system and each running program separately using simple keyboard shortcuts."""),
 	# version
-	"addon_version": "1.0",
+	"addon_version": "1.1",
 	# Author(s)
 	"addon_author": "Oleksandr Gryshchenko <grisov.nvaccess@mailnull.com>",
 	# URL for the add-on documentation support
