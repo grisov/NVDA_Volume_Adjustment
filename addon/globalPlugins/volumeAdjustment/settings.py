@@ -49,7 +49,7 @@ class VASettingsPanel(SettingsPanel):
 		self.hideDuplicatesChk.SetValue(config.conf[addonName]['duplicates'])
 
 		procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
-		self.procs = list(set(self.procs)) if config.conf[addonName]['duplicates'] else procs
+		self.procs = list(set(procs)) if config.conf[addonName]['duplicates'] else procs
 		self.procs.extend([proc for proc in hidden.processes if proc not in procs])
 		# Translators: The label of the Checkable list in the settings panel
 		self.hideProcesses = addonHelper.addLabeledControl(_("Hide &processes:"), nvdaControls.CustomCheckListBox, choices=self.procs)

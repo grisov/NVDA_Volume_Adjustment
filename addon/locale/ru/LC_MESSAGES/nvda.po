@@ -2,15 +2,15 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 'volumeAdjustment' '1.1'\n"
 "Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
-"POT-Creation-Date: 2020-11-08 20:26+0200\n"
-"PO-Revision-Date: 2020-11-08 20:30+0200\n"
+"POT-Creation-Date: 2020-11-17 00:13+0200\n"
+"PO-Revision-Date: 2020-11-17 00:28+0200\n"
 "Last-Translator: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
 "Language-Team: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 2.4.1\n"
+"X-Generator: Poedit 2.4.2\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
 
@@ -62,9 +62,13 @@ msgstr "&Шаг изменения уровня громкости:"
 msgid "Change the volume of the current &application"
 msgstr "Изменить громкость &текущего  приложения"
 
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "Hide audio sessions with the same &names"
+msgstr "Скрыть аудиосеансы с одинаковыми &именами"
+
 #. Translators: The label of the Checkable list in the settings panel
-msgid "Hide audio &devices:"
-msgstr "Скрыть аудио &устройства:"
+msgid "Hide &processes:"
+msgstr "Скрыть &процессы:"
 
 #. Translators: The label of the button in the settings panel
 msgid "Update"
@@ -74,9 +78,14 @@ msgstr "Обновить"
 msgid "Clear"
 msgstr "Очистить"
 
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "&Control all available audio devices (experimental)"
+msgstr ""
+"&Управлять всеми доступными аудиоустройствами (экспериментальная функция)"
+
 #. Translators: The label of the Checkable list in the settings panel
-msgid "Hide &processes:"
-msgstr "Скрыть &процессы:"
+msgid "Hide audio &devices:"
+msgstr "Скрыть аудио &устройства:"
 
 #. Add-on summary, usually the user visible name of the addon.
 #. Translators: Summary for this add-on
