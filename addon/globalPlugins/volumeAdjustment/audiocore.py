@@ -9,9 +9,12 @@ import json
 from os import path
 from threading import Thread
 from globalVars import appArgs
+import config
 from ctypes import cast, POINTER
 from comtypes import CoCreateInstance, CLSCTX_ALL, CLSCTX_INPROC_SERVER
 from .pycaw import AudioUtilities, IAudioEndpointVolume, CLSID_MMDeviceEnumerator, IMMDeviceEnumerator, EDataFlow, ERole
+
+addonName = path.basename(path.dirname(__file__))
 
 
 class ExtendedAudioUtilities(AudioUtilities):
@@ -82,39 +85,53 @@ class AudioDevices(object):
 		"""
 		self._defaultDevice = AudioUtilities.GetSpeakers()
 		self._devices = []
-		try:
-			mixers = ExtendedAudioUtilities.GetAllDevices()
-		except Exception:
-			mixers = []
-		for mixer in mixers:
-			device = ExtendedAudioUtilities.GetSpeaker(mixer.id)
+		if config.conf[addonName]['advanced']:
 			try:
-				interface = device.Activate(
-					IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+				mixers = ExtendedAudioUtilities.GetAllDevices()
 			except Exception:
-				continue
-			device = AudioDevice(
-				id = mixer.id,
-				name = mixer.FriendlyName or mixer.id,
-				volume = cast(interface, POINTER(IAudioEndpointVolume))
-			)
-			if device.id and device.name and device.id not in hide:
-				if device.id==self._defaultDevice.GetId():
-					device._default = True
-					self._devices.insert(0, device)
-				else:
-					self._devices.append(device)
+				mixers = []
+			for mixer in mixers:
+				device = ExtendedAudioUtilities.GetSpeaker(mixer.id)
+				try:
+					interface = device.Activate(
+						IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+				except Exception:
+					continue
+				device = AudioDevice(
+					id = mixer.id,
+					name = mixer.FriendlyName or mixer.id,
+					volume = cast(interface, POINTER(IAudioEndpointVolume))
+				)
+				if device.id and device.name and device.id not in hide:
+					if device.id==self._defaultDevice.GetId():
+						device._default = True
+						self._devices.insert(0, device)
+					else:
+						self._devices.append(device)
 		# Insert to the list the default audio output device if it is not listed
 		# for some reason on some systems it is not determined in the standard way
 		if not next(filter(lambda d: d.default, self._devices), None):
-			default = AudioUtilities.GetSpeakers()
 			device = AudioDevice(
-				id = default.GetId(),
-				name = ' ',
-				volume = cast(default.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None), POINTER(IAudioEndpointVolume))
+				id = self._defaultDevice.GetId(),
+				name = self.getDeviceNameByID(self._defaultDevice.GetId()),
+				volume = cast(self._defaultDevice.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None), POINTER(IAudioEndpointVolume))
 			)
 			device._default = True
 			self._devices.insert(0, device)
+
+	def getDeviceNameByID(self, id:str) -> str:
+		"""Get the name of the audio device by its ID.
+		@param id: audio device ID
+		@type id: str
+		@return: human friendly name of audio device or empty string
+		@rtype: str
+		"""
+		try:
+			mixers = AudioUtilities.GetAllDevices()
+		except Exception:
+			mixers = []
+		mixer = next(filter(lambda m: m.id==id, mixers), None)
+		return mixer.FriendlyName if mixer else ' '
 
 	def scan(self, hide:list=[]) -> None:
 		"""Search for available audio devices in the system and save them in the current object.

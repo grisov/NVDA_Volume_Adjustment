@@ -32,6 +32,7 @@ class VASettingsPanel(SettingsPanel):
 		@param sizer: The sizer to which to add the settings controls.
 		@type sizer: wx._core.BoxSizer
 		"""
+		self.sizer = sizer
 		addonHelper = guiHelper.BoxSizerHelper(self, sizer=sizer)
 		# Translators: The label of the component in the settings panel
 		self.volumeStep = addonHelper.addLabeledControl(_("Volume level change &step:"), nvdaControls.SelectOnFocusSpinCtrl,
@@ -41,29 +42,15 @@ class VASettingsPanel(SettingsPanel):
 			wx.CheckBox(self, label=_("Change the volume of the current &application"))
 		)
 		self.followFocusChk.SetValue(config.conf[addonName]['focus'])
-		# Translators: The label of the Checkable list in the settings panel
-		self.hideDevices = addonHelper.addLabeledControl(_("Hide audio &devices:"), nvdaControls.CustomCheckListBox, choices=[])
-		self.devs = dict(hidden.devices)
-		self.devs.update({devices[i].id: devices[i].name for i in range(len(devices))})
-		for id,name in self.devs.items():
-			self.hideDevices.Append(name, id)
-		if len(self.devs)>0:
-			self.hideDevices.SetCheckedStrings([self.devs[id] for id in hidden.devices])
-			self.hideDevices.SetSelection(0)
+		self.hideDuplicatesChk = addonHelper.addItem(
+		# Translators: This is the label for a checkbox in the settings panel.
+			wx.CheckBox(self, label=_("Hide audio sessions with the same &names"))
+		)
+		self.hideDuplicatesChk.SetValue(config.conf[addonName]['duplicates'])
 
-		devButtons = wx.BoxSizer(wx.HORIZONTAL)
-		# Translators: The label of the button in the settings panel
-		self.updateDevicesButton = wx.Button(self, label=_("Update"))
-		self.updateDevicesButton.Bind(wx.EVT_BUTTON, self.onUpdateDevicesButton)
-		devButtons.Add(self.updateDevicesButton)
-		# Translators: The label of the button in the settings panel
-		self.clearDevicesButton = wx.Button(self, label=_("Clear"))
-		self.clearDevicesButton.Bind(wx.EVT_BUTTON, self.onClearDevicesButton)
-		devButtons.Add(self.clearDevicesButton)
-		sizer.Add(devButtons, flag=wx.RIGHT)
-
-		self.procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
-		self.procs.extend([proc for proc in hidden.processes if proc not in self.procs])
+		procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
+		self.procs = list(set(self.procs)) if config.conf[addonName]['duplicates'] else procs
+		self.procs.extend([proc for proc in hidden.processes if proc not in procs])
 		# Translators: The label of the Checkable list in the settings panel
 		self.hideProcesses = addonHelper.addLabeledControl(_("Hide &processes:"), nvdaControls.CustomCheckListBox, choices=self.procs)
 		if len(self.procs)>0:
@@ -80,6 +67,56 @@ class VASettingsPanel(SettingsPanel):
 		self.clearProcessesButton.Bind(wx.EVT_BUTTON, self.onClearProcessesButton)
 		procButtons.Add(self.clearProcessesButton)
 		sizer.Add(procButtons, flag=wx.RIGHT)
+
+		self.advancedChk = addonHelper.addItem(
+		# Translators: This is the label for a checkbox in the settings panel.
+			wx.CheckBox(self, label=_("&Control all available audio devices (experimental)"))
+		)
+		self.advancedChk.SetValue(config.conf[addonName]['advanced'])
+		self.advancedChk.Bind(wx.EVT_CHECKBOX, self.onAdvancedCheckbox)
+		# Translators: The label of the Checkable list in the settings panel
+		self.hideDevices = addonHelper.addLabeledControl(_("Hide audio &devices:"), nvdaControls.CustomCheckListBox, choices=[])
+		self.devs = dict(hidden.devices)
+		self.devs.update({devices[i].id: devices[i].name for i in range(len(devices))})
+		for id,name in self.devs.items():
+			self.hideDevices.Append(name, id)
+		if len(self.devs)>0:
+			self.hideDevices.SetCheckedStrings([self.devs[id] for id in hidden.devices])
+			self.hideDevices.SetSelection(0)
+		self.hideDevices.Show(show=self.advancedChk.GetValue())
+
+		self.devButtons = wx.BoxSizer(wx.HORIZONTAL)
+		# Translators: The label of the button in the settings panel
+		self.updateDevicesButton = wx.Button(self, label=_("Update"))
+		self.updateDevicesButton.Bind(wx.EVT_BUTTON, self.onUpdateDevicesButton)
+		self.devButtons.Add(self.updateDevicesButton)
+		# Translators: The label of the button in the settings panel
+		self.clearDevicesButton = wx.Button(self, label=_("Clear"))
+		self.clearDevicesButton.Bind(wx.EVT_BUTTON, self.onClearDevicesButton)
+		self.devButtons.Add(self.clearDevicesButton)
+		sizer.Add(self.devButtons, flag=wx.RIGHT)
+		sizer.Show(self.devButtons, show=self.advancedChk.GetValue())
+
+	def onAdvancedCheckbox(self, event) -> None:
+		"""Enabling or disabling advanced add-on features.
+		Ability to adjust volume level of all detected audio devices (experimental function).
+		@param event: event binder object which processes changing of the wx.Checkbox
+		@type event: wx.core.PyEventBinder
+		"""
+		config.conf[addonName]['advanced'] = event.IsChecked()
+		devices.initialize(hidden.devices)
+		self.hideDevices.Clear()
+		self.devs = dict(hidden.devices)
+		self.devs.update({devices[i].id: devices[i].name for i in range(len(devices))})
+		for id,name in self.devs.items():
+			self.hideDevices.Append(name, id)
+		if len(self.devs)>0:
+			self.hideDevices.SetCheckedStrings([self.devs[id] for id in hidden.devices])
+			self.hideDevices.SetSelection(0)
+		self.hideDevices.Show(show=event.IsChecked())
+		self.sizer.Show(self.devButtons, show=event.IsChecked())
+		self.sizer.Fit(self)
+		self.hideDevices.GetParent().Layout()
 
 	def onUpdateDevicesButton(self, event) -> None:
 		"""Update the list of connected audio devices when the appropriate button is pressed.
@@ -114,8 +151,9 @@ class VASettingsPanel(SettingsPanel):
 		@param event: event that occurs when a wx.Button is pressed
 		@type event: wx.core.PyEventBinder
 		"""
-		self.procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
-		self.procs.extend([proc for proc in hidden.processes if proc not in self.procs])
+		procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
+		self.procs = list(set(procs)) if config.conf[addonName]['duplicates'] else procs
+		self.procs.extend([proc for proc in hidden.processes if proc not in procs])
 		self.hideProcesses.Clear()
 		self.hideProcesses.SetItems(self.procs)
 		if len(self.procs)>0:
@@ -143,6 +181,7 @@ class VASettingsPanel(SettingsPanel):
 		"""Update Configuration when clicking OK."""
 		config.conf[addonName]['step'] = self.volumeStep.GetValue()
 		config.conf[addonName]['focus'] = self.followFocusChk.GetValue()
+		config.conf[addonName]['duplicates'] = self.hideDuplicatesChk.GetValue()
 		devs = {}
 		for checked in self.hideDevices.GetCheckedItems():
 			id = self.hideDevices.GetClientData(checked)

@@ -40,7 +40,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""Initializing initial configuration values ​​and other fields"""
 		confspec = {
 			"step": "integer(default=1,min=1,max=20)",
-			"focus": "boolean(default=true)"
+			"focus": "boolean(default=true)",
+			"duplicates": "boolean(default=true)",
+			"advanced": "boolean(default=false)"
 		}
 		config.conf.spec[addonName] = confspec
 		super(GlobalPlugin, self).__init__(*args, **kwargs)
@@ -51,6 +53,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._previous = ''
 		# Name of the current process
 		self._process = ''
+		devices.scan(hidden.devices)
 
 	def terminate(self, *args, **kwargs):
 		"""This will be called when NVDA is finished with this global plugin"""
@@ -174,11 +177,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def getAllSessions(self) -> list:
 		"""List of all running processes that available in the list of audio sessions
-		excluding hidden sessions and duplicate items.
+		excluding hidden sessions and duplicate items if the corresponding option is enabled.
 		@return: list of currently running processes
 		@rtype: list
 		"""
-		return list(set((s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name() and s.Process.name() not in hidden.processes)))
+		procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name() and s.Process.name() not in hidden.processes]
+		return list(set(procs)) if config.conf[addonName]['duplicates'] else procs
 
 	def selectAudioSource(self, sessions:list) -> None:
 		"""Select audio source to adjust its volume level.
@@ -279,8 +283,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: L{inputCore.InputGesture}
 		"""
-		if len(devices)==0:
-			devices.initialize(hidden.devices)
 		sessions = self.getAllSessions()
 		if self._index<0:
 			try:
@@ -297,8 +299,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: L{inputCore.InputGesture}
 		"""
-		if len(devices)==0:
-			devices.initialize(hidden.devices)
 		sessions = self.getAllSessions()
 		if self._index<0:
 			try:
