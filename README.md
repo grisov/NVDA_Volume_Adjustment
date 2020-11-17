@@ -43,14 +43,21 @@ The minimum value to which the volume level will be changed with a one keypress.
 If this check box is checked, the add-on will be automatically switching to the audio session that corresponds to the program in focus.
 For example, if you are currently browsing a website in Firefox, the add-on will detect this and automatically switch to the Firefox audio session. And you can immediately adjust the volume level for the current process without finding it in the list.
 
-### Hide audio devices
-If you do not use one or more audio devices and do not want them to be present when switching between audio sources, you can easily remove them from the main list by simply checking them in the settings panel.
-The "Update" button is used to scan all audio devices on the system and display updated information. And all checked elements are remain as marked.
-"Clear" button - uncheck all checked elements and removes obsolete items.
+### Hide audio sessions with the same names
+Sometimes, when runs some programs, there are openning multiple audio sessions with the same names. This option allows to hide such audio sessions.
 
 ### Hide processes
 In this list of check boxes you can mark the processes that you want to hide from the main list. These can be, for example, service programs.
 The "Update" button is used to update the list of all running processes and available audio sessions. The all checked elements remain as marked.
+"Clear" button - uncheck all checked elements and removes obsolete items.
+
+### Control all available audio devices
+Enables advanced features of the add-on, namely the ability to adjust the volume of all audio devices detected in the system.
+For unknown reasons, this feature causes errors on some systems, so it is marked as experimental.
+
+### Hide audio devices
+If you don't use one or more audio devices and do not want them to be present when switching between audio sources, you can easily remove them from the main list by simply checking them in the settings panel.
+The "Update" button is used to scan all audio devices on the system and display updated information. And all checked elements are remain as marked.
 "Clear" button - uncheck all checked elements and removes obsolete items.
 
 ## Contributions
@@ -67,7 +74,6 @@ We are very grateful to everyone who made the effort to develop, translate and m
 * fixed bug duplication of audio sessions for one running process;
 * fixed the method of  detecting current audio session;
 * improved the method for determining the name of the current process;
-* the list of audio devices is scanned the first time user access them, not at the NVDA startup;
 * overriding the default output device in another way if the first attempt was unsuccessful;
 * improved add-on settings panel.
 
