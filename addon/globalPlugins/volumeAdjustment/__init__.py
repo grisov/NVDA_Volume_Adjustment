@@ -23,8 +23,11 @@ import globalPluginHandler
 import ui
 import gui
 import config
+import tones
 from api import getFocusObject
 from scriptHandler import script
+from nvwave import getOutputDeviceNames
+from synthDriverHandler import getSynth, setSynth
 from .audiocore import devices, hidden, AudioSession
 from .pycaw import AudioUtilities
 from .settings import VASettingsPanel
@@ -308,11 +311,62 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._index = self._index-1 if self._index>0 else len(devices)+len(sessions)-1
 		self.selectAudioSource(sessions)
 
+	def setOutputDevice(self, name: str) -> None:
+		"""Switche the NVDA output to the audio device with the specified name.
+		@param name:
+		@type name: str
+		"""
+		config.conf['speech']['outputDevice'] = name
+		status = setSynth(getSynth().name)
+		if status:
+			tones.terminate()
+			tones.initialize()
+		ui.message(name)
+
+	def selectOutputDevice(self, step: int) -> str:
+		"""Select an audio device from the list with an offset to the specified step.
+		@param step: offset step in the list of available audio devices
+		@type step: int (usually 1 or -1)
+		@return: the name of the selected audio device
+		@rtype: str
+		"""
+		devices = getOutputDeviceNames()
+		if devices[0] in ("", "Microsoft Sound Mapper"):
+			# Translators: name for default (Microsoft Sound Mapper) audio output device.
+			devices[0] = _("Microsoft Sound Mapper")
+		try:
+			current = devices.index(config.conf["speech"]["outputDevice"])
+		except ValueError:
+			current = 0
+		return devices[(current+step)%len(devices)]
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Next output audio device"))
+	def script_nextOutputDevice(self, gesture) -> None:
+		"""Switch the output to the next available audio device.
+		@param gesture: the input gesture in question
+		@type gesture: L{inputCore.InputGesture}
+		"""
+		device = self.selectOutputDevice(step=1)
+		self.setOutputDevice(name=device)
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Previous output audio device"))
+	def script_prevOutputDevice(self, gesture) -> None:
+		"""Switch the output to the previous available audio device.
+		@param gesture: the input gesture in question
+		@type gesture: L{inputCore.InputGesture}
+		"""
+		device = self.selectOutputDevice(step=-1)
+		self.setOutputDevice(name=device)
+
 	__gestures = {
 		"kb:NVDA+windows+upArrow": "volumeUp",
 		"kb:NVDA+windows+downArrow": "volumeDown",
 		"kb:NVDA+windows+home": "volumeMax",
 		"kb:NVDA+windows+end": "volumeMin",
 		"kb:NVDA+windows+rightArrow": "nextSource",
-		"kb:NVDA+windows+leftArrow": "prevSource"
+		"kb:NVDA+windows+leftArrow": "prevSource",
+		"kb:NVDA+windows+pageUp": "nextOutputDevice",
+		"kb:NVDA+windows+pageDown": "prevOutputDevice"
 	}
