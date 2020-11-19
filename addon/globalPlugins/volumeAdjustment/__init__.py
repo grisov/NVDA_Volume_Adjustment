@@ -341,7 +341,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		return devices[(current+step)%len(devices)]
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
-	@script(description=_("Next output audio device"))
+	@script(description=_("Next audio output device"))
 	def script_nextOutputDevice(self, gesture) -> None:
 		"""Switch the output to the next available audio device.
 		@param gesture: the input gesture in question
@@ -351,7 +351,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.setOutputDevice(name=device)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
-	@script(description=_("Previous output audio device"))
+	@script(description=_("Previous audio output device"))
 	def script_prevOutputDevice(self, gesture) -> None:
 		"""Switch the output to the previous available audio device.
 		@param gesture: the input gesture in question

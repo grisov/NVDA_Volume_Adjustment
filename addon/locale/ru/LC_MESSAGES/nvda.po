@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 'volumeAdjustment' '1.1'\n"
 "Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
-"POT-Creation-Date: 2020-11-17 00:13+0200\n"
-"PO-Revision-Date: 2020-11-17 00:28+0200\n"
+"POT-Creation-Date: 2020-11-19 23:10+0200\n"
+"PO-Revision-Date: 2020-11-19 23:26+0200\n"
 "Last-Translator: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
 "Language-Team: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
 "Language: ru\n"
@@ -53,6 +53,18 @@ msgstr "Перейти к следующему источнику звука"
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
 msgid "Switch to the previous audio source"
 msgstr "Перейти к предыдущему источнику звука"
+
+#. Translators: name for default (Microsoft Sound Mapper) audio output device.
+msgid "Microsoft Sound Mapper"
+msgstr "Microsoft Sound Mapper"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Next audio output device"
+msgstr "Следующее устройство вывода звука"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Previous audio output device"
+msgstr "Предыдущее устройство вывода звука"
 
 #. Translators: The label of the component in the settings panel
 msgid "Volume level change &step:"

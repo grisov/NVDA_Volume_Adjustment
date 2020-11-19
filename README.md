@@ -14,7 +14,8 @@ You can always change the default keyboard shortcuts to your preferred ones thro
 * quickly switch to the maximum or minimum volume level of any audio source;
 * flexible settings for announcing the list of detected audio devices and running programs;
 * automatically switching to the program in focus;
-* the ability to set a custom volume change step.
+* the ability to set a custom volume change step;
+* quick switching the output to other available audio devices.
 
 ## Switch between audio sources
 To go to the previous or next audio source you can use the NVDA+Windows+ left or right arrow key combinations. The list consists of two parts - system audio devices and running audio sessions. Switching occurs cyclically in a circle like NVDA settings circle.
@@ -32,6 +33,10 @@ When the sound source is selected you can change its volume level using the foll
 * mute audio source - NVDA+Windows+Arrow Down (when the minimum volume level is already set).
 
 Note: The volume changes by one percent per one keypress by default. This value can be changed in the settings panel in the range from 1 to 20.
+
+## Quick switching between audio output devices
+To switch the output of all NVDA sounds to the next available audio device, simply press NVDA+Windows+PageUp.
+And to return to the previous audio device, use NVDA+Windows+PageDown.
 
 ## Add-on settings panel
 The following options allows to flexibly adjust the behavior of the add-on and the list of audio resources to switch between them.
@@ -75,7 +80,8 @@ We are very grateful to everyone who made the effort to develop, translate and m
 * fixed the method of  detecting current audio session;
 * improved the method for determining the name of the current process;
 * overriding the default output device in another way if the first attempt was unsuccessful;
-* improved add-on settings panel.
+* improved add-on settings panel;
+* added ability to quickly switch the output to other available audio device.
 
 ### Version 1.0: features of implementation
 * This add-on is based on the advanced features of NVDA Unmute add-on, which were removed from the original add-on due to inconsistency with its main task.
