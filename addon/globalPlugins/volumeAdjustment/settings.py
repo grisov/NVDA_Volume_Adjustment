@@ -22,7 +22,7 @@ from .audiocore import devices, hidden, AudioUtilities
 
 
 class AddonsReloadDialog(wx.Dialog):
-		"""Global plugins reload request dialog."""
+	"""Global plugins reload request dialog."""
 
 	def __init__(self, parent):
 		# Translators: The title of the dialog which appears when the user enables or disables the default gestures

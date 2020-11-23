@@ -364,6 +364,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		device = self.selectOutputDevice(step=-1)
 		self.setOutputDevice(name=device)
 
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Switch the output to the selected audio device"))
+	def script_switchTo(self, gesture):
+		"""Switch NVDA audio output to the selected sound device.
+		@param gesture: gesture assigned to this method
+		@type gesture: L{inputCore.InputGesture}
+		"""
+		index = min(int(gesture.displayName.lower()[-2:].replace('f','')), 12) - 1
+		self.setOutputDevice(name=getOutputDeviceNames()[index])
+
 	__defaultGestures = {
 		"kb:NVDA+windows+upArrow": "volumeUp",
 		"kb:NVDA+windows+downArrow": "volumeDown",
@@ -374,3 +384,5 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"kb:NVDA+windows+pageUp": "nextOutputDevice",
 		"kb:NVDA+windows+pageDown": "prevOutputDevice"
 	}
+	for key in range(1, len(getOutputDeviceNames())+1):
+		__defaultGestures["kb:NVDA+windows+f%d" % key] = "switchTo"
