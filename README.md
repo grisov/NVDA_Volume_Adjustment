@@ -1,7 +1,7 @@
 # NVDA Volume Adjustment
 
 * Author: Oleksandr Gryshchenko
-* Version: 1.1
+* Version: 1.2
 * Download [stable version][1]
 * Download [development version][2]
 
@@ -37,6 +37,7 @@ Note: The volume changes by one percent per one keypress by default. This value 
 ## Quick switching between audio output devices
 To switch the output of all NVDA sounds to the next available audio device, simply press NVDA+Windows+PageUp.
 And to return to the previous audio device, use NVDA+Windows+PageDown.
+In addition, to quickly switch the NVDA audio output to the selected audio device, you can use the NVDA+Windows+ function keys from F1.
 
 ## Add-on settings panel
 The following options allows to flexibly adjust the behavior of the add-on and the list of audio resources to switch between them.
@@ -65,6 +66,9 @@ If you don't use one or more audio devices and do not want them to be present wh
 The "Update" button is used to scan all audio devices on the system and display updated information. And all checked elements are remain as marked.
 "Clear" button - uncheck all checked elements and removes obsolete items.
 
+### Using default keyboard shortcuts
+If you don't planning to use all the features of the add-on. In the settings panel, you can disable the default key combinations for all available functions. Then you can assign your own keyboard shortcuts through the standard NVDA "Input Gestures..." dialog only for those functions that interest you.
+
 ## Contributions
 We are very grateful to everyone who made the effort to develop, translate and maintain this add-on:
 * Dang Manh Cuong - Vietnamese translation;
@@ -74,6 +78,10 @@ We are very grateful to everyone who made the effort to develop, translate and m
 * Stefan Banita - Polish translation.
 
 ## Change log
+
+### Version 1.2
+* added separate keyboard shortcuts to quickly switch to the selected audio output device;
+* added the ability to disable gestures used in the add-on by default.
 
 ### Version 1.1
 * fixed bug duplication of audio sessions for one running process;
@@ -102,5 +110,5 @@ These can be installed with pip:
 1. Open a command line, change to the root of this repo
 2. Run the **scons** command. The created add-on, if there were no errors, is placed in the current directory.
 
-[1]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/v1.1/volumeAdjustment-1.1.nvda-addon
-[2]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/v1.1/volumeAdjustment-1.1.nvda-addon
+[1]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/v1.2/volumeAdjustment-1.2.nvda-addon
+[2]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/v1.2/volumeAdjustment-1.2.nvda-addon
