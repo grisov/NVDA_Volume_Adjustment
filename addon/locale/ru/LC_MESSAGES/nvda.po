@@ -1,9 +1,13 @@
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
 msgid ""
 msgstr ""
-"Project-Id-Version: 'volumeAdjustment' '1.1'\n"
+"Project-Id-Version: 'volumeAdjustment' '1.2'\n"
 "Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
-"POT-Creation-Date: 2020-11-19 23:10+0200\n"
-"PO-Revision-Date: 2020-11-19 23:26+0200\n"
+"POT-Creation-Date: 2020-11-23 03:19+0200\n"
+"PO-Revision-Date: 2020-11-23 03:49+0200\n"
 "Last-Translator: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
 "Language-Team: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
 "Language: ru\n"
@@ -66,6 +70,28 @@ msgstr "Следующее устройство вывода звука"
 msgid "Previous audio output device"
 msgstr "Предыдущее устройство вывода звука"
 
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch the output to the selected audio device"
+msgstr "Переключить вывод звука NVDA на выбранное аудиоустройство"
+
+#. Translators: The title of the dialog which appears when the user enables or disables the default gestures
+msgid "Gestures Configuration Change"
+msgstr "Изменение клавишных команд дополнения"
+
+#. Translators: The message displayed when addon gestures has been changed.
+msgid "NVDA add-ons must be reloaded for the new gestures to take effect."
+msgstr ""
+"Чтобы новые комбинации клавиш вступили в силу, необходимо перезагрузить "
+"дополнения NVDA."
+
+#. Translators: The label for a button  in the dialog which appears when the user changed addon's default gestures
+msgid "Reload &now"
+msgstr "Перезагрузить &сейчас"
+
+#. Translators: The label for a button  in the dialog which appears when the user changed NVDA's interface language.
+msgid "Reload &later"
+msgstr "Перезагрузить &позже"
+
 #. Translators: The label of the component in the settings panel
 msgid "Volume level change &step:"
 msgstr "&Шаг изменения уровня громкости:"
@@ -97,7 +123,11 @@ msgstr ""
 
 #. Translators: The label of the Checkable list in the settings panel
 msgid "Hide audio &devices:"
-msgstr "Скрыть аудио &устройства:"
+msgstr "&Скрыть аудио устройства:"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "Use default &keyboard shortcuts"
+msgstr "Использовать сочетания &клавиш заданные по умолчанию"
 
 #. Add-on summary, usually the user visible name of the addon.
 #. Translators: Summary for this add-on
