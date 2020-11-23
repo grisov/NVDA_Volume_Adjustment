@@ -13,10 +13,50 @@ except addonHandler.AddonError:
 	log.warning("Unable to initialise translations. This may be because the addon is running from NVDA scratchpad.")
 
 import wx
-from gui import SettingsPanel, guiHelper, nvdaControls
 import config
+from gui import SettingsPanel, guiHelper, nvdaControls
+from globalPluginHandler import reloadGlobalPlugins
+from queueHandler import queueFunction, eventQueue
 from . import addonName, addonSummary
 from .audiocore import devices, hidden, AudioUtilities
+
+
+class AddonsReloadDialog(wx.Dialog):
+		"""Global plugins reload request dialog."""
+
+	def __init__(self, parent):
+		# Translators: The title of the dialog which appears when the user enables or disables the default gestures
+		super(AddonsReloadDialog, self).__init__(parent, title=_("Gestures Configuration Change"))
+		mainSizer = wx.BoxSizer(wx.VERTICAL)
+		sHelper = guiHelper.BoxSizerHelper(self, orientation=wx.VERTICAL)
+		# Translators: The message displayed when addon gestures has been changed.
+		sHelper.addItem(wx.StaticText(self, label=_("NVDA add-ons must be reloaded for the new gestures to take effect.")))
+
+		bHelper = sHelper.addDialogDismissButtons(guiHelper.ButtonHelper(wx.HORIZONTAL))
+		# Translators: The label for a button  in the dialog which appears when the user changed addon's default gestures
+		reloadNowButton = bHelper.addButton(self, label=_("Reload &now"))
+		reloadNowButton.Bind(wx.EVT_BUTTON, self.onReloadNowButton)
+		reloadNowButton.SetFocus()
+
+		# Translators: The label for a button  in the dialog which appears when the user changed NVDA's interface language.
+		reloadLaterButton = bHelper.addButton(self, wx.ID_CLOSE, label=_("Reload &later"))
+		reloadLaterButton.Bind(wx.EVT_BUTTON, lambda evt: self.Close())
+		self.Bind(wx.EVT_CLOSE, lambda evt: self.Destroy())
+		self.EscapeId = wx.ID_CLOSE
+
+		mainSizer.Add(sHelper.sizer, border=guiHelper.BORDER_FOR_DIALOGS, flag=wx.ALL)
+		self.Sizer = mainSizer
+		mainSizer.Fit(self)
+		self.CentreOnScreen()
+
+	def onReloadNowButton(self, eventt) -> None:
+		"""Executed when the appropriate button in the dialog box is pressed.
+		@param event: event that occurs when a wx.Button is pressed
+		@type event: wx.core.PyEventBinder
+		"""
+		self.Destroy()
+		config.conf.save()
+		queueFunction(eventQueue, reloadGlobalPlugins)
 
 
 class VASettingsPanel(SettingsPanel):
@@ -97,6 +137,13 @@ class VASettingsPanel(SettingsPanel):
 		sizer.Add(self.devButtons, flag=wx.RIGHT)
 		sizer.Show(self.devButtons, show=self.advancedChk.GetValue())
 
+		self.defaultGesturesChk = addonHelper.addItem(
+		# Translators: This is the label for a checkbox in the settings panel.
+			wx.CheckBox(self, label=_("Use default &keyboard shortcuts"))
+		)
+		self.defaultGesturesChk.SetValue(config.conf[addonName]['gestures'])
+		self.defaultGesturesChk.Bind(wx.EVT_CHECKBOX, self.onGesturesCheckbox)
+
 	def onAdvancedCheckbox(self, event) -> None:
 		"""Enabling or disabling advanced add-on features.
 		Ability to adjust volume level of all detected audio devices (experimental function).
@@ -117,6 +164,14 @@ class VASettingsPanel(SettingsPanel):
 		self.sizer.Show(self.devButtons, show=event.IsChecked())
 		self.sizer.Fit(self)
 		self.hideDevices.GetParent().Layout()
+
+	def onGesturesCheckbox(self, event) -> None:
+		"""Enabling or disabling default keyboard shortcuts.
+		@param event: event binder object which processes changing of the wx.Checkbox
+		@type event: wx.core.PyEventBinder
+		"""
+		config.conf[addonName]['gestures'] = event.IsChecked()
+		AddonsReloadDialog(self).ShowModal()
 
 	def onUpdateDevicesButton(self, event) -> None:
 		"""Update the list of connected audio devices when the appropriate button is pressed.

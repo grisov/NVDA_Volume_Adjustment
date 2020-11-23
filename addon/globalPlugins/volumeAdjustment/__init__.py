@@ -40,12 +40,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	scriptCategory = addonSummary
 
 	def __init__(self, *args, **kwargs):
-		"""Initializing initial configuration values ​​and other fields"""
+		"""Initializing initial configuration values ​​and other fields."""
 		confspec = {
 			"step": "integer(default=1,min=1,max=20)",
 			"focus": "boolean(default=true)",
 			"duplicates": "boolean(default=true)",
-			"advanced": "boolean(default=false)"
+			"advanced": "boolean(default=false)",
+			"gestures": "boolean(default=true)"
 		}
 		config.conf.spec[addonName] = confspec
 		super(GlobalPlugin, self).__init__(*args, **kwargs)
@@ -56,6 +57,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._previous = ''
 		# Name of the current process
 		self._process = ''
+		# Bind default gestures if necessary
+		if config.conf[addonName]['gestures']:
+			self.bindGestures(self.__defaultGestures)
 		devices.scan(hidden.devices)
 
 	def terminate(self, *args, **kwargs):
@@ -360,7 +364,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		device = self.selectOutputDevice(step=-1)
 		self.setOutputDevice(name=device)
 
-	__gestures = {
+	__defaultGestures = {
 		"kb:NVDA+windows+upArrow": "volumeUp",
 		"kb:NVDA+windows+downArrow": "volumeDown",
 		"kb:NVDA+windows+home": "volumeMax",
