@@ -371,7 +371,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: gesture assigned to this method
 		@type gesture: L{inputCore.InputGesture}
 		"""
-		index = min(int(gesture.displayName.lower()[-2:].replace('f','')), 12) - 1
+		index = int(gesture.displayName.lower()[-2:].replace('f',''))-1
 		self.setOutputDevice(name=getOutputDeviceNames()[index])
 
 	__defaultGestures = {
@@ -384,5 +384,5 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"kb:NVDA+windows+pageUp": "nextOutputDevice",
 		"kb:NVDA+windows+pageDown": "prevOutputDevice"
 	}
-	for key in range(1, len(getOutputDeviceNames())+1):
+	for key in range(1, min(len(getOutputDeviceNames()), 12)+1):
 		__defaultGestures["kb:NVDA+windows+f%d" % key] = "switchTo"
