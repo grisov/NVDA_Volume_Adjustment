@@ -108,14 +108,6 @@ msgstr "Приховувати аудіо-сесії з &однаковими і
 msgid "Hide &processes:"
 msgstr "Приховати &процеси:"
 
-#. Translators: The label of the button in the settings panel
-msgid "Update"
-msgstr "Оновити"
-
-#. Translators: The label of the button in the settings panel
-msgid "Clear"
-msgstr "Очистити"
-
 #. Translators: This is the label for a checkbox in the settings panel.
 msgid "&Control all available audio devices (experimental)"
 msgstr "Керувати &всіма доступними аудіопристроями (експериментальна функція)"

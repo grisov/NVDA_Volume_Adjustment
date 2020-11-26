@@ -25,6 +25,10 @@ class AddonsReloadDialog(wx.Dialog):
 	"""Global plugins reload request dialog."""
 
 	def __init__(self, parent):
+		"""Layout of dialog box elements to show.
+		@param parent: parent top level window
+		@type parent: wx._core.Dialog
+		"""
 		# Translators: The title of the dialog which appears when the user enables or disables the default gestures
 		super(AddonsReloadDialog, self).__init__(parent, title=_("Gestures Configuration Change"))
 		mainSizer = wx.BoxSizer(wx.VERTICAL)
