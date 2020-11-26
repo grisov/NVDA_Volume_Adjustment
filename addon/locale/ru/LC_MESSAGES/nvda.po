@@ -108,18 +108,10 @@ msgstr "Скрыть аудиосеансы с одинаковыми &имен�
 msgid "Hide &processes:"
 msgstr "Скрыть &процессы:"
 
-#. Translators: The label of the button in the settings panel
-msgid "Update"
-msgstr "Обновить"
-
-#. Translators: The label of the button in the settings panel
-msgid "Clear"
-msgstr "Очистить"
-
 #. Translators: This is the label for a checkbox in the settings panel.
 msgid "&Control all available audio devices (experimental)"
 msgstr ""
-"&Управлять всеми доступными аудиоустройствами (экспериментальная функция)"
+"&Управлять всеми доступными аудио-устройствами (экспериментальная функция)"
 
 #. Translators: The label of the Checkable list in the settings panel
 msgid "Hide audio &devices:"
