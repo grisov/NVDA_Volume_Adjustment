@@ -98,12 +98,10 @@ class VASettingsPanel(SettingsPanel):
 			self.hideProcesses.SetSelection(0)
 
 		procButtons = wx.BoxSizer(wx.HORIZONTAL)
-		# Translators: The label of the button in the settings panel
-		self.updateProcessesButton = wx.Button(self, label=_("Update"))
+		self.updateProcessesButton = wx.Button(self, id=wx.ID_REFRESH)
 		self.updateProcessesButton.Bind(wx.EVT_BUTTON, self.onUpdateProcessesButton)
 		procButtons.Add(self.updateProcessesButton)
-		# Translators: The label of the button in the settings panel
-		self.clearProcessesButton = wx.Button(self, label=_("Clear"))
+		self.clearProcessesButton = wx.Button(self, id=wx.ID_CLEAR)
 		self.clearProcessesButton.Bind(wx.EVT_BUTTON, self.onClearProcessesButton)
 		procButtons.Add(self.clearProcessesButton)
 		sizer.Add(procButtons, flag=wx.RIGHT)
@@ -126,12 +124,10 @@ class VASettingsPanel(SettingsPanel):
 		self.hideDevices.Show(show=self.advancedChk.GetValue())
 
 		self.devButtons = wx.BoxSizer(wx.HORIZONTAL)
-		# Translators: The label of the button in the settings panel
-		self.updateDevicesButton = wx.Button(self, label=_("Update"))
+		self.updateDevicesButton = wx.Button(self, id=wx.ID_REFRESH)
 		self.updateDevicesButton.Bind(wx.EVT_BUTTON, self.onUpdateDevicesButton)
 		self.devButtons.Add(self.updateDevicesButton)
-		# Translators: The label of the button in the settings panel
-		self.clearDevicesButton = wx.Button(self, label=_("Clear"))
+		self.clearDevicesButton = wx.Button(self, id=wx.ID_CLEAR)
 		self.clearDevicesButton.Bind(wx.EVT_BUTTON, self.onClearDevicesButton)
 		self.devButtons.Add(self.clearDevicesButton)
 		sizer.Add(self.devButtons, flag=wx.RIGHT)
