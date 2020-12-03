@@ -2,19 +2,24 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: 'volumeAdjustment' '1.0'\n"
+"Project-Id-Version: 'volumeAdjustment' '1.2'\n"
 "Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
-"POT-Creation-Date: 2020-11-04 10:45+0100\n"
-"PO-Revision-Date: 2020-11-06 01:48+0200\n"
+"POT-Creation-Date: 2020-11-27 08:17+0100\n"
+"PO-Revision-Date: 2020-12-03 10:27+0100\n"
 "Last-Translator: Stefan Banita\n"
 "Language-Team: Stefan Banita\n"
 "Language: pl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 2.4.1\n"
+"X-Generator: Poedit 2.4.2\n"
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 "
 "|| n%100>14) ? 1 : 2);\n"
+
+#. Translators: The current application does not pay audio
+#, python-brace-format
+msgid "{app} is not playing any sound."
+msgstr "{app} nie odtwarza żadnego dźwięku."
 
 #. Translators: The message is announced during volume control
 msgid "Volume"
@@ -52,6 +57,40 @@ msgstr "Przełączenie na kolejne źródło dźwięku"
 msgid "Switch to the previous audio source"
 msgstr "Przełączenie na poprzednie źródło dźwięku"
 
+#. Translators: name for default (Microsoft Sound Mapper) audio output device.
+msgid "Microsoft Sound Mapper"
+msgstr "Mapowanie Dźwięku Microsoft"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Next audio output device"
+msgstr "Następne urządzenie wyjściowe audio"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Previous audio output device"
+msgstr "Poprzednie urządzenie wyjściowe audio"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch the output to the selected audio device"
+msgstr "Przełączenie wyjścia na wybrane urządzenie audio"
+
+#. Translators: The title of the dialog which appears when the user enables or disables the default gestures
+msgid "Gestures Configuration Change"
+msgstr "Zmiana konfiguracji skrótów klawiszowych"
+
+#. Translators: The message displayed when addon gestures has been changed.
+msgid "NVDA add-ons must be reloaded for the new gestures to take effect."
+msgstr ""
+"Dodatki NVDA muszą zostać ponownie przeładowane, aby nowe skróty klawiszowe "
+"zadziałały."
+
+#. Translators: The label for a button  in the dialog which appears when the user changed addon's default gestures
+msgid "Reload &now"
+msgstr "Przeładuj &teraz"
+
+#. Translators: The label for a button  in the dialog which appears when the user changed NVDA's interface language.
+msgid "Reload &later"
+msgstr "Przeładuj &później"
+
 #. Translators: The label of the component in the settings panel
 msgid "Volume level change &step:"
 msgstr "&Krok zmiany poziomu głośności:"
@@ -60,21 +99,25 @@ msgstr "&Krok zmiany poziomu głośności:"
 msgid "Change the volume of the current &application"
 msgstr "Zmień głośność bieżącej &aplikacji"
 
-#. Translators: The label of the Checkable list in the settings panel
-msgid "Hide audio &devices:"
-msgstr "Ukryj &urządzenia audio:"
-
-#. Translators: The label of the button in the settings panel
-msgid "Update"
-msgstr "Aktualizuj"
-
-#. Translators: The label of the button in the settings panel
-msgid "Clear"
-msgstr "Wyczyść"
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "Hide audio sessions with the same &names"
+msgstr "Ukryj sesje audio o takich samych &nazwach"
 
 #. Translators: The label of the Checkable list in the settings panel
 msgid "Hide &processes:"
 msgstr "Ukryj &procesy:"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "&Control all available audio devices (experimental)"
+msgstr "Kontroluj &wszystkie dostępne urządzenia audio (eksperymentalnie)"
+
+#. Translators: The label of the Checkable list in the settings panel
+msgid "Hide audio &devices:"
+msgstr "Ukryj &urządzenia audio:"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "Use default &keyboard shortcuts"
+msgstr "Użyj domyślnych &skrótów klawiszowych"
 
 #. Add-on summary, usually the user visible name of the addon.
 #. Translators: Summary for this add-on
