@@ -51,7 +51,7 @@ if FREEBSD:
         cext.SWAIT: _common.STATUS_WAITING,
         cext.SLOCK: _common.STATUS_LOCKED,
     }
-elif OPENBSD or NETBSD:
+elif OPENBSD:
     PROC_STATUSES = {
         cext.SIDL: _common.STATUS_IDLE,
         cext.SSLEEP: _common.STATUS_SLEEPING,
@@ -76,12 +76,11 @@ elif OPENBSD or NETBSD:
 elif NETBSD:
     PROC_STATUSES = {
         cext.SIDL: _common.STATUS_IDLE,
-        cext.SACTIVE: _common.STATUS_RUNNING,
-        cext.SDYING: _common.STATUS_ZOMBIE,
+        cext.SSLEEP: _common.STATUS_SLEEPING,
         cext.SSTOP: _common.STATUS_STOPPED,
         cext.SZOMB: _common.STATUS_ZOMBIE,
-        cext.SDEAD: _common.STATUS_DEAD,
-        cext.SSUSPENDED: _common.STATUS_SUSPENDED,  # unique to NetBSD
+        cext.SRUN: _common.STATUS_WAKING,
+        cext.SONPROC: _common.STATUS_RUNNING,
     }
 
 TCP_STATUSES = {
@@ -99,10 +98,7 @@ TCP_STATUSES = {
     cext.PSUTIL_CONN_NONE: _common.CONN_NONE,
 }
 
-if NETBSD:
-    PAGESIZE = os.sysconf("SC_PAGESIZE")
-else:
-    PAGESIZE = os.sysconf("SC_PAGE_SIZE")
+PAGESIZE = cext_posix.getpagesize()
 AF_LINK = cext_posix.AF_LINK
 
 HAS_PER_CPU_TIMES = hasattr(cext, "per_cpu_times")
@@ -329,7 +325,9 @@ def disk_partitions(all=False):
     partitions = cext.disk_partitions()
     for partition in partitions:
         device, mountpoint, fstype, opts = partition
-        ntuple = _common.sdiskpart(device, mountpoint, fstype, opts)
+        maxfile = maxpath = None  # set later
+        ntuple = _common.sdiskpart(device, mountpoint, fstype, opts,
+                                   maxfile, maxpath)
         retlist.append(ntuple)
     return retlist
 
@@ -354,7 +352,7 @@ def net_if_stats():
     for name in names:
         try:
             mtu = cext_posix.net_if_mtu(name)
-            isup = cext_posix.net_if_flags(name)
+            isup = cext_posix.net_if_is_running(name)
             duplex, speed = cext_posix.net_if_duplex_speed(name)
         except OSError as err:
             # https://github.com/giampaolo/psutil/issues/1279
@@ -670,6 +668,10 @@ class Process(object):
             return cext.proc_cmdline(self.pid)
 
     @wrap_exceptions
+    def environ(self):
+        return cext.proc_environ(self.pid)
+
+    @wrap_exceptions
     def terminal(self):
         tty_nr = self.oneshot()[kinfo_proc_map['ttynr']]
         tmap = _psposix.get_terminal_map()
@@ -901,3 +903,15 @@ class Process(object):
         @wrap_exceptions
         def memory_maps(self):
             return cext.proc_memory_maps(self.pid)
+
+        @wrap_exceptions
+        def rlimit(self, resource, limits=None):
+            if limits is None:
+                return cext.proc_getrlimit(self.pid, resource)
+            else:
+                if len(limits) != 2:
+                    raise ValueError(
+                        "second argument must be a (soft, hard) tuple, "
+                        "got %s" % repr(limits))
+                soft, hard = limits
+                return cext.proc_setrlimit(self.pid, resource, soft, hard)
