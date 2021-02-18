@@ -2,8 +2,10 @@
 # A part of the NVDA Volume Adjustment add-on
 # This file is covered by the GNU General Public License.
 # See the file COPYING for more details.
-# Copyright (C) 2020 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
+# Copyright (C) 2020-2021 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
 
+from __future__ import annotations
+from typing import Callable, List
 import addonHandler
 from logHandler import log
 try:
@@ -16,8 +18,7 @@ _addonDir = os.path.join(os.path.dirname(__file__), "..", "..")
 if isinstance(_addonDir, bytes):
 	_addonDir = _addonDir.decode("mbcs")
 _curAddon = addonHandler.Addon(_addonDir)
-addonName = _curAddon.manifest['name']
-addonSummary = _curAddon.manifest['summary']
+addonName, addonSummary = _curAddon.manifest['name'], _curAddon.manifest['summary']
 
 import globalPluginHandler
 import ui
@@ -39,7 +40,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	"""Implementation global commands of NVDA Volume Adjustment add-on."""
 	scriptCategory = addonSummary
 
-	def __init__(self, *args, **kwargs):
+	def __init__(self, *args, **kwargs) -> None:
 		"""Initializing initial configuration values ​​and other fields."""
 		confspec = {
 			"step": "integer(default=1,min=1,max=20)",
@@ -52,17 +53,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		super(GlobalPlugin, self).__init__(*args, **kwargs)
 		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(VASettingsPanel)
 		# Switching between processes
-		self._index = 0	# index of current audio source
+		self._index: int = 0	# index of current audio source
 		# Remember the name of the audio session of the previous process
-		self._previous = ''
+		self._previous: str = ''
 		# Name of the current process
-		self._process = ''
+		self._process: str = ''
 		# Bind default gestures if necessary
 		if config.conf[addonName]['gestures']:
 			self.bindGestures(self.__defaultGestures)
 		devices.scan(hidden.devices)
 
-	def terminate(self, *args, **kwargs):
+	def terminate(self, *args, **kwargs) -> None:
 		"""This will be called when NVDA is finished with this global plugin"""
 		super().terminate(*args, **kwargs)
 		try:
@@ -70,8 +71,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		except IndexError:
 			log.warning("Can't remove %s Settings panel from NVDA settings dialogs", _addonSummary)
 
-	def event_gainFocus(self, obj, NextHandler):
-		"""Track the application in focus if the corresponding option is enabled."""
+	def event_gainFocus(self, obj: NVDAObjects.NVDAObject, NextHandler: Callable) -> None:
+		"""Track the application in focus if the corresponding option is enabled.
+		@param obj: the object to track if focused
+		@type obj: NVDAObjects.NVDAObject
+		@param nextHandler: next event handler
+		@type nextHandler: Callable
+		"""
 		if config.conf[addonName]['focus']:
 			self._index = -1
 			self._previous = UNDEFINED_APP
@@ -125,7 +131,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if session.name!=self._previous:
 			ui.message(session.title)
 			self._previous = session.name
-		volumeLevel = session.volume.GetMasterVolume()
+		volumeLevel: float = session.volume.GetMasterVolume()
 		if volumeLevel<=self.step/100.0 and session.volume.GetMute():
 			session.volume.SetMute(False, None)
 		volumeLevel = min(1.0, float(round(volumeLevel*100) + self.step)/100.0)
@@ -141,7 +147,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if session.name!=self._previous:
 			ui.message(session.title)
 			self._previous = session.name
-		volumeLevel = session.volume.GetMasterVolume()
+		volumeLevel: float = session.volume.GetMasterVolume()
 		volumeLevel = max(0.0, float(round(volumeLevel*100) - self.step)/100.0)
 		if volumeLevel > 0.0:
 			session.volume.SetMasterVolume(volumeLevel, None)
@@ -158,7 +164,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		device = devices[self._index]
 		self._previous = UNDEFINED_APP
-		volumeLevel = device.volume.GetMasterVolumeLevelScalar()
+		volumeLevel: float = device.volume.GetMasterVolumeLevelScalar()
 		if volumeLevel<=self.step/100.0 and device.volume.GetMute():
 			device.volume.SetMute(False, None)
 		volumeLevel = min(1.0, float(round(volumeLevel*100) + self.step)/100.0)
@@ -172,7 +178,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		device = devices[self._index]
 		self._previous = UNDEFINED_APP
-		volumeLevel = device.volume.GetMasterVolumeLevelScalar()
+		volumeLevel: float = device.volume.GetMasterVolumeLevelScalar()
 		volumeLevel = max(0.0, float(round(volumeLevel*100) - self.step)/100.0)
 		if volumeLevel > 0.0:
 			device.volume.SetMasterVolumeLevelScalar(volumeLevel, None)
@@ -182,20 +188,20 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self.announceIsMuted()
 		return volumeLevel
 
-	def getAllSessions(self) -> list:
+	def getAllSessions(self) -> List[str]:
 		"""List of all running processes that available in the list of audio sessions
 		excluding hidden sessions and duplicate items if the corresponding option is enabled.
 		@return: list of currently running processes
-		@rtype: list
+		@rtype: List[str]
 		"""
 		procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name() and s.Process.name() not in hidden.processes]
 		return list(set(procs)) if config.conf[addonName]['duplicates'] else procs
 
-	def selectAudioSource(self, sessions:list) -> None:
+	def selectAudioSource(self, sessions: List[str]) -> None:
 		"""Select audio source to adjust its volume level.
 		This can be a physical audio device or a running process.
 		@param sessions: filtered list of all running processes, changes dynamically
-		@type sessions: list
+		@type sessions: List[str]
 		"""
 		if 0<=self._index < len(devices):
 			title = devices[self._index].name
@@ -216,7 +222,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Increase the volume"))
-	def script_volumeUp(self, gesture) -> None:
+	def script_volumeUp(self, gesture: inputCore.InputGesture) -> None:
 		"""Increase the volume of the selected audio source.
 		@param gesture: the input gesture in question
 		@type gesture: L{inputCore.InputGesture}
@@ -224,14 +230,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if self._index<0 and not self.selectProcessInFocus():
 			return
 		if 0<=self._index<len(devices):
-			volumeLevel = self.increaseDevice()
+			volumeLevel: float = self.increaseDevice()
 		else:
-			volumeLevel = self.increaseSelectedSession()
+			volumeLevel: float = self.increaseSelectedSession()
 		self.announceVolumeLevel(volumeLevel)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Decrease the volume"))
-	def script_volumeDown(self, gesture) -> None:
+	def script_volumeDown(self, gesture: inputCore.InputGesture) -> None:
 		"""Decrease the volume of the selected audio source.
 		@param gesture: the input gesture in question
 		@type gesture: L{inputCore.InputGesture}
@@ -245,7 +251,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Set maximum volume level"))
-	def script_volumeMax(self, gesture) -> None:
+	def script_volumeMax(self, gesture: inputCore.InputGesture) -> None:
 		"""Set the maximum volume level for the selected audio source.
 		@param gesture: the input gesture in question
 		@type gesture: L{inputCore.InputGesture}
@@ -256,18 +262,18 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			if devices[self._index].volume.GetMute():
 				devices[self._index].volume.SetMute(False, None)
 			devices[self._index].volume.SetMasterVolumeLevelScalar(1.0, None)
-			volumeLevel = devices[self._index].volume.GetMasterVolumeLevelScalar()
+			volumeLevel: float = devices[self._index].volume.GetMasterVolumeLevelScalar()
 		else:
 			session = AudioSession(self._process)
 			if session.volume.GetMute():
 				session.volume.SetMute(False, None)
 			session.volume.SetMasterVolume(1.0, None)
-			volumeLevel = session.volume.GetMasterVolume()
+			volumeLevel: float = session.volume.GetMasterVolume()
 		self.announceVolumeLevel(volumeLevel)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Set minimum volume level"))
-	def script_volumeMin(self, gesture) -> None:
+	def script_volumeMin(self, gesture: inputCore.InputGesture) -> None:
 		"""Set the minimum volume level for the selected audio source.
 		@param gesture: the input gesture in question
 		@type gesture: L{inputCore.InputGesture}
@@ -276,43 +282,43 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return
 		if 0<=self._index<len(devices):
 			devices[self._index].volume.SetMasterVolumeLevelScalar(0.0, None)
-			volumeLevel = devices[self._index].volume.GetMasterVolumeLevelScalar()
+			volumeLevel: float = devices[self._index].volume.GetMasterVolumeLevelScalar()
 		else:
 			session = AudioSession(self._process)
 			session.volume.SetMasterVolume(0.0, None)
-			volumeLevel = session.volume.GetMasterVolume()
+			volumeLevel: float = session.volume.GetMasterVolume()
 		self.announceVolumeLevel(volumeLevel)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Switch to the next audio source"))
-	def script_nextSource(self, gesture) -> None:
+	def script_nextSource(self, gesture: inputCore.InputGesture) -> None:
 		"""Switch to the next audio source (audio device or process).
 		@param gesture: the input gesture in question
 		@type gesture: L{inputCore.InputGesture}
 		"""
-		sessions = self.getAllSessions()
+		sessions: List[str] = self.getAllSessions()
 		if self._index<0:
 			try:
-				self._index = len(devices) + sessions.index(next(filter(lambda s: self._process in s, sessions), None))
+				self._index: int = len(devices) + sessions.index(next(filter(lambda s: self._process in s, sessions), None))
 			except (ValueError, TypeError):
-				self._index = len(devices)-1
+				self._index: int = len(devices)-1
 		self._index = self._index+1 if self._index<(len(devices)+len(sessions)-1) else 0
 		self.selectAudioSource(sessions)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Switch to the previous audio source"))
-	def script_prevSource(self, gesture) -> None:
+	def script_prevSource(self, gesture: inputCore.InputGesture) -> None:
 		"""Switch to the previous audio source (audio device or process).
 		@param gesture: the input gesture in question
 		@type gesture: L{inputCore.InputGesture}
 		"""
-		sessions = self.getAllSessions()
+		sessions: List[str] = self.getAllSessions()
 		if self._index<0:
 			try:
-				self._index = len(devices) + sessions.index(next(filter(lambda s: self._process in s, sessions), None))
+				self._index: int = len(devices) + sessions.index(next(filter(lambda s: self._process in s, sessions), None))
 			except (ValueError, TypeError):
 				pass
-		self._index = self._index-1 if self._index>0 else len(devices)+len(sessions)-1
+		self._index: int = self._index-1 if self._index>0 else len(devices)+len(sessions)-1
 		self.selectAudioSource(sessions)
 
 	def setOutputDevice(self, name: str) -> None:
@@ -321,7 +327,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@type name: str
 		"""
 		config.conf['speech']['outputDevice'] = name
-		status = setSynth(getSynth().name)
+		status: bool = setSynth(getSynth().name)
 		if status:
 			tones.terminate()
 			tones.initialize()
@@ -334,39 +340,39 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@return: the name of the selected audio device
 		@rtype: str
 		"""
-		devices = getOutputDeviceNames()
+		devices: List[str] = getOutputDeviceNames()
 		if devices[0] in ("", "Microsoft Sound Mapper"):
 			# Translators: name for default (Microsoft Sound Mapper) audio output device.
 			devices[0] = _("Microsoft Sound Mapper")
 		try:
-			current = devices.index(config.conf["speech"]["outputDevice"])
+			current: int = devices.index(config.conf["speech"]["outputDevice"])
 		except ValueError:
-			current = 0
+			current: int = 0
 		return devices[(current+step)%len(devices)]
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Next audio output device"))
-	def script_nextOutputDevice(self, gesture) -> None:
+	def script_nextOutputDevice(self, gesture: inputCore.InputGesture) -> None:
 		"""Switch the output to the next available audio device.
 		@param gesture: the input gesture in question
 		@type gesture: L{inputCore.InputGesture}
 		"""
-		device = self.selectOutputDevice(step=1)
+		device: str = self.selectOutputDevice(step=1)
 		self.setOutputDevice(name=device)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Previous audio output device"))
-	def script_prevOutputDevice(self, gesture) -> None:
+	def script_prevOutputDevice(self, gesture: inputCore.InputGesture) -> None:
 		"""Switch the output to the previous available audio device.
 		@param gesture: the input gesture in question
 		@type gesture: L{inputCore.InputGesture}
 		"""
-		device = self.selectOutputDevice(step=-1)
+		device: str = self.selectOutputDevice(step=-1)
 		self.setOutputDevice(name=device)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Switch the output to the selected audio device"))
-	def script_switchTo(self, gesture):
+	def script_switchTo(self, gesture: inputCore.InputGesture) -> None:
 		"""Switch NVDA audio output to the selected sound device.
 		@param gesture: gesture assigned to this method
 		@type gesture: L{inputCore.InputGesture}

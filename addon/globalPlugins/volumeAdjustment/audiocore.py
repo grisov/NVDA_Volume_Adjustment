@@ -3,8 +3,10 @@
 # A part of the NVDA Volume Adjustment add-on
 # This file is covered by the GNU General Public License.
 # See the file COPYING for more details.
-# Copyright (C) 2020 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
+# Copyright (C) 2020-2021 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
 
+from __future__ import annotations
+from typing import Optional, List, Dict
 import json
 from os import path
 from threading import Thread
@@ -21,12 +23,12 @@ class ExtendedAudioUtilities(AudioUtilities):
 	"""Improved Audio Utilities object which gives more opportunities."""
 
 	@staticmethod
-	def GetSpeaker(id:str=None):
+	def GetSpeaker(id: Optional[str]=None) -> 'POINTER(POINTER(pycaw.IMMDevice))':
 		"""Get speakers by its ID (render + multimedia) device.
 		@param id: audio device ID
-		@type id: str or None
+		@type id: Optional[str]
 		@return: pointer to the detected audio device
-		@rtype: POINTER(POINTER(IMMDevice))
+		@rtype: POINTER(POINTER(pycaw.IMMDevice))
 		"""
 		device_enumerator = CoCreateInstance(
 			CLSID_MMDeviceEnumerator,
@@ -42,19 +44,19 @@ class ExtendedAudioUtilities(AudioUtilities):
 class AudioDevice(object):
 	"""Presentation of one audio device."""
 
-	def __init__(self, id:str='', name:str='', volume=None):
+	def __init__(self, id: Optional[str]='', name: str='', volume: 'POINTER(IAudioEndpointVolume)'=None) -> None:
 		"""The main properties of an audio device.
 		@param id: audio device ID
-		@type id: str or None
+		@type id: Optional[str]
 		@param name: human friendly name of audio device
 		@type name: str
 		@param volume: pointer on the interface to adjust the volume of the audio device
 		@type volume: POINTER(IAudioEndpointVolume)
 		"""
-		self._id = id
-		self._name = name
-		self._volume = volume
-		self._default = False
+		self._id: Optional[str] = id
+		self._name: str = name
+		self._volume: 'POINTER(IAudioEndpointVolume)' = volume
+		self._default: bool = False
 
 	# Accessors: getter-methods for obtaining class field values
 	id = lambda self: self._id
@@ -72,32 +74,32 @@ class AudioDevice(object):
 class AudioDevices(object):
 	"""Detection and presentation of all system audio devices."""
 
-	def __init__(self):
+	def __init__(self) -> None:
 		"""Initial values of default audio device and a list of all detected devices."""
-		self._defaultDevice = AudioDevice()
-		self._devices = []
+		self._defaultDevice: AudioDevice = AudioDevice()
+		self._devices: List[AudioDevice] = []
 
-	def initialize(self, hide:list=[]) -> None:
+	def initialize(self, hide: List[str]=[]) -> None:
 		"""Detect audio devices and save them in the list.
 		Should running in a separate thread to avoid blocking NVDA.
 		@param hide: a list of device IDs that needs to hide
-		@type hide: list
+		@type hide: List[str]
 		"""
-		self._defaultDevice = AudioUtilities.GetSpeakers()
-		self._devices = []
+		self._defaultDevice: 'POINTER(POINTER(pycaw.IMMDevice))' = AudioUtilities.GetSpeakers()
+		self._devices: List[AudioDevice] = []
 		if config.conf[addonName]['advanced']:
 			try:
-				mixers = ExtendedAudioUtilities.GetAllDevices()
+				mixers: List = ExtendedAudioUtilities.GetAllDevices()
 			except Exception:
-				mixers = []
+				mixers: List = []
 			for mixer in mixers:
-				device = ExtendedAudioUtilities.GetSpeaker(mixer.id)
+				device: 'POINTER(POINTER(pycaw.IMMDevice))' = ExtendedAudioUtilities.GetSpeaker(mixer.id)
 				try:
 					interface = device.Activate(
 						IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
 				except Exception:
 					continue
-				device = AudioDevice(
+				device: AudioDevice = AudioDevice(
 					id = mixer.id,
 					name = mixer.FriendlyName or mixer.id,
 					volume = cast(interface, POINTER(IAudioEndpointVolume))
@@ -119,10 +121,10 @@ class AudioDevices(object):
 			device._default = True
 			self._devices.insert(0, device)
 
-	def getDeviceNameByID(self, id:str) -> str:
+	def getDeviceNameByID(self, id: Optional[str]) -> str:
 		"""Get the name of the audio device by its ID.
 		@param id: audio device ID
-		@type id: str
+		@type id: Optional[str]
 		@return: human friendly name of audio device or empty string
 		@rtype: str
 		"""
@@ -133,10 +135,10 @@ class AudioDevices(object):
 		mixer = next(filter(lambda m: m.id==id, mixers), None)
 		return mixer.FriendlyName if mixer else ' '
 
-	def scan(self, hide:list=[]) -> None:
+	def scan(self, hide: List[str]=[]) -> None:
 		"""Search for available audio devices in the system and save them in the current object.
 		@param hide: a list of device IDs that needs to hide
-		@type hide: list
+		@type hide: List[str]
 		"""
 		scan = Thread(target=self.initialize, args=[hide])
 		scan.start()
@@ -148,7 +150,7 @@ class AudioDevices(object):
 		"""
 		return len(self._devices)
 
-	def __getitem__(self, index:int) -> AudioDevice:
+	def __getitem__(self, index: int) -> AudioDevice:
 		"""Return the audio device by its sequence number in the list.
 		@param index: the index of the device in the sequence of detected audio devices
 		@type index: int
@@ -161,30 +163,30 @@ class AudioDevices(object):
 class AudioSession(object):
 	"""Object for working with the audio session of a separate running process."""
 
-	def __init__(self, name:str):
+	def __init__(self, name: str) -> None:
 		"""Initialize an audio session.
 		@param name: the name of the running process
 		@type name: str
 		"""
-		self._sessions = [session for session in AudioUtilities.GetAllSessions() if session.Process and session.Process.name()]
-		self._current = self.selectAudioSession(name)
-		self._name = ''
-		self._volume = None
+		self._sessions: List = [session for session in AudioUtilities.GetAllSessions() if session.Process and session.Process.name()]
+		self._current: 'pycaw.AudioSession' = self.selectAudioSession(name)
+		self._name: str = ''
+		self._volume: Optional['pycaw.ISimpleAudioVolume'] = None
 
-	def selectAudioSession(self, name:str):
+	def selectAudioSession(self, name: str) -> Optional['pycaw.AudioSession']:
 		"""Find and return an audio session by its specified name.
 		@param name: full name or part of the process name
 		@type name: str
 		@return: an audio session related to a given process
-		@rtype: pycaw.AudioSession
+		@rtype: Optional[pycaw.AudioSession]
 		"""
 		return next(filter(lambda s: name.lower() in s.Process.name().lower(), self._sessions), None)
 
 	@property
-	def name(self) -> str:
+	def name(self) -> Optional[str]:
 		"""Getter method - returns the full name of the current process.
 		@return: name of the current running process
-		@rtype: str
+		@rtype: Optional[str]
 		"""
 		if not self._name:
 			try:
@@ -206,10 +208,10 @@ class AudioSession(object):
 		return name or self.name.replace('.exe', '')
 
 	@property
-	def volume(self):
+	def volume(self) -> Optional['pycaw.ISimpleAudioVolume']:
 		"""An object used to control the volume level of the current running process.
 		@return: pointer to control the volume of the selected running process
-		@rtype: ISimpleAudioVolume
+		@rtype: Optional[pycaw.ISimpleAudioVolume]
 		"""
 		if not self._volume:
 			self._volume = self._current.SimpleAudioVolume
@@ -219,16 +221,16 @@ class AudioSession(object):
 class HiddenSources(object):
 	"""Lists of devices and processes that need to be hidden."""
 
-	def __init__(self):
+	def __init__(self) -> None:
 		"""File name for saving data and loading previously saved data."""
 		self._file = path.join(appArgs.configPath, path.basename(path.dirname(__file__)) + '.json')
-		self._data = {}
+		self._data: Dict = {}
 		self.load()
 
-	def load(self):
+	def load(self) -> HiddenSources:
 		"""Load previously saved data.
 		@return: updated self object
-		@rtype: core.HiddenSources
+		@rtype: HiddenSources
 		"""
 		try:
 			with open(self._file, 'r', encoding='utf-8') as f:
@@ -250,56 +252,56 @@ class HiddenSources(object):
 		return True
 
 	@property
-	def devices(self) -> dict:
+	def devices(self) -> Dict[str, str]:
 		"""Return a set of audio devices that need to be hidden.
 		@return: dict, in which the key is the device ID and value is its name
-		@rtype: dict
+		@rtype: Dict[str, str]
 		"""
 		return self._data.get("devices", {})
 
 	@devices.setter
-	def devices(self, devices:dict):
+	def devices(self, devices: Dict[str, str]) -> HiddenSources:
 		"""Update a list of devices that needs to hide.
 		@param devices: dict with devices in which the key is the ID and the value is the device name
-		@type devices: dict
+		@type devices: Dict[str, str]
 		@return: updated self object
-		@rtype: core.HiddenSources
+		@rtype: HiddenSources
 		"""
 		self._data['devices'] = devices
 		return self
 
 	@property
-	def processes(self) -> list:
+	def processes(self) -> List[str]:
 		"""List of processes that need to be hidden.
 		@return: list of full names of processes
-		@rtype: list
+		@rtype: List[str]
 		"""
 		return self._data.get("processes", [])
 
 	@processes.setter
-	def processes(self, processes:list):
+	def processes(self, processes: List[str]) -> HiddenSources:
 		"""Update the list of processes to hide.
 		@param processes: list of the full names of processes
-		@type processes: list
+		@type processes: List[str]
 		@return: updated self object
-		@rtype: core.HiddenSources
+		@rtype: HiddenSources
 		"""
 		self._data['processes'] = list(processes)
 		return self
 
-	def isChangedDevices(self, devices:dict) -> bool:
+	def isChangedDevices(self, devices: Dict[str, str]) -> bool:
 		"""Determine if the new list of audio devices differs from the existing one.
 		@param devices: dict with devices in which the key is the ID and the value is the device name
-		@type devices: dict
+		@type devices: Dict[str, str]
 		@return: indication of whether the data are different
 		@rtype: bool
 		"""
 		return set(self.devices)^set(devices)
 
-	def isChangedProcesses(self, processes:list) -> bool:
+	def isChangedProcesses(self, processes: List[str]) -> bool:
 		"""Determine if the new processes list differs from the existing one.
 		@param processes: list of the full names of processes
-		@type processes: list
+		@type processes: List[str]
 		@return: indication of whether the data are different
 		@rtype: bool
 		"""
