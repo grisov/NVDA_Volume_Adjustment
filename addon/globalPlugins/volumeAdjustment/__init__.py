@@ -1,4 +1,4 @@
-#-*- coding:utf-8 -*-
+﻿#-*- coding:utf-8 -*-
 # A part of the NVDA Volume Adjustment add-on
 # This file is covered by the GNU General Public License.
 # See the file COPYING for more details.
@@ -38,7 +38,7 @@ UNDEFINED_APP = "UndefinedCurrentApplicationName"
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	"""Implementation global commands of NVDA Volume Adjustment add-on."""
-	scriptCategory = addonSummary
+	scriptCategory: str = addonSummary
 
 	def __init__(self, *args, **kwargs) -> None:
 		"""Initializing initial configuration values ​​and other fields."""
@@ -123,7 +123,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		ui.message(_("The sound is muted"))
 
 	def increaseSelectedSession(self) -> float:
-		"""Increase the volume level for a selected running process.
+		"""Increase the volume level for a selected running process
+		and unmute audio session if it is muted.
 		@return: current volume level
 		@rtype: float
 		"""
@@ -132,14 +133,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			ui.message(session.title)
 			self._previous = session.name
 		volumeLevel: float = session.volume.GetMasterVolume()
-		if volumeLevel<=self.step/100.0 and session.volume.GetMute():
+		if session.volume.GetMute():
 			session.volume.SetMute(False, None)
 		volumeLevel = min(1.0, float(round(volumeLevel*100) + self.step)/100.0)
 		session.volume.SetMasterVolume(volumeLevel, None)
 		return volumeLevel
 
 	def decreaseSelectedSession(self) -> float:
-		"""Decrease the volume level for a selected running process.
+		"""Decrease the volume level for a selected running process
+		and unmute audio session if it is muted.
 		@return: current volume level
 		@rtype: float
 		"""
@@ -150,6 +152,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		volumeLevel: float = session.volume.GetMasterVolume()
 		volumeLevel = max(0.0, float(round(volumeLevel*100) - self.step)/100.0)
 		if volumeLevel > 0.0:
+			if session.volume.GetMute():
+				session.volume.SetMute(False, None)
 			session.volume.SetMasterVolume(volumeLevel, None)
 			self.announceVolumeLevel(volumeLevel)
 		else:
@@ -158,21 +162,23 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		return volumeLevel
 
 	def increaseDevice(self) -> float:
-		"""Increase the volume level for selected audio device.
+		"""Increase the volume level for selected audio device
+		and unmute audio device if it is muted.
 		@return: current volume level
 		@rtype: float
 		"""
 		device = devices[self._index]
 		self._previous = UNDEFINED_APP
 		volumeLevel: float = device.volume.GetMasterVolumeLevelScalar()
-		if volumeLevel<=self.step/100.0 and device.volume.GetMute():
+		if device.volume.GetMute():
 			device.volume.SetMute(False, None)
 		volumeLevel = min(1.0, float(round(volumeLevel*100) + self.step)/100.0)
 		device.volume.SetMasterVolumeLevelScalar(volumeLevel, None)
 		return volumeLevel
 
 	def decreaseDevice(self) -> float:
-		"""Decrease the volume level for selected audio device.
+		"""Decrease the volume level for selected audio device
+		and unmute audio device if it is muted.
 		@return: current volume level
 		@rtype: float
 		"""
@@ -181,6 +187,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		volumeLevel: float = device.volume.GetMasterVolumeLevelScalar()
 		volumeLevel = max(0.0, float(round(volumeLevel*100) - self.step)/100.0)
 		if volumeLevel > 0.0:
+			if device.volume.GetMute():
+				device.volume.SetMute(False, None)
 			device.volume.SetMasterVolumeLevelScalar(volumeLevel, None)
 			self.announceVolumeLevel(volumeLevel)
 		else:
@@ -380,6 +388,18 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		index = int(gesture.displayName.lower()[-2:].replace('f',''))-1
 		self.setOutputDevice(name=getOutputDeviceNames()[index])
 
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Mute selected audio source"))
+	def script_muteSource(self, gesture: inputCore.InputGesture) -> None:
+		"""Mute or unmute the selected audio source.
+		@param gesture: gesture assigned to this method
+		@type gesture: L{inputCore.InputGesture}
+		"""
+		if self._index<0 and not self.selectProcessInFocus():
+			return
+		volume = devices[self._index].volume if 0<=self._index<len(devices) else AudioSession(self._process).volume
+		volume.SetMute(False if volume.GetMute() else True, None)
+
 	__defaultGestures = {
 		"kb:NVDA+windows+upArrow": "volumeUp",
 		"kb:NVDA+windows+downArrow": "volumeDown",
@@ -388,7 +408,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"kb:NVDA+windows+rightArrow": "nextSource",
 		"kb:NVDA+windows+leftArrow": "prevSource",
 		"kb:NVDA+windows+pageUp": "nextOutputDevice",
-		"kb:NVDA+windows+pageDown": "prevOutputDevice"
+		"kb:NVDA+windows+pageDown": "prevOutputDevice",
+		"kb:NVDA+windows+m": "muteSource"
 	}
 	for key in range(1, min(len(getOutputDeviceNames()), 12)+1):
 		__defaultGestures["kb:NVDA+windows+f%d" % key] = "switchTo"

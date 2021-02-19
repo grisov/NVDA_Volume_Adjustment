@@ -66,7 +66,7 @@ class AddonsReloadDialog(wx.Dialog):
 
 class VASettingsPanel(SettingsPanel):
 	"""Add-on settings panel object"""
-	title = addonSummary
+	title: str = addonSummary
 
 	def __init__(self, parent: wx.Window) -> None:
 		"""Initializing the add-on settings panel object.
