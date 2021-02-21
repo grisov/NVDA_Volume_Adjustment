@@ -20,7 +20,7 @@ addonName = path.basename(path.dirname(__file__))
 
 
 class Configuration(object):
-	"""Collection of devices and processes that need to be hidden
+	"""Collection of devices and processes that need to be hidden,
 	and list of muted audio sources.
 	"""
 
@@ -114,13 +114,17 @@ class Configuration(object):
 
 	@property
 	def muted(self) -> List[str]:
+		"""List of audio sources that have been muted by the methods of this add-on.
+		@return: list of names of audio sessions and IDs of audio devices
+		@rtype: List[str]
+		"""
 		return self._data.get("muted", [])
 
 	def addMuted(self, name: Optional[str]) -> Configuration:
-		"""Add muted audio source.
-		@param name: name of the audio source
+		"""Add name of the audio source to the collection of muted.
+		@param name: name of the audio session or ID of the audio device
 		@type name: Optional[str]
-		@return: the current object for further reference to its attributes
+		@return: the current object instance for further reference to its attributes
 		@rtype: Configuration
 		"""
 		if name and name not in self.muted:
@@ -129,11 +133,10 @@ class Configuration(object):
 		return self
 
 	def delMuted(self, name: Optional[str]) -> Configuration:
-		"""
-		and remove it from the list of muted sources.
-		@param name: the name of the audio source
+		"""Remove name of the audio source from the list of muted.
+		@param name: the name of the audio session or ID of the audio device
 		@type name: Optional[str]
-		@return:
+		@return: the current object instance for further reference to its attributes
 		@rtype: Configuration
 		"""
 		try:
@@ -144,6 +147,7 @@ class Configuration(object):
 			self._data["muted"] = self.muted
 		return self
 
+# Global Configuration instance
 cfg = Configuration()
 
 
@@ -170,21 +174,22 @@ class ExtendedAudioUtilities(AudioUtilities):
 
 
 class AudioSource(object):
+	"""Represents the basic properties of audio source."""
 
 	def __init__(self,
 		id: Optional[str]='',
-		name: str='',
+		name: Optional[str]='',
 		volume: Optional['comtypes.POINTER(ISimpleAudioVolume)']=None) -> None:
 		"""The main properties of an audio source.
-		@param id: audio source ID
+		@param id: audio source ID (audio device ID or audio session name)
 		@type id: Optional[str]
 		@param name: name of audio source
-		@type name: str
+		@type name: Optional[str]
 		@param volume: pointer on the interface to adjust the volume of the audio source
 		@type volume: Optional[comtypes.POINTER(ISimpleAudioVolume)]
 		"""
 		self._id: Optional[str] = id
-		self._name: str = name
+		self._name: Optional[str] = name
 		self._volume: Optional['comtypes.POINTER(ISimpleAudioVolume)'] = volume
 
 	# Accessors: getter-methods for obtaining class field values
@@ -198,6 +203,13 @@ class AudioSource(object):
 	volume = property(volume)
 
 	def volumeControl(self, volumeControlFunction: str) -> Callable:
+		"""Link to the audio source volume level setting function.
+		Used due to the difference between the appropriate methods in audio devices and audio sessions.
+		@param volumeControlFunction: name of the volume control function
+		@type volumeControlFunction: str
+		@return: link to the volume control function
+		@rtype: Callable
+		"""
 		try:
 			return getattr(self.volume, volumeControlFunction)
 		except AttributeError:
@@ -205,22 +217,77 @@ class AudioSource(object):
 
 	@property
 	def volumeLevel(self) -> float:
+		"""Get the volume level of the sound source.
+		The method must be overridden for each type of sound source.
+		@return: current volume level
+		@rtype: float
+		"""
 		return NotImplementedError
 
 	@volumeLevel.setter
-	def volumeLevel(self) -> None:
+	def volumeLevel(self, level: float) -> None:
+		"""Set the volume level of the sound source.
+		The method must be overridden for each type of sound source.
+		@param level: target volume level
+		@type level: float
+		"""
 		return NotImplementedError
+
+	def volumeUp(self) -> float:
+		"""Increase the volume level by the specified step.
+		@return: current volume level
+		@rtype: float
+		"""
+		self.isMuted and self.unmute()
+		level = self.volumeLevel = min(1.0, float(round(self.volumeLevel*100) + config.conf[addonName]["step"])/100.0)
+		return level
+
+	def volumeDown(self) -> float:
+		"""Decrease the volume level by the specified step.
+		@return: current volume level
+		@rtype: float
+		"""
+		self.isMuted and self.unmute()
+		level = self.volumeLevel = max(0.0, float(round(self.volumeLevel*100) - config.conf[addonName]["step"])/100.0)
+		return level
+
+	def volumeMax(self) -> float:
+		"""Set the maximum volume level of the audio source.
+		@return: current volume level
+		@rtype: float
+		"""
+		self.isMuted and self.unmute()
+		self.volumeLevel = 1.0
+		return self.volumeLevel
+
+	def volumeMin(self) -> float:
+		"""Set the minimum volume level of the audio source.
+		@return: current volume level
+		@rtype: float
+		"""
+		self.isMuted and self.unmute()
+		self.volumeLevel = 0.0
+		return self.volumeLevel
 
 	@property
 	def isMuted(self) -> bool:
-		if config.conf[addonName]['muteCompletely']:
-			try:
-				return self.volume.GetMute()
-			except AttributeError:
-				return False
-		return self.id in cfg.muted
+		"""Check whether the current audio source is muted.
+		@return: a state of the audio source (muted or no)
+		@rtype: bool
+		"""
+		try:
+			state = self.volume.GetMute()
+		except AttributeError:
+			state = False
+		if not config.conf[addonName]['muteCompletely']:
+			return (self.id in cfg.muted) or state
+		return state
 
 	def mute(self) -> bool:
+		"""Mute the current audio source.
+		@return: a state of the audio source (muted or no)
+		@rtype: bool
+		"""
 		try:
 			if config.conf[addonName]['muteCompletely']:
 				self.volume.SetMute(True, None)
@@ -233,6 +300,10 @@ class AudioSource(object):
 			return True
 
 	def unmute(self) -> bool:
+		"""Unmute the current audio source.
+		@return: a state of the audio source (muted or no)
+		@rtype: bool
+		"""
 		try:
 			if config.conf[addonName]['muteCompletely']:
 				self.volume.SetMute(False, None)
@@ -265,10 +336,18 @@ class AudioDevice(AudioSource):
 
 	@property
 	def default(self) -> bool:
+		"""Check if the current audio device is the default output device.
+		@return: default output audio device or not
+		@rtype: bool
+		"""
 		return self._default
 
 	@property
 	def volumeLevel(self) -> float:
+		"""Get the volume level of the audio device.
+		@return: current volume level
+		@rtype: float [-1.0, 0.0...1.0]
+		"""
 		try:
 			return super(AudioDevice, self).volumeControl("GetMasterVolumeLevelScalar")()
 		except (AttributeError, TypeError,):
@@ -276,6 +355,10 @@ class AudioDevice(AudioSource):
 
 	@volumeLevel.setter
 	def volumeLevel(self, level: float) -> None:
+		"""Set the volume level of the audio device.
+		@param level: target volume level
+		@type level: float [0.0...1.0]
+		"""
 		try:
 			super(AudioDevice, self).volumeControl("SetMasterVolumeLevelScalar")(level, None)
 		except (AttributeError, TypeError,):
@@ -293,7 +376,7 @@ class AudioDevices(object):
 	def initialize(self, hide: List[str]=[]) -> None:
 		"""Detect audio devices and save them in the list.
 		Should running in a separate thread to avoid blocking NVDA.
-		@param hide: a list of device IDs that needs to hide
+		@param hide: a list of devices IDs that needs to hide
 		@type hide: List[str]
 		"""
 		self._defaultDevice: 'POINTER(POINTER(pycaw.IMMDevice))' = AudioUtilities.GetSpeakers()
@@ -381,7 +464,7 @@ class AudioSession(AudioSource):
 		"""
 		self._sessions: List = [session for session in AudioUtilities.GetAllSessions() if session.Process and session.Process.name()]
 		self._current: 'pycaw.AudioSession' = self.selectAudioSession(name)
-		super(AudioSession, self).__init__(name, name, None)
+		super(AudioSession, self).__init__(id=name, name=None, volume=None)
 
 	def selectAudioSession(self, name: str) -> Optional['pycaw.AudioSession']:
 		"""Find and return an audio session by its specified name.
@@ -419,7 +502,7 @@ class AudioSession(AudioSource):
 
 	@property
 	def volume(self) -> Optional['comtypes.POINTER(ISimpleAudioVolume)']:
-		"""An object used to control the volume level of the current running process.
+		"""Pointer used to control the volume level of the current running process.
 		@return: pointer to control the volume of the selected running process
 		@rtype: Optional[comtypes.POINTER(ISimpleAudioVolume)]
 		"""
@@ -429,6 +512,10 @@ class AudioSession(AudioSource):
 
 	@property
 	def volumeLevel(self) -> float:
+		"""Get the volume level of the audio session.
+		@return: current volume level
+		@rtype: float [-1.0, 0.0...1.0]
+		"""
 		try:
 			return super(AudioSession, self).volumeControl("GetMasterVolume")()
 		except (AttributeError, TypeError,):
@@ -436,6 +523,10 @@ class AudioSession(AudioSource):
 
 	@volumeLevel.setter
 	def volumeLevel(self, level: float) -> None:
+		"""Set the volume level of the audio session.
+		@param level: target volume level
+		@type level: float [0.0...1.0]
+		"""
 		try:
 			super(AudioSession, self).volumeControl("SetMasterVolume")(level, None)
 		except (AttributeError, TypeError,):

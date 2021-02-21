@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: 'volumeAdjustment' '1.2'\n"
 "Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
 "POT-Creation-Date: 2020-11-23 03:19+0200\n"
-"PO-Revision-Date: 2020-11-23 04:53+0200\n"
+"PO-Revision-Date: 2021-02-21 21:06+0200\n"
 "Last-Translator: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
 "Language-Team: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
 "Language: uk_UA\n"
@@ -28,7 +28,7 @@ msgstr "Гучність"
 
 #. Translators: The message is announced during volume control
 msgid "The sound is muted"
-msgstr "Звук вимкнено"
+msgstr "Звук приглушено"
 
 #. Translators: Used as the prefix to default audio device name
 msgid "Default audio device"
