@@ -29,7 +29,7 @@ from api import getFocusObject
 from scriptHandler import script
 from nvwave import getOutputDeviceNames
 from synthDriverHandler import getSynth, setSynth
-from .audiocore import devices, hidden, AudioSession
+from .audiocore import cfg, devices, AudioSession
 from .pycaw import AudioUtilities
 from .settings import VASettingsPanel
 
@@ -47,6 +47,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			"focus": "boolean(default=true)",
 			"duplicates": "boolean(default=true)",
 			"advanced": "boolean(default=false)",
+			"muteCompletely": "boolean(default=false)",
+			"mutePercentage": "integer(default=70,min=1,max=99)",
 			"gestures": "boolean(default=true)"
 		}
 		config.conf.spec[addonName] = confspec
@@ -61,7 +63,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Bind default gestures if necessary
 		if config.conf[addonName]['gestures']:
 			self.bindGestures(self.__defaultGestures)
-		devices.scan(hidden.devices)
+		devices.scan(cfg.devices)
 
 	def terminate(self, *args, **kwargs) -> None:
 		"""This will be called when NVDA is finished with this global plugin"""
@@ -133,8 +135,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			ui.message(session.title)
 			self._previous = session.name
 		volumeLevel: float = session.volume.GetMasterVolume()
-		if session.volume.GetMute():
-			session.volume.SetMute(False, None)
+		session.isMuted and session.unmute()
 		volumeLevel = min(1.0, float(round(volumeLevel*100) + self.step)/100.0)
 		session.volume.SetMasterVolume(volumeLevel, None)
 		return volumeLevel
@@ -152,12 +153,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		volumeLevel: float = session.volume.GetMasterVolume()
 		volumeLevel = max(0.0, float(round(volumeLevel*100) - self.step)/100.0)
 		if volumeLevel > 0.0:
-			if session.volume.GetMute():
-				session.volume.SetMute(False, None)
+			session.isMuted and session.unmute()
 			session.volume.SetMasterVolume(volumeLevel, None)
 			self.announceVolumeLevel(volumeLevel)
 		else:
-			session.volume.SetMute(True, None)
+			session.mute()
 			self.announceIsMuted()
 		return volumeLevel
 
@@ -170,8 +170,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		device = devices[self._index]
 		self._previous = UNDEFINED_APP
 		volumeLevel: float = device.volume.GetMasterVolumeLevelScalar()
-		if device.volume.GetMute():
-			device.volume.SetMute(False, None)
+		device.isMuted and device.unmute()
 		volumeLevel = min(1.0, float(round(volumeLevel*100) + self.step)/100.0)
 		device.volume.SetMasterVolumeLevelScalar(volumeLevel, None)
 		return volumeLevel
@@ -187,12 +186,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		volumeLevel: float = device.volume.GetMasterVolumeLevelScalar()
 		volumeLevel = max(0.0, float(round(volumeLevel*100) - self.step)/100.0)
 		if volumeLevel > 0.0:
-			if device.volume.GetMute():
-				device.volume.SetMute(False, None)
+			device.isMuted and device.unmute()
 			device.volume.SetMasterVolumeLevelScalar(volumeLevel, None)
 			self.announceVolumeLevel(volumeLevel)
 		else:
-			device.volume.SetMute(True, None)
+			device.mute()
 			self.announceIsMuted()
 		return volumeLevel
 
@@ -202,7 +200,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@return: list of currently running processes
 		@rtype: List[str]
 		"""
-		procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name() and s.Process.name() not in hidden.processes]
+		procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name() and s.Process.name() not in cfg.processes]
 		return list(set(procs)) if config.conf[addonName]['duplicates'] else procs
 
 	def selectAudioSource(self, sessions: List[str]) -> None:
@@ -397,8 +395,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		if self._index<0 and not self.selectProcessInFocus():
 			return
-		volume = devices[self._index].volume if 0<=self._index<len(devices) else AudioSession(self._process).volume
-		volume.SetMute(False if volume.GetMute() else True, None)
+		if 0<=self._index<len(devices):
+			device = devices[self._index]
+			device.unmute() if device.isMuted else device.mute()
+		else:
+			session = AudioSession(self._process)
+			session.unmute() if session.isMuted else session.mute()
+
 
 	__defaultGestures = {
 		"kb:NVDA+windows+upArrow": "volumeUp",
@@ -409,7 +412,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"kb:NVDA+windows+leftArrow": "prevSource",
 		"kb:NVDA+windows+pageUp": "nextOutputDevice",
 		"kb:NVDA+windows+pageDown": "prevOutputDevice",
-		"kb:NVDA+windows+m": "muteSource"
+		"kb:NVDA+windows+escape": "muteSource"
 	}
 	for key in range(1, min(len(getOutputDeviceNames()), 12)+1):
 		__defaultGestures["kb:NVDA+windows+f%d" % key] = "switchTo"

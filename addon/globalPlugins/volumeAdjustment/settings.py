@@ -19,7 +19,7 @@ from gui import SettingsPanel, guiHelper, nvdaControls
 from globalPluginHandler import reloadGlobalPlugins
 from queueHandler import queueFunction, eventQueue
 from . import addonName, addonSummary
-from .audiocore import devices, hidden, AudioUtilities
+from .audiocore import cfg, devices, AudioUtilities
 
 
 class AddonsReloadDialog(wx.Dialog):
@@ -98,11 +98,11 @@ class VASettingsPanel(SettingsPanel):
 
 		procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
 		self.procs = list(set(procs)) if config.conf[addonName]['duplicates'] else procs
-		self.procs.extend([proc for proc in hidden.processes if proc not in procs])
+		self.procs.extend([proc for proc in cfg.processes if proc not in procs])
 		# Translators: The label of the Checkable list in the settings panel
 		self.hideProcesses = addonHelper.addLabeledControl(_("Hide &processes:"), nvdaControls.CustomCheckListBox, choices=self.procs)
 		if len(self.procs)>0:
-			self.hideProcesses.SetCheckedStrings(hidden.processes)
+			self.hideProcesses.SetCheckedStrings(cfg.processes)
 			self.hideProcesses.SetSelection(0)
 
 		procButtons = wx.BoxSizer(wx.HORIZONTAL)
@@ -122,12 +122,12 @@ class VASettingsPanel(SettingsPanel):
 		self.advancedChk.Bind(wx.EVT_CHECKBOX, self.onAdvancedCheckbox)
 		# Translators: The label of the Checkable list in the settings panel
 		self.hideDevices = addonHelper.addLabeledControl(_("Hide audio &devices:"), nvdaControls.CustomCheckListBox, choices=[])
-		self.devs = dict(hidden.devices)
+		self.devs = dict(cfg.devices)
 		self.devs.update({devices[i].id: devices[i].name for i in range(len(devices))})
 		for id,name in self.devs.items():
 			self.hideDevices.Append(name, id)
 		if len(self.devs)>0:
-			self.hideDevices.SetCheckedStrings([self.devs[id] for id in hidden.devices])
+			self.hideDevices.SetCheckedStrings([self.devs[id] for id in cfg.devices])
 			self.hideDevices.SetSelection(0)
 		self.hideDevices.Show(show=self.advancedChk.GetValue())
 
@@ -155,14 +155,14 @@ class VASettingsPanel(SettingsPanel):
 		@type event: wx._core.PyEvent
 		"""
 		config.conf[addonName]['advanced'] = event.IsChecked()
-		devices.initialize(hidden.devices)
+		devices.initialize(cfg.devices)
 		self.hideDevices.Clear()
-		self.devs = dict(hidden.devices)
+		self.devs = dict(cfg.devices)
 		self.devs.update({devices[i].id: devices[i].name for i in range(len(devices))})
 		for id,name in self.devs.items():
 			self.hideDevices.Append(name, id)
 		if len(self.devs)>0:
-			self.hideDevices.SetCheckedStrings([self.devs[id] for id in hidden.devices])
+			self.hideDevices.SetCheckedStrings([self.devs[id] for id in cfg.devices])
 			self.hideDevices.SetSelection(0)
 		self.hideDevices.Show(show=event.IsChecked())
 		self.sizer.Show(self.devButtons, show=event.IsChecked())
@@ -184,12 +184,12 @@ class VASettingsPanel(SettingsPanel):
 		"""
 		devices.initialize()
 		self.hideDevices.Clear()
-		self.devs = dict(hidden.devices)
+		self.devs = dict(cfg.devices)
 		self.devs.update({devices[i].id: devices[i].name for i in range(len(devices))})
 		for id,name in self.devs.items():
 			self.hideDevices.Append(name, id)
 		if len(self.devs)>0:
-			self.hideDevices.SetCheckedStrings([self.devs[id] for id in hidden.devices])
+			self.hideDevices.SetCheckedStrings([self.devs[id] for id in cfg.devices])
 			self.hideDevices.SetSelection(0)
 		self.hideDevices.SetFocus()
 
@@ -212,11 +212,11 @@ class VASettingsPanel(SettingsPanel):
 		"""
 		procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
 		self.procs = list(set(procs)) if config.conf[addonName]['duplicates'] else procs
-		self.procs.extend([proc for proc in hidden.processes if proc not in procs])
+		self.procs.extend([proc for proc in cfg.processes if proc not in procs])
 		self.hideProcesses.Clear()
 		self.hideProcesses.SetItems(self.procs)
 		if len(self.procs)>0:
-			self.hideProcesses.SetCheckedStrings(hidden.processes)
+			self.hideProcesses.SetCheckedStrings(cfg.processes)
 			self.hideProcesses.SetSelection(0)
 		self.hideProcesses.SetFocus()
 
@@ -246,11 +246,11 @@ class VASettingsPanel(SettingsPanel):
 			id = self.hideDevices.GetClientData(checked)
 			devs[id] = self.devs[id]
 		procs = self.hideProcesses.GetCheckedStrings()
-		isChangedDevices = hidden.isChangedDevices(devs)
-		if hidden.isChangedProcesses(procs) or isChangedDevices:
-			hidden.devices = devs
-			hidden.processes = procs
-			hidden.save()
+		isChangedDevices = cfg.isChangedDevices(devs)
+		if cfg.isChangedProcesses(procs) or isChangedDevices:
+			cfg.devices = devs
+			cfg.processes = procs
+			cfg.save()
 			if isChangedDevices:
 				# Re-initialize the list of devices for the new settings to take effect
-				devices.scan(hidden.devices)
+				devices.scan(cfg.devices)

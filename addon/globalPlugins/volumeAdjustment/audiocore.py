@@ -6,7 +6,7 @@
 # Copyright (C) 2020-2021 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
 
 from __future__ import annotations
-from typing import Optional, List, Dict
+from typing import Optional, Callable, List, Dict
 import json
 from os import path
 from threading import Thread
@@ -17,6 +17,134 @@ from comtypes import CoCreateInstance, CLSCTX_ALL, CLSCTX_INPROC_SERVER
 from .pycaw import AudioUtilities, IAudioEndpointVolume, CLSID_MMDeviceEnumerator, IMMDeviceEnumerator, EDataFlow, ERole
 
 addonName = path.basename(path.dirname(__file__))
+
+
+class Configuration(object):
+	"""Collection of devices and processes that need to be hidden
+	and list of muted audio sources.
+	"""
+
+	def __init__(self) -> None:
+		"""File name for saving data and loading previously saved data."""
+		self._file = path.join(appArgs.configPath, path.basename(path.dirname(__file__)) + '.json')
+		self._data: Dict = {}
+		self.load()
+
+	def load(self) -> Configuration:
+		"""Load previously saved data.
+		@return: updated self object
+		@rtype: Configuration
+		"""
+		try:
+			with open(self._file, 'r', encoding='utf-8') as f:
+				self._data = json.load(f)
+		except Exception:
+			pass
+		if 'version' not in self._data:
+			self._data = {'version': 0}
+		return self
+
+	def save(self) -> bool:
+		"""Save the data to an external file.
+		@return: whether the data has been successfully saved
+		@rtype: bool
+		"""
+		try:
+			with open(self._file, 'w', encoding='utf-8') as f:
+				f.write(json.dumps(self._data, skipkeys=True, ensure_ascii=False, indent=4))
+		except Exception:
+			return False
+		return True
+
+	@property
+	def devices(self) -> Dict[str, str]:
+		"""Return a set of audio devices that need to be hidden.
+		@return: dict, in which the key is the device ID and value is its name
+		@rtype: Dict[str, str]
+		"""
+		return self._data.get("devices", {})
+
+	@devices.setter
+	def devices(self, devices: Dict[str, str]) -> Configuration:
+		"""Update a list of devices that needs to hide.
+		@param devices: dict with devices in which the key is the ID and the value is the device name
+		@type devices: Dict[str, str]
+		@return: updated self object
+		@rtype: Configuration
+		"""
+		self._data['devices'] = devices
+		return self
+
+	@property
+	def processes(self) -> List[str]:
+		"""List of processes that need to be hidden.
+		@return: list of full names of processes
+		@rtype: List[str]
+		"""
+		return self._data.get("processes", [])
+
+	@processes.setter
+	def processes(self, processes: List[str]) -> Configuration:
+		"""Update the list of processes to hide.
+		@param processes: list of the full names of processes
+		@type processes: List[str]
+		@return: updated self object
+		@rtype: Configuration
+		"""
+		self._data['processes'] = list(processes)
+		return self
+
+	def isChangedDevices(self, devices: Dict[str, str]) -> bool:
+		"""Determine if the new list of audio devices differs from the existing one.
+		@param devices: dict with devices in which the key is the ID and the value is the device name
+		@type devices: Dict[str, str]
+		@return: indication of whether the data are different
+		@rtype: bool
+		"""
+		return set(self.devices)^set(devices)
+
+	def isChangedProcesses(self, processes: List[str]) -> bool:
+		"""Determine if the new processes list differs from the existing one.
+		@param processes: list of the full names of processes
+		@type processes: List[str]
+		@return: indication of whether the data are different
+		@rtype: bool
+		"""
+		return set(self.processes)^set(processes)
+
+	@property
+	def muted(self) -> List[str]:
+		return self._data.get("muted", [])
+
+	def addMuted(self, name: Optional[str]) -> Configuration:
+		"""Add muted audio source.
+		@param name: name of the audio source
+		@type name: Optional[str]
+		@return: the current object for further reference to its attributes
+		@rtype: Configuration
+		"""
+		if name and name not in self.muted:
+			self.muted.append(name)
+			self._data["muted"] = self.muted
+		return self
+
+	def delMuted(self, name: Optional[str]) -> Configuration:
+		"""
+		and remove it from the list of muted sources.
+		@param name: the name of the audio source
+		@type name: Optional[str]
+		@return:
+		@rtype: Configuration
+		"""
+		try:
+			self.muted.remove(name)
+		except ValueError:
+			pass
+		else:
+			self._data["muted"] = self.muted
+		return self
+
+cfg = Configuration()
 
 
 class ExtendedAudioUtilities(AudioUtilities):
@@ -41,34 +169,117 @@ class ExtendedAudioUtilities(AudioUtilities):
 		return speakers
 
 
-class AudioDevice(object):
+class AudioSource(object):
+
+	def __init__(self,
+		id: Optional[str]='',
+		name: str='',
+		volume: Optional['comtypes.POINTER(ISimpleAudioVolume)']=None) -> None:
+		"""The main properties of an audio source.
+		@param id: audio source ID
+		@type id: Optional[str]
+		@param name: name of audio source
+		@type name: str
+		@param volume: pointer on the interface to adjust the volume of the audio source
+		@type volume: Optional[comtypes.POINTER(ISimpleAudioVolume)]
+		"""
+		self._id: Optional[str] = id
+		self._name: str = name
+		self._volume: Optional['comtypes.POINTER(ISimpleAudioVolume)'] = volume
+
+	# Accessors: getter-methods for obtaining class field values
+	id = lambda self: self._id
+	name = lambda self: self._name
+	volume = lambda self: self._volume
+
+	# The main properties of the audio device
+	id = property(id)
+	name = property(name)
+	volume = property(volume)
+
+	def volumeControl(self, volumeControlFunction: str) -> Callable:
+		try:
+			return getattr(self.volume, volumeControlFunction)
+		except AttributeError:
+			return None
+
+	@property
+	def volumeLevel(self) -> float:
+		return NotImplementedError
+
+	@volumeLevel.setter
+	def volumeLevel(self) -> None:
+		return NotImplementedError
+
+	@property
+	def isMuted(self) -> bool:
+		if config.conf[addonName]['muteCompletely']:
+			try:
+				return self.volume.GetMute()
+			except AttributeError:
+				return False
+		return self.id in cfg.muted
+
+	def mute(self) -> bool:
+		try:
+			if config.conf[addonName]['muteCompletely']:
+				self.volume.SetMute(True, None)
+			elif not self.isMuted:
+				self.volumeLevel = (self.volumeLevel*(100-config.conf[addonName]['mutePercentage']))/100.0
+		except AttributeError:
+			return False
+		else:
+			cfg.addMuted(self.id).save()
+			return True
+
+	def unmute(self) -> bool:
+		try:
+			if config.conf[addonName]['muteCompletely']:
+				self.volume.SetMute(False, None)
+			elif self.isMuted:
+				self.volumeLevel = min(1.0, round(self.volumeLevel*100.0)/(100.0-config.conf[addonName]['mutePercentage']))
+		except AttributeError:
+			return False
+		else:
+			cfg.delMuted(self.id).save()
+			return True
+
+
+class AudioDevice(AudioSource):
 	"""Presentation of one audio device."""
 
-	def __init__(self, id: Optional[str]='', name: str='', volume: 'POINTER(IAudioEndpointVolume)'=None) -> None:
+	def __init__(self,
+		id: Optional[str]='',
+		name: str='',
+		volume: Optional['comtypes.POINTER(ISimpleAudioVolume)']=None) -> None:
 		"""The main properties of an audio device.
 		@param id: audio device ID
 		@type id: Optional[str]
 		@param name: human friendly name of audio device
 		@type name: str
 		@param volume: pointer on the interface to adjust the volume of the audio device
-		@type volume: POINTER(IAudioEndpointVolume)
+		@type volume: Optional[comtypes.POINTER(ISimpleAudioVolume)]
 		"""
-		self._id: Optional[str] = id
-		self._name: str = name
-		self._volume: 'POINTER(IAudioEndpointVolume)' = volume
+		super(AudioDevice, self).__init__(id, name, volume)
 		self._default: bool = False
 
-	# Accessors: getter-methods for obtaining class field values
-	id = lambda self: self._id
-	name = lambda self: self._name
-	volume = lambda self: self._volume
-	default = lambda self: self._default
+	@property
+	def default(self) -> bool:
+		return self._default
 
-	# The main properties of the audio device
-	id = property(id)
-	name = property(name)
-	volume = property(volume)
-	default = property(default)
+	@property
+	def volumeLevel(self) -> float:
+		try:
+			return super(AudioDevice, self).volumeControl("GetMasterVolumeLevelScalar")()
+		except (AttributeError, TypeError,):
+			return -1.0
+
+	@volumeLevel.setter
+	def volumeLevel(self, level: float) -> None:
+		try:
+			super(AudioDevice, self).volumeControl("SetMasterVolumeLevelScalar")(level, None)
+		except (AttributeError, TypeError,):
+			pass
 
 
 class AudioDevices(object):
@@ -160,7 +371,7 @@ class AudioDevices(object):
 		return self._devices[index]
 
 
-class AudioSession(object):
+class AudioSession(AudioSource):
 	"""Object for working with the audio session of a separate running process."""
 
 	def __init__(self, name: str) -> None:
@@ -170,8 +381,7 @@ class AudioSession(object):
 		"""
 		self._sessions: List = [session for session in AudioUtilities.GetAllSessions() if session.Process and session.Process.name()]
 		self._current: 'pycaw.AudioSession' = self.selectAudioSession(name)
-		self._name: str = ''
-		self._volume: Optional['pycaw.ISimpleAudioVolume'] = None
+		super(AudioSession, self).__init__(name, name, None)
 
 	def selectAudioSession(self, name: str) -> Optional['pycaw.AudioSession']:
 		"""Find and return an audio session by its specified name.
@@ -208,106 +418,29 @@ class AudioSession(object):
 		return name or self.name.replace('.exe', '')
 
 	@property
-	def volume(self) -> Optional['pycaw.ISimpleAudioVolume']:
+	def volume(self) -> Optional['comtypes.POINTER(ISimpleAudioVolume)']:
 		"""An object used to control the volume level of the current running process.
 		@return: pointer to control the volume of the selected running process
-		@rtype: Optional[pycaw.ISimpleAudioVolume]
+		@rtype: Optional[comtypes.POINTER(ISimpleAudioVolume)]
 		"""
 		if not self._volume:
 			self._volume = self._current.SimpleAudioVolume
 		return self._volume
 
-
-class HiddenSources(object):
-	"""Lists of devices and processes that need to be hidden."""
-
-	def __init__(self) -> None:
-		"""File name for saving data and loading previously saved data."""
-		self._file = path.join(appArgs.configPath, path.basename(path.dirname(__file__)) + '.json')
-		self._data: Dict = {}
-		self.load()
-
-	def load(self) -> HiddenSources:
-		"""Load previously saved data.
-		@return: updated self object
-		@rtype: HiddenSources
-		"""
+	@property
+	def volumeLevel(self) -> float:
 		try:
-			with open(self._file, 'r', encoding='utf-8') as f:
-				self._data = json.load(f)
-		except Exception:
+			return super(AudioSession, self).volumeControl("GetMasterVolume")()
+		except (AttributeError, TypeError,):
+			return -1.0
+
+	@volumeLevel.setter
+	def volumeLevel(self, level: float) -> None:
+		try:
+			super(AudioSession, self).volumeControl("SetMasterVolume")(level, None)
+		except (AttributeError, TypeError,):
 			pass
-		return self
-
-	def save(self) -> bool:
-		"""Save the data to an external file.
-		@return: whether the data has been successfully saved
-		@rtype: bool
-		"""
-		try:
-			with open(self._file, 'w', encoding='utf-8') as f:
-				f.write(json.dumps(self._data, skipkeys=True, ensure_ascii=False, indent=4))
-		except Exception:
-			return False
-		return True
-
-	@property
-	def devices(self) -> Dict[str, str]:
-		"""Return a set of audio devices that need to be hidden.
-		@return: dict, in which the key is the device ID and value is its name
-		@rtype: Dict[str, str]
-		"""
-		return self._data.get("devices", {})
-
-	@devices.setter
-	def devices(self, devices: Dict[str, str]) -> HiddenSources:
-		"""Update a list of devices that needs to hide.
-		@param devices: dict with devices in which the key is the ID and the value is the device name
-		@type devices: Dict[str, str]
-		@return: updated self object
-		@rtype: HiddenSources
-		"""
-		self._data['devices'] = devices
-		return self
-
-	@property
-	def processes(self) -> List[str]:
-		"""List of processes that need to be hidden.
-		@return: list of full names of processes
-		@rtype: List[str]
-		"""
-		return self._data.get("processes", [])
-
-	@processes.setter
-	def processes(self, processes: List[str]) -> HiddenSources:
-		"""Update the list of processes to hide.
-		@param processes: list of the full names of processes
-		@type processes: List[str]
-		@return: updated self object
-		@rtype: HiddenSources
-		"""
-		self._data['processes'] = list(processes)
-		return self
-
-	def isChangedDevices(self, devices: Dict[str, str]) -> bool:
-		"""Determine if the new list of audio devices differs from the existing one.
-		@param devices: dict with devices in which the key is the ID and the value is the device name
-		@type devices: Dict[str, str]
-		@return: indication of whether the data are different
-		@rtype: bool
-		"""
-		return set(self.devices)^set(devices)
-
-	def isChangedProcesses(self, processes: List[str]) -> bool:
-		"""Determine if the new processes list differs from the existing one.
-		@param processes: list of the full names of processes
-		@type processes: List[str]
-		@return: indication of whether the data are different
-		@rtype: bool
-		"""
-		return set(self.processes)^set(processes)
 
 
-# global instances to avoid multiple scans of all audio devices
+# global instance to avoid multiple scans of all audio devices
 devices = AudioDevices()
-hidden = HiddenSources()
