@@ -36,6 +36,9 @@ class AddonsReloadDialog(wx.Dialog):
 		sHelper = guiHelper.BoxSizerHelper(self, orientation=wx.VERTICAL)
 		# Translators: The message displayed when addon gestures has been changed.
 		sHelper.addItem(wx.StaticText(self, label=_("NVDA add-ons must be reloaded for the new gestures to take effect.")))
+		if config.conf[addonName]['gestures']:
+			# Translators: The warning is displayed before switching on default addon gestures
+			sHelper.addItem(wx.StaticText(self, label=_("Warning! Using the feature to set the maximum volume level may damage your hearing.")))
 
 		bHelper = sHelper.addDialogDismissButtons(guiHelper.ButtonHelper(wx.HORIZONTAL))
 		# Translators: The label for a button  in the dialog which appears when the user changed addon's default gestures
@@ -141,6 +144,24 @@ class VASettingsPanel(SettingsPanel):
 		sizer.Add(self.devButtons, flag=wx.RIGHT)
 		sizer.Show(self.devButtons, show=self.advancedChk.GetValue())
 
+		self.muteCompletelyChk = addonHelper.addItem(
+			# Translators: This is the label for a checkbox in the settings panel.
+			wx.CheckBox(self, label=_("Completely turn off the volume with &mute command"))
+		)
+		self.muteCompletelyChk.SetValue(config.conf[addonName]['muteCompletely'])
+		self.muteCompletelyChk.Bind(wx.EVT_CHECKBOX, self.onMuteCompletelyCheckbox)
+		self.mutePercentageSlider = addonHelper.addLabeledControl(
+			# Translators: This is the label for a slider in the settings panel.
+			labelText=_("Decrease the volume &by, %"),
+			wxCtrlClass=nvdaControls.EnhancedInputSlider, value=config.conf[addonName]['mutePercentage'],
+			minValue=1, maxValue=99, size=(250, -1)
+		)
+		self.mutePercentageSlider.Show(show=not self.muteCompletelyChk.GetValue())
+		self.unmuteOnExitChk = addonHelper.addItem(
+		# Translators: This is the label for a checkbox in the settings panel.
+			wx.CheckBox(self, label=_("&Unmute all muted audio resources at NVDA shutdown"))
+		)
+		self.unmuteOnExitChk.SetValue(config.conf[addonName]['unmuteOnExit'])
 		self.defaultGesturesChk = addonHelper.addItem(
 		# Translators: This is the label for a checkbox in the settings panel.
 			wx.CheckBox(self, label=_("Use default &keyboard shortcuts"))
@@ -168,6 +189,16 @@ class VASettingsPanel(SettingsPanel):
 		self.sizer.Show(self.devButtons, show=event.IsChecked())
 		self.sizer.Fit(self)
 		self.hideDevices.GetParent().Layout()
+
+	def onMuteCompletelyCheckbox(self, event: wx._core.PyEvent) -> None:
+		"""Enable or disable volume turn off mode with the mute function,
+		dynamically controls the showing of the volume mute slider.
+		@param event: event binder object which processes changing of the wx.Checkbox
+		@type event: wx._core.PyEvent
+		"""
+		self.mutePercentageSlider.Show(show=not self.muteCompletelyChk.GetValue())
+		self.mutePercentageSlider.GetParent().Layout()
+		self.sizer.Fit(self)
 
 	def onGesturesCheckbox(self, event: wx._core.PyEvent) -> None:
 		"""Enabling or disabling default keyboard shortcuts.
@@ -241,6 +272,9 @@ class VASettingsPanel(SettingsPanel):
 		config.conf[addonName]['step'] = self.volumeStep.GetValue()
 		config.conf[addonName]['focus'] = self.followFocusChk.GetValue()
 		config.conf[addonName]['duplicates'] = self.hideDuplicatesChk.GetValue()
+		config.conf[addonName]['muteCompletely'] = self.muteCompletelyChk.GetValue()
+		config.conf[addonName]['mutePercentage'] = self.mutePercentageSlider.GetValue()
+		config.conf[addonName]['unmuteOnExit'] = self.unmuteOnExitChk.GetValue()
 		devs = {}
 		for checked in self.hideDevices.GetCheckedItems():
 			id = self.hideDevices.GetClientData(checked)

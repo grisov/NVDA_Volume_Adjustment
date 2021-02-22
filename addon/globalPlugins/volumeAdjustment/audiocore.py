@@ -305,9 +305,8 @@ class AudioSource(object):
 		@rtype: bool
 		"""
 		try:
-			if config.conf[addonName]['muteCompletely']:
-				self.volume.SetMute(False, None)
-			elif self.isMuted:
+			self.volume.SetMute(False, None)
+			if self.isMuted:
 				self.volumeLevel = min(1.0, round(self.volumeLevel*100.0)/(100.0-config.conf[addonName]['mutePercentage']))
 		except AttributeError:
 			return False

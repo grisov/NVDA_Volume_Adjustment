@@ -53,8 +53,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			"duplicates": "boolean(default=true)",
 			"advanced": "boolean(default=false)",
 			"muteCompletely": "boolean(default=false)",
-			"mutePercentage": "integer(default=70,min=1,max=99)",
-			"unmute": "boolean(default=true)",
+			"mutePercentage": "integer(default=75,min=1,max=99)",
+			"unmuteOnExit": "boolean(default=true)",
 			"gestures": "boolean(default=true)"
 		}
 		config.conf.spec[addonName] = confspec
@@ -72,7 +72,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def terminate(self, *args, **kwargs) -> None:
 		"""This will be called when NVDA is finished with this global plugin."""
 		super().terminate(*args, **kwargs)
-		config.conf[addonName]["unmute"] and Thread(target=self.unmuteAllAudioSources).start()
+		config.conf[addonName]["unmuteOnExit"] and Thread(target=self.unmuteAllAudioSources).start()
 		try:
 			gui.settingsDialogs.NVDASettingsDialog.categoryClasses.remove(VASettingsPanel)
 		except IndexError:
