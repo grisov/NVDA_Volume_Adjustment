@@ -46,7 +46,7 @@ class AddonsReloadDialog(wx.Dialog):
 		reloadNowButton.Bind(wx.EVT_BUTTON, self.onReloadNowButton)
 		reloadNowButton.SetFocus()
 
-		# Translators: The label for a button  in the dialog which appears when the user changed NVDA's interface language.
+		# Translators: The label for a button  in the dialog which appears when the user changed addon's default gestures
 		reloadLaterButton = bHelper.addButton(self, wx.ID_CLOSE, label=_("Reload &later"))
 		reloadLaterButton.Bind(wx.EVT_BUTTON, lambda evt: self.Close())
 		self.Bind(wx.EVT_CLOSE, lambda evt: self.Destroy())
