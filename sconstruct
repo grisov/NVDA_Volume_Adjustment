@@ -24,9 +24,21 @@ import buildVars  # NOQA: E402
 
 def md2html(source, dest):
 	import markdown
+	# Temp: to be replaced by an extensions list in spring 2021.
+	import markdown.extensions.tables
+	mdTable = markdown.extensions.tables.TableExtension()
 	lang = os.path.basename(os.path.dirname(source)).replace('_', '-')
+	localeLang = os.path.basename(os.path.dirname(source))
+	try:
+		if sys.version_info.major == 2:
+			_ = gettext.translation("nvda", localedir=os.path.join("addon", "locale"), languages=[localeLang]).ugettext
+		else:
+			_ = gettext.translation("nvda", localedir=os.path.join("addon", "locale"), languages=[localeLang]).gettext
+		summary = _(buildVars.addon_info["addon_summary"])
+	except:
+		summary = buildVars.addon_info["addon_summary"]
 	title = "{addonSummary} {addonVersion}".format(
-		addonSummary=buildVars.addon_info["addon_summary"], addonVersion=buildVars.addon_info["addon_version"]
+		addonSummary=summary, addonVersion=buildVars.addon_info["addon_version"]
 	)
 	headerDic = {
 		"[[!meta title=\"": "# ",
@@ -36,7 +48,7 @@ def md2html(source, dest):
 		mdText = f.read()
 		for k, v in headerDic.items():
 			mdText = mdText.replace(k, v, 1)
-		htmlText = markdown.markdown(mdText)
+		htmlText = markdown.markdown(mdText, extensions=[mdTable])
 	# Optimization: build resulting HTML text in one go instead of writing parts separately.
 	docText = "\n".join([
 		"<!DOCTYPE html>",
@@ -229,4 +241,4 @@ env.Depends(manifest, "buildVars.py")
 
 env.Depends(addon, manifest)
 env.Default(addon)
-env.Clean(addon, ['.sconsign.dblite', 'addon/doc/en/'])
+env.Clean(addon, ['.sconsign.dblite', 'addon/doc/' + buildVars.baseLanguage + '/'])

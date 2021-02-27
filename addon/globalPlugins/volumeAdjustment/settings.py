@@ -5,13 +5,14 @@
 # See the file COPYING for more details.
 # Copyright (C) 2020-2021 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
 
-from __future__ import annotations
+from typing import Callable
 import addonHandler
 from logHandler import log
 try:
 	addonHandler.initTranslation()
 except addonHandler.AddonError:
 	log.warning("Unable to initialise translations. This may be because the addon is running from NVDA scratchpad.")
+_: Callable[[str], str]
 
 import wx
 import config
@@ -19,7 +20,7 @@ from gui import SettingsPanel, guiHelper, nvdaControls
 from globalPluginHandler import reloadGlobalPlugins
 from queueHandler import queueFunction, eventQueue
 from . import addonName, addonSummary
-from .audiocore import cfg, devices, AudioUtilities
+from .audiocore import cfg, devices, ExtendedAudioUtilities
 
 
 class AddonsReloadDialog(wx.Dialog):
@@ -99,7 +100,7 @@ class VASettingsPanel(SettingsPanel):
 		)
 		self.hideDuplicatesChk.SetValue(config.conf[addonName]['duplicates'])
 
-		procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
+		procs = [s.Process.name() for s in ExtendedAudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
 		self.procs = list(set(procs)) if config.conf[addonName]['duplicates'] else procs
 		self.procs.extend([proc for proc in cfg.processes if proc not in procs])
 		# Translators: The label of the Checkable list in the settings panel
@@ -241,7 +242,7 @@ class VASettingsPanel(SettingsPanel):
 		@param event: event that occurs when a wx.Button is pressed
 		@type event: wx._core.PyEvent
 		"""
-		procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
+		procs = [s.Process.name() for s in ExtendedAudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
 		self.procs = list(set(procs)) if config.conf[addonName]['duplicates'] else procs
 		self.procs.extend([proc for proc in cfg.processes if proc not in procs])
 		self.hideProcesses.Clear()
@@ -256,7 +257,7 @@ class VASettingsPanel(SettingsPanel):
 		@param event: event that occurs when a wx.Button is pressed
 		@type event: wx._core.PyEvent
 		"""
-		self.procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
+		self.procs = [s.Process.name() for s in ExtendedAudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
 		self.hideProcesses.Clear()
 		self.hideProcesses.SetItems(self.procs)
 		if len(self.procs)>0:

@@ -6,15 +6,15 @@
 # Copyright (C) 2020-2021 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
 
 from __future__ import annotations
-from typing import Optional, Callable, List, Dict
+from typing import Optional, Callable, List, Dict, Union, Generator
 import json
 from os import path
 from threading import Thread
 from globalVars import appArgs
 import config
 from ctypes import cast, POINTER
-from comtypes import CoCreateInstance, CLSCTX_ALL, CLSCTX_INPROC_SERVER
-from .pycaw import AudioUtilities, IAudioEndpointVolume, CLSID_MMDeviceEnumerator, IMMDeviceEnumerator, EDataFlow, ERole
+from comtypes import CoCreateInstance, CLSCTX_ALL, CLSCTX_INPROC_SERVER, pointer
+from . import pycaw
 
 addonName = path.basename(path.dirname(__file__))
 
@@ -59,7 +59,7 @@ class Configuration(object):
 	@property
 	def devices(self) -> Dict[str, str]:
 		"""Return a set of audio devices that need to be hidden.
-		@return: dict, in which the key is the device ID and value is its name
+		@return: collection of audio devices IDs
 		@rtype: Dict[str, str]
 		"""
 		return self._data.get("devices", {})
@@ -101,7 +101,7 @@ class Configuration(object):
 		@return: indication of whether the data are different
 		@rtype: bool
 		"""
-		return set(self.devices)^set(devices)
+		return bool(set(self.devices)^set(devices))
 
 	def isChangedProcesses(self, processes: List[str]) -> bool:
 		"""Determine if the new processes list differs from the existing one.
@@ -110,7 +110,7 @@ class Configuration(object):
 		@return: indication of whether the data are different
 		@rtype: bool
 		"""
-		return set(self.processes)^set(processes)
+		return bool(set(self.processes)^set(processes))
 
 	@property
 	def muted(self) -> List[str]:
@@ -132,10 +132,10 @@ class Configuration(object):
 			self._data["muted"] = self.muted
 		return self
 
-	def delMuted(self, name: Optional[str]) -> Configuration:
+	def delMuted(self, name: str) -> Configuration:
 		"""Remove name of the audio source from the list of muted.
 		@param name: the name of the audio session or ID of the audio device
-		@type name: Optional[str]
+		@type name: str
 		@return: the current object instance for further reference to its attributes
 		@rtype: Configuration
 		"""
@@ -151,25 +151,25 @@ class Configuration(object):
 cfg = Configuration()
 
 
-class ExtendedAudioUtilities(AudioUtilities):
+class ExtendedAudioUtilities(pycaw.AudioUtilities):
 	"""Improved Audio Utilities object which gives more opportunities."""
 
 	@staticmethod
-	def GetSpeaker(id: Optional[str]=None) -> 'POINTER(POINTER(pycaw.IMMDevice))':
+	def GetSpeaker(id: Optional[str]=None) -> pycaw.IMMDevice:
 		"""Get speakers by its ID (render + multimedia) device.
 		@param id: audio device ID
-		@type id: Optional[str]
+		@type id: str
 		@return: pointer to the detected audio device
-		@rtype: POINTER(POINTER(pycaw.IMMDevice))
+		@rtype: pycaw.IMMDevice
 		"""
 		device_enumerator = CoCreateInstance(
-			CLSID_MMDeviceEnumerator,
-			IMMDeviceEnumerator,
+			pycaw.CLSID_MMDeviceEnumerator,
+			pycaw.IMMDeviceEnumerator,
 			CLSCTX_INPROC_SERVER)
 		if id is not None:
 			speakers = device_enumerator.GetDevice(id)
 		else:
-			speakers = device_enumerator.GetDefaultAudioEndpoint(EDataFlow.eRender.value, ERole.eMultimedia.value)
+			speakers = device_enumerator.GetDefaultAudioEndpoint(pycaw.EDataFlow.eRender.value, pycaw.ERole.eMultimedia.value)
 		return speakers
 
 
@@ -177,30 +177,44 @@ class AudioSource(object):
 	"""Represents the basic properties of audio source."""
 
 	def __init__(self,
-		id: Optional[str]='',
-		name: Optional[str]='',
-		volume: Optional['comtypes.POINTER(ISimpleAudioVolume)']=None) -> None:
+		id: str,
+		name: str,
+		volume: Union[pycaw.ISimpleAudioVolume, pycaw.IAudioEndpointVolume, None] = None) -> None:
 		"""The main properties of an audio source.
 		@param id: audio source ID (audio device ID or audio session name)
-		@type id: Optional[str]
+		@type id: str
 		@param name: name of audio source
-		@type name: Optional[str]
+		@type name: str
 		@param volume: pointer on the interface to adjust the volume of the audio source
-		@type volume: Optional[comtypes.POINTER(ISimpleAudioVolume)]
+		@type volume: Union[pycaw.ISimpleAudioVolume, pycaw.IAudioEndpointVolume, None]
 		"""
-		self._id: Optional[str] = id
-		self._name: Optional[str] = name
-		self._volume: Optional['comtypes.POINTER(ISimpleAudioVolume)'] = volume
+		self._id = id
+		self._name = name
+		self._volume = volume
 
-	# Accessors: getter-methods for obtaining class field values
-	id = lambda self: self._id
-	name = lambda self: self._name
-	volume = lambda self: self._volume
+	@property
+	def id(self) -> str:
+		"""ID of the current audio source.
+		@return: device ID or audio session name
+		@rtype: str
+		"""
+		return self._id
 
-	# The main properties of the audio device
-	id = property(id)
-	name = property(name)
-	volume = property(volume)
+	@property
+	def name(self) -> str:
+		"""Name of the current audio source.
+		@return: audio source name
+		@rtype: str
+		"""
+		return self._name
+
+	@property
+	def volume(self) -> Union[pycaw.ISimpleAudioVolume, pycaw.IAudioEndpointVolume, None]:
+		"""An object that gives access to control the volume of the sound source.
+		@return: volume control object
+		@rtype: Union[pycaw.ISimpleAudioVolume, pycaw.IAudioEndpointVolume, None]
+		"""
+		return self._volume
 
 	def volumeControl(self, volumeControlFunction: str) -> Callable:
 		"""Link to the audio source volume level setting function.
@@ -210,10 +224,7 @@ class AudioSource(object):
 		@return: link to the volume control function
 		@rtype: Callable
 		"""
-		try:
-			return getattr(self.volume, volumeControlFunction)
-		except AttributeError:
-			return None
+		return getattr(self.volume, volumeControlFunction, lambda: None)
 
 	@property
 	def volumeLevel(self) -> float:
@@ -222,7 +233,7 @@ class AudioSource(object):
 		@return: current volume level
 		@rtype: float
 		"""
-		return NotImplementedError
+		raise NotImplementedError("This property must be overridden in the child class!")
 
 	@volumeLevel.setter
 	def volumeLevel(self, level: float) -> None:
@@ -231,7 +242,7 @@ class AudioSource(object):
 		@param level: target volume level
 		@type level: float
 		"""
-		return NotImplementedError
+		raise NotImplementedError("This property must be overridden in the child class!")
 
 	def volumeUp(self) -> float:
 		"""Increase the volume level by the specified step.
@@ -275,10 +286,7 @@ class AudioSource(object):
 		@return: a state of the audio source (muted or no)
 		@rtype: bool
 		"""
-		try:
-			state = self.volume.GetMute()
-		except AttributeError:
-			state = False
+		state = False if self.volume is None else self.volume.GetMute() 
 		if not config.conf[addonName]['muteCompletely']:
 			return (self.id in cfg.muted) or state
 		return state
@@ -290,7 +298,8 @@ class AudioSource(object):
 		"""
 		try:
 			if config.conf[addonName]['muteCompletely']:
-				self.volume.SetMute(True, None)
+				# The getattr() function is used for correct processing by the MyPy analyzer
+				getattr(self.volume, 'SetMute')(True, None)
 			elif not self.isMuted:
 				self.volumeLevel = (self.volumeLevel*(100-config.conf[addonName]['mutePercentage']))/100.0
 		except AttributeError:
@@ -305,7 +314,8 @@ class AudioSource(object):
 		@rtype: bool
 		"""
 		try:
-			self.volume.SetMute(False, None)
+			# The getattr() function is used for correct processing by the MyPy analyzer
+			getattr(self.volume, 'SetMute')(False, None)
 			if self.isMuted:
 				self.volumeLevel = min(1.0, round(self.volumeLevel*100.0)/(100.0-config.conf[addonName]['mutePercentage']))
 		except AttributeError:
@@ -319,16 +329,16 @@ class AudioDevice(AudioSource):
 	"""Presentation of one audio device."""
 
 	def __init__(self,
-		id: Optional[str]='',
-		name: str='',
-		volume: Optional['comtypes.POINTER(ISimpleAudioVolume)']=None) -> None:
+		id: str = '',
+		name: str = '',
+		volume: pointer[pycaw.IAudioEndpointVolume] = None) -> None:
 		"""The main properties of an audio device.
 		@param id: audio device ID
-		@type id: Optional[str]
+		@type id: str
 		@param name: human friendly name of audio device
 		@type name: str
 		@param volume: pointer on the interface to adjust the volume of the audio device
-		@type volume: Optional[comtypes.POINTER(ISimpleAudioVolume)]
+		@type volume: pointer[pycaw.IAudioEndpointVolume]
 		"""
 		super(AudioDevice, self).__init__(id, name, volume)
 		self._default: bool = False
@@ -369,36 +379,37 @@ class AudioDevices(object):
 
 	def __init__(self) -> None:
 		"""Initial values of default audio device and a list of all detected devices."""
-		self._defaultDevice: AudioDevice = AudioDevice()
 		self._devices: List[AudioDevice] = []
 
-	def initialize(self, hide: List[str]=[]) -> None:
+	def initialize(self, hide: Dict[str, str]={}) -> AudioDevices:
 		"""Detect audio devices and save them in the list.
 		Should running in a separate thread to avoid blocking NVDA.
-		@param hide: a list of devices IDs that needs to hide
-		@type hide: List[str]
+		@param hide: a collection of devices that needs to hide
+		@type hide: Dict[str, str]
+		@return: collection of the detected audio devices
+		@rtype: AudioDevices
 		"""
-		self._defaultDevice: 'POINTER(POINTER(pycaw.IMMDevice))' = AudioUtilities.GetSpeakers()
-		self._devices: List[AudioDevice] = []
+		defaultDevice: pycaw.IMMDevice = pycaw.AudioUtilities.GetSpeakers()
+		self._devices = []
 		if config.conf[addonName]['advanced']:
 			try:
-				mixers: List = ExtendedAudioUtilities.GetAllDevices()
+				mixers: List[pycaw.AudioDevice] = [mx for mx in ExtendedAudioUtilities.GetAllDevices() if mx]
 			except Exception:
-				mixers: List = []
+				mixers = []
 			for mixer in mixers:
-				device: 'POINTER(POINTER(pycaw.IMMDevice))' = ExtendedAudioUtilities.GetSpeaker(mixer.id)
+				immDevice: pycaw.IMMDevice = ExtendedAudioUtilities.GetSpeaker(mixer.id)
 				try:
-					interface = device.Activate(
-						IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+					interface = immDevice.Activate(
+						pycaw.IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
 				except Exception:
 					continue
-				device: AudioDevice = AudioDevice(
-					id = mixer.id,
-					name = mixer.FriendlyName or mixer.id,
-					volume = cast(interface, POINTER(IAudioEndpointVolume))
+				device = AudioDevice(
+					id = mixer.id or '',
+					name = mixer.FriendlyName or mixer.id or '',
+					volume = cast(interface, POINTER(pycaw.IAudioEndpointVolume))
 				)
 				if device.id and device.name and device.id not in hide:
-					if device.id==self._defaultDevice.GetId():
+					if device.id==defaultDevice.GetId():
 						device._default = True
 						self._devices.insert(0, device)
 					else:
@@ -407,12 +418,13 @@ class AudioDevices(object):
 		# for some reason on some systems it is not determined in the standard way
 		if not next(filter(lambda d: d.default, self._devices), None):
 			device = AudioDevice(
-				id = self._defaultDevice.GetId(),
-				name = self.getDeviceNameByID(self._defaultDevice.GetId()),
-				volume = cast(self._defaultDevice.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None), POINTER(IAudioEndpointVolume))
+				id = defaultDevice.GetId() or '',
+				name = self.getDeviceNameByID(defaultDevice.GetId()) or '',
+				volume = cast(defaultDevice.Activate(pycaw.IAudioEndpointVolume._iid_, CLSCTX_ALL, None), POINTER(pycaw.IAudioEndpointVolume))
 			)
 			device._default = True
 			self._devices.insert(0, device)
+		return self
 
 	def getDeviceNameByID(self, id: Optional[str]) -> str:
 		"""Get the name of the audio device by its ID.
@@ -422,19 +434,18 @@ class AudioDevices(object):
 		@rtype: str
 		"""
 		try:
-			mixers = AudioUtilities.GetAllDevices()
+			mixers: List[pycaw.AudioDevice] = [mx for mx in ExtendedAudioUtilities.GetAllDevices() if mx]
 		except Exception:
 			mixers = []
 		mixer = next(filter(lambda m: m.id==id, mixers), None)
 		return mixer.FriendlyName if mixer else ' '
 
-	def scan(self, hide: List[str]=[]) -> None:
+	def scan(self, hide: Dict[str, str]={}) -> None:
 		"""Search for available audio devices in the system and save them in the current object.
-		@param hide: a list of device IDs that needs to hide
-		@type hide: List[str]
+		@param hide: a collection of audio devices that needs to hide
+		@type hide: Dict[str, str]
 		"""
-		scan = Thread(target=self.initialize, args=[hide])
-		scan.start()
+		Thread(target=self.initialize, args=[hide]).start()
 
 	def __len__(self) -> int:
 		"""The number of audio devices detected in the system.
@@ -452,6 +463,14 @@ class AudioDevices(object):
 		"""
 		return self._devices[index]
 
+	def __iter__(self) -> Generator[AudioDevice, None, None]:
+		"""Iteration through all detected audio devices.
+		@return: generator of all detected audio devices
+		@rtype: Generator[AudioDevice, None, None]
+		"""
+		for device in self._devices:
+			yield device
+
 
 class AudioSession(AudioSource):
 	"""Object for working with the audio session of a separate running process."""
@@ -461,30 +480,32 @@ class AudioSession(AudioSource):
 		@param name: the name of the running process
 		@type name: str
 		"""
-		self._sessions: List = [session for session in AudioUtilities.GetAllSessions() if session.Process and session.Process.name()]
-		self._current: 'pycaw.AudioSession' = self.selectAudioSession(name)
-		super(AudioSession, self).__init__(id=name, name=None, volume=None)
+		self._sessions: List[pycaw.AudioSession] = [session for session in pycaw.AudioUtilities.GetAllSessions() if session.Process and session.Process.name()]
+		self._current: pycaw.AudioSession = self.selectAudioSession(name)
+		super(AudioSession, self).__init__(id=name, name='', volume=None)
 
-	def selectAudioSession(self, name: str) -> Optional['pycaw.AudioSession']:
+	def selectAudioSession(self, name: str = 'nvda.exe') -> pycaw.AudioSession:
 		"""Find and return an audio session by its specified name.
 		@param name: full name or part of the process name
 		@type name: str
 		@return: an audio session related to a given process
-		@rtype: Optional[pycaw.AudioSession]
+		@rtype: pycaw.AudioSession
 		"""
-		return next(filter(lambda s: name.lower() in s.Process.name().lower(), self._sessions), None)
+		return next(filter(lambda s: name.lower() in s.Process.name().lower(), self._sessions),
+			next(filter(lambda s: 'nvda.exe' in s.Process.name().lower(), self._sessions),
+				self._sessions[0]))
 
 	@property
-	def name(self) -> Optional[str]:
+	def name(self) -> str:
 		"""Getter method - returns the full name of the current process.
 		@return: name of the current running process
-		@rtype: Optional[str]
+		@rtype: str
 		"""
 		if not self._name:
 			try:
 				self._name = self._current.Process.name()
 			except AttributeError:
-				self._name = None
+				self._name = ''
 		return self._name
 
 	@property
@@ -500,10 +521,10 @@ class AudioSession(AudioSource):
 		return name or self.name.replace('.exe', '')
 
 	@property
-	def volume(self) -> Optional['comtypes.POINTER(ISimpleAudioVolume)']:
+	def volume(self) -> Union[pycaw.ISimpleAudioVolume, pycaw.IAudioEndpointVolume, None]:
 		"""Pointer used to control the volume level of the current running process.
 		@return: pointer to control the volume of the selected running process
-		@rtype: Optional[comtypes.POINTER(ISimpleAudioVolume)]
+		@rtype: Union[pycaw.ISimpleAudioVolume, pycaw.IAudioEndpointVolume, None]
 		"""
 		if not self._volume:
 			self._volume = self._current.SimpleAudioVolume
