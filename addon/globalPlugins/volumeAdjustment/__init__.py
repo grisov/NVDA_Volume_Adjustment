@@ -150,9 +150,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		if 0<=self._index < len(devices):
 			source: Union[AudioDevice, AudioSession] = devices[self._index]
+			title: str = source.name
 			if source.default:
 		# Translators: Used as the prefix to default audio device name
-				title: str = "{default}: {title}".format(default=_("Default audio device"), title=source.name)
+				title = "{default}: {title}".format(default=_("Default audio device"), title=source.name)
 		else:
 			try:
 				self._process = sessions[self._index-len(devices)]

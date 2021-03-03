@@ -88,7 +88,7 @@ class VASettingsPanel(SettingsPanel):
 		addonHelper = guiHelper.BoxSizerHelper(self, sizer=sizer)
 		self.reportStatusChk = addonHelper.addItem(
 		# Translators: This is the label for a checkbox in the settings panel.
-			wx.CheckBox(self, label=_("*Report the status of the sound source when switching"))
+			wx.CheckBox(self, label=_("*Report the status of the sound source while switching"))
 		)
 		self.reportStatusChk.SetValue(config.conf[addonName]['status'])
 		# Translators: The label of the component in the settings panel
@@ -150,19 +150,24 @@ class VASettingsPanel(SettingsPanel):
 		sizer.Add(self.devButtons, flag=wx.RIGHT)
 		sizer.Show(self.devButtons, show=self.advancedChk.GetValue())
 
-		self.muteCompletelyChk = addonHelper.addItem(
-			# Translators: This is the label for a checkbox in the settings panel.
-			wx.CheckBox(self, label=_("Completely turn off the volume with &mute command"))
+		self.muteMode = addonHelper.addLabeledControl(
+			# Translators: This is the label for a choice list in the settings panel.
+			labelText=_("*Mute mode"),
+			wxCtrlClass=wx.Choice, choices=[]
 		)
-		self.muteCompletelyChk.SetValue(config.conf[addonName]['muteCompletely'])
-		self.muteCompletelyChk.Bind(wx.EVT_CHECKBOX, self.onMuteCompletelyCheckbox)
+		# Translators: An item in the choice list of mute modes in the settings panel
+		self.muteMode.Append(_("Complete Mute"), 0)
+		# Translators: An item in the choice list of mute modes in the settings panel
+		self.muteMode.Append(_("Volume Down"), 1)
+		self.muteMode.Select(int(not config.conf[addonName]['muteCompletely']))
+		self.muteMode.Bind(wx.EVT_CHOICE, self.onMuteModeChoice)
 		self.mutePercentageSlider = addonHelper.addLabeledControl(
 			# Translators: This is the label for a slider in the settings panel.
 			labelText=_("Decrease the volume &by, %"),
 			wxCtrlClass=nvdaControls.EnhancedInputSlider, value=config.conf[addonName]['mutePercentage'],
 			minValue=1, maxValue=99, size=(250, -1)
 		)
-		self.mutePercentageSlider.Show(show=not self.muteCompletelyChk.GetValue())
+		self.mutePercentageSlider.Show(show=not config.conf[addonName]['muteCompletely'])
 		self.unmuteOnExitChk = addonHelper.addItem(
 		# Translators: This is the label for a checkbox in the settings panel.
 			wx.CheckBox(self, label=_("&Unmute all muted audio resources at NVDA shutdown"))
@@ -188,7 +193,7 @@ class VASettingsPanel(SettingsPanel):
 		self.devs.update({devices[i].id: devices[i].name for i in range(len(devices))})
 		for id,name in self.devs.items():
 			self.hideDevices.Append(name, id)
-		if len(self.devs)>0:
+		if event.IsChecked() and len(self.devs)>0:
 			self.hideDevices.SetCheckedStrings([self.devs[id] for id in cfg.devices])
 			self.hideDevices.SetSelection(0)
 		self.hideDevices.Show(show=event.IsChecked())
@@ -196,13 +201,14 @@ class VASettingsPanel(SettingsPanel):
 		self.sizer.Fit(self)
 		self.hideDevices.GetParent().Layout()
 
-	def onMuteCompletelyCheckbox(self, event: wx._core.PyEvent) -> None:
-		"""Enable or disable volume turn off mode with the mute function,
+	def onMuteModeChoice(self, event: wx._core.PyEvent) -> None:
+		"""Select the mute mode - completely turn off or partial decrease of the volume level,
 		dynamically controls the showing of the volume mute slider.
-		@param event: event binder object which processes changing of the wx.Checkbox
+		@param event: event binder object which processes changing of the wx.Choice
 		@type event: wx._core.PyEvent
 		"""
-		self.mutePercentageSlider.Show(show=not self.muteCompletelyChk.GetValue())
+		mode: int = self.muteMode.GetClientData(self.muteMode.GetSelection())
+		self.mutePercentageSlider.Show(show=mode)
 		self.mutePercentageSlider.GetParent().Layout()
 		self.sizer.Fit(self)
 
@@ -279,7 +285,7 @@ class VASettingsPanel(SettingsPanel):
 		config.conf[addonName]['step'] = self.volumeStep.GetValue()
 		config.conf[addonName]['focus'] = self.followFocusChk.GetValue()
 		config.conf[addonName]['duplicates'] = self.hideDuplicatesChk.GetValue()
-		config.conf[addonName]['muteCompletely'] = self.muteCompletelyChk.GetValue()
+		config.conf[addonName]['muteCompletely'] = not self.muteMode.GetClientData(self.muteMode.GetSelection())
 		config.conf[addonName]['mutePercentage'] = self.mutePercentageSlider.GetValue()
 		config.conf[addonName]['unmuteOnExit'] = self.unmuteOnExitChk.GetValue()
 		devs = {}
