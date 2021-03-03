@@ -1,11 +1,9 @@
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
 msgid ""
 msgstr ""
 "Project-Id-Version: 'volumeAdjustment' '1.3'\n"
 "Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
 "POT-Creation-Date: 2021-02-23 01:59+0200\n"
-"PO-Revision-Date: 2021-02-23 02:26+0200\n"
+"PO-Revision-Date: 2021-03-03 20:29+0200\n"
 "Last-Translator: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
 "Language-Team: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
 "Language: ru\n"
@@ -102,6 +100,10 @@ msgstr "Перезагрузить &сейчас"
 msgid "Reload &later"
 msgstr "Перезагрузить &позже"
 
+# Translators: This is the label for a checkbox in the settings panel.
+msgid "&Report the status of the sound source while switching"
+msgstr "Соо&бщать о состоянии источника звука при переключении"
+
 #. Translators: The label of the component in the settings panel
 msgid "Volume level change &step:"
 msgstr "&Шаг изменения уровня громкости:"
@@ -119,7 +121,7 @@ msgid "Hide &processes:"
 msgstr "Скрыть &процессы:"
 
 #. Translators: This is the label for a checkbox in the settings panel.
-msgid "&Control all available audio devices (experimental)"
+msgid "C&ontrol all available audio devices (experimental)"
 msgstr ""
 "&Управлять всеми доступными аудио-устройствами (экспериментальная функция)"
 
@@ -128,8 +130,8 @@ msgid "Hide audio &devices:"
 msgstr "Скрыть &аудио устройства:"
 
 #. Translators: This is the label for a checkbox in the settings panel.
-msgid "Completely turn off the volume with &mute command"
-msgstr "Полностью &отключать звук командой приглушения громкости"
+msgid "&Mute mode:"
+msgstr "&Режим отключения звука:"
 
 #. Translators: This is the label for a slider in the settings panel.
 msgid "Decrease the volume &by, %"

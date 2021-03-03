@@ -88,7 +88,7 @@ class VASettingsPanel(SettingsPanel):
 		addonHelper = guiHelper.BoxSizerHelper(self, sizer=sizer)
 		self.reportStatusChk = addonHelper.addItem(
 		# Translators: This is the label for a checkbox in the settings panel.
-			wx.CheckBox(self, label=_("*Report the status of the sound source while switching"))
+			wx.CheckBox(self, label=_("&Report the status of the sound source while switching"))
 		)
 		self.reportStatusChk.SetValue(config.conf[addonName]['status'])
 		# Translators: The label of the component in the settings panel
@@ -125,7 +125,7 @@ class VASettingsPanel(SettingsPanel):
 
 		self.advancedChk = addonHelper.addItem(
 		# Translators: This is the label for a checkbox in the settings panel.
-			wx.CheckBox(self, label=_("&Control all available audio devices (experimental)"))
+			wx.CheckBox(self, label=_("C&ontrol all available audio devices (experimental)"))
 		)
 		self.advancedChk.SetValue(config.conf[addonName]['advanced'])
 		self.advancedChk.Bind(wx.EVT_CHECKBOX, self.onAdvancedCheckbox)
@@ -152,7 +152,7 @@ class VASettingsPanel(SettingsPanel):
 
 		self.muteMode = addonHelper.addLabeledControl(
 			# Translators: This is the label for a choice list in the settings panel.
-			labelText=_("*Mute mode"),
+			labelText=_("&Mute mode:"),
 			wxCtrlClass=wx.Choice, choices=[]
 		)
 		# Translators: An item in the choice list of mute modes in the settings panel
