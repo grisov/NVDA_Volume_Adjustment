@@ -6,7 +6,7 @@
 # Copyright (C) 2020-2021 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
 
 from __future__ import annotations
-from typing import Optional, Callable, List, Dict, Union, Generator
+from typing import Optional, Callable, List, Dict, Union, Iterator
 import json
 from os import path
 from threading import Thread
@@ -179,18 +179,19 @@ class AudioSource(object):
 	def __init__(self,
 		id: str,
 		name: str,
-		volume: Union[pycaw.ISimpleAudioVolume, pycaw.IAudioEndpointVolume, None] = None) -> None:
+		volume: Union[pycaw.ISimpleAudioVolume, pointer[pycaw.IAudioEndpointVolume], None] = None) -> None:
 		"""The main properties of an audio source.
 		@param id: audio source ID (audio device ID or audio session name)
 		@type id: str
 		@param name: name of audio source
 		@type name: str
 		@param volume: pointer on the interface to adjust the volume of the audio source
-		@type volume: Union[pycaw.ISimpleAudioVolume, pycaw.IAudioEndpointVolume, None]
+		@type volume: Union[pycaw.ISimpleAudioVolume, pointer[pycaw.IAudioEndpointVolume], None]
 		"""
 		self._id = id
 		self._name = name
 		self._volume = volume
+		self._default: bool = False
 
 	@property
 	def id(self) -> str:
@@ -215,6 +216,14 @@ class AudioSource(object):
 		@rtype: Union[pycaw.ISimpleAudioVolume, pycaw.IAudioEndpointVolume, None]
 		"""
 		return self._volume
+
+	@property
+	def default(self) -> bool:
+		"""Check if the current audio source is the default output device.
+		@return: default output audio device or not
+		@rtype: bool
+		"""
+		return self._default
 
 	def volumeControl(self, volumeControlFunction: str) -> Callable:
 		"""Link to the audio source volume level setting function.
@@ -328,29 +337,6 @@ class AudioSource(object):
 class AudioDevice(AudioSource):
 	"""Presentation of one audio device."""
 
-	def __init__(self,
-		id: str = '',
-		name: str = '',
-		volume: pointer[pycaw.IAudioEndpointVolume] = None) -> None:
-		"""The main properties of an audio device.
-		@param id: audio device ID
-		@type id: str
-		@param name: human friendly name of audio device
-		@type name: str
-		@param volume: pointer on the interface to adjust the volume of the audio device
-		@type volume: pointer[pycaw.IAudioEndpointVolume]
-		"""
-		super(AudioDevice, self).__init__(id, name, volume)
-		self._default: bool = False
-
-	@property
-	def default(self) -> bool:
-		"""Check if the current audio device is the default output device.
-		@return: default output audio device or not
-		@rtype: bool
-		"""
-		return self._default
-
 	@property
 	def volumeLevel(self) -> float:
 		"""Get the volume level of the audio device.
@@ -463,10 +449,10 @@ class AudioDevices(object):
 		"""
 		return self._devices[index]
 
-	def __iter__(self) -> Generator[AudioDevice, None, None]:
+	def __iter__(self) -> Iterator[AudioDevice]:
 		"""Iteration through all detected audio devices.
-		@return: generator of all detected audio devices
-		@rtype: Generator[AudioDevice, None, None]
+		@return: iterator of all detected audio devices
+		@rtype: Iterator[AudioDevice]
 		"""
 		for device in self._devices:
 			yield device

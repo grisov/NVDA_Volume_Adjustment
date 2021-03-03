@@ -50,6 +50,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if appArgs.secure or config.isAppX:
 			return
 		confspec = {
+			"status": "boolean(default=true)",
 			"step": "integer(default=1,min=1,max=20)",
 			"focus": "boolean(default=true)",
 			"duplicates": "boolean(default=true)",
@@ -148,10 +149,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@type sessions: List[str]
 		"""
 		if 0<=self._index < len(devices):
-			title: str = devices[self._index].name
-			if devices[self._index].default:
+			source: Union[AudioDevice, AudioSession] = devices[self._index]
+			if source.default:
 		# Translators: Used as the prefix to default audio device name
-				title = "{default}: {title}".format(default=_("Default audio device"), title=title)
+				title: str = "{default}: {title}".format(default=_("Default audio device"), title=source.name)
 		else:
 			try:
 				self._process = sessions[self._index-len(devices)]
@@ -161,8 +162,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				except IndexError:
 					self._process = UNDEFINED_APP
 			self._previous = self._process
-			title = AudioSession(self._process).title
+			source = AudioSession(self._process)
+			title = source.title
 		ui.message(title)
+		if config.conf[addonName]['status']:
+			self.announceMuted() if source.isMuted else self.announceVolumeLevel(source.volumeLevel)
 
 	def getAudioSource(self) -> Union[AudioDevice, AudioSession]:
 		"""Get the object of selected audio source (device or process),

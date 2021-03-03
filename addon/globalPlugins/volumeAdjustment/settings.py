@@ -86,6 +86,11 @@ class VASettingsPanel(SettingsPanel):
 		"""
 		self.sizer = sizer
 		addonHelper = guiHelper.BoxSizerHelper(self, sizer=sizer)
+		self.reportStatusChk = addonHelper.addItem(
+		# Translators: This is the label for a checkbox in the settings panel.
+			wx.CheckBox(self, label=_("*Report the status of the sound source when switching"))
+		)
+		self.reportStatusChk.SetValue(config.conf[addonName]['status'])
 		# Translators: The label of the component in the settings panel
 		self.volumeStep = addonHelper.addLabeledControl(_("Volume level change &step:"), nvdaControls.SelectOnFocusSpinCtrl,
 			value=str(config.conf[addonName]['step']), min=1, max=20)
@@ -266,10 +271,11 @@ class VASettingsPanel(SettingsPanel):
 
 	def postInit(self) -> None:
 		"""Set system focus to the first component in the settings panel."""
-		self.volumeStep.SetFocus()
+		self.reportStatusChk.SetFocus()
 
 	def onSave(self) -> None:
 		"""Update Configuration when clicking OK."""
+		config.conf[addonName]['status'] = self.reportStatusChk.GetValue()
 		config.conf[addonName]['step'] = self.volumeStep.GetValue()
 		config.conf[addonName]['focus'] = self.followFocusChk.GetValue()
 		config.conf[addonName]['duplicates'] = self.hideDuplicatesChk.GetValue()
