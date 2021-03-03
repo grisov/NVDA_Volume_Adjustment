@@ -62,6 +62,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		}
 		config.conf.spec[addonName] = confspec
 		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(VASettingsPanel)
+		# Remember the default output audio device
+		self._defaultOutputDevice: str = config.conf["speech"]["outputDevice"]
 		# Switching between processes
 		self._index: int = 0	# index of current audio source
 		# Remember the name of the audio session of the previous process
@@ -344,6 +346,21 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		index = int(gesture.displayName.lower()[-2:].replace('f',''))-1
 		self.setOutputDevice(name=getOutputDeviceNames()[index])
 
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Switch the output to the default audio device"))
+	def script_switchToDefault(self, gesture: InputGesture) -> None:
+		"""Switch NVDA audio output to the default sound device.
+		@param gesture: gesture assigned to this method
+		@type gesture: InputGesture
+		"""
+		name: str = "Microsoft Sound Mapper"
+		if self._defaultOutputDevice not in ("", name):
+			for device in getOutputDeviceNames():
+				if device in devices[0].name or devices[0].name in device:
+					name = device
+					break
+		self.setOutputDevice(name=name)
+
 
 	__defaultGestures = {
 		"kb:NVDA+windows+upArrow": "volumeUp",
@@ -354,7 +371,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"kb:NVDA+windows+rightArrow": "next",
 		"kb:NVDA+windows+leftArrow": "prev",
 		"kb:NVDA+windows+pageUp": "nextOutputDevice",
-		"kb:NVDA+windows+pageDown": "prevOutputDevice"
+		"kb:NVDA+windows+pageDown": "prevOutputDevice",
+		"kb:NVDA+windows+d": "switchToDefault"
 	}
 	for key in range(1, min(len(getOutputDeviceNames()), 12)+1):
 		__defaultGestures["kb:NVDA+windows+f%d" % key] = "switchTo"
