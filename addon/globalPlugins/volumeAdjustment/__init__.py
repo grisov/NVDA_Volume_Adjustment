@@ -4,6 +4,7 @@
 # See the file COPYING for more details.
 # Copyright (C) 2020-2021 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
 
+from __future__ import annotations
 from typing import Callable, List, Union
 import addonHandler
 from logHandler import log
@@ -72,6 +73,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._process: str = ''
 		# Bind default gestures if necessary
 		config.conf[addonName]['gestures'] and self.bindGestures(self.__defaultGestures)
+		self.bindSwitchingMethods()
 		devices.scan(cfg.devices)
 
 	def terminate(self, *args, **kwargs) -> None:
@@ -346,23 +348,37 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		index = int(gesture.displayName.lower()[-2:].replace('f',''))-1
 		self.setOutputDevice(name=getOutputDeviceNames()[index])
 
-	# Translators: The name of the method that displayed in the NVDA input gestures dialog
-	@script(description=_("Switch the output to the default audio device"))
-	def script_switchToDefault(self, gesture: InputGesture) -> None:
-		"""Switch NVDA audio output to the default sound device.
-		@param gesture: gesture assigned to this method
-		@type gesture: InputGesture
+	def switchingMethodsFactory(self, index: int, deviceName: str) -> Callable[[GlobalPlugin, InputGesture], None]:
+		"""Create a separate switching method for each output audio device detected in the system.
+		@param index: sequence number of the detected audio device
+		@type index: int, index>=0
+		@param deviceName: the name of the output audio device in the system
+		@type deviceName: str
+		@return: the instance of the method to switch to the specified audio device
+		@rtype: Callable[[GlobalPlugin, InputGesture], None]
 		"""
-		name: str = "Microsoft Sound Mapper"
-		if self._defaultOutputDevice not in ("", name):
-			for device in getOutputDeviceNames():
-				if device in devices[0].name or devices[0].name in device:
-					name = device
-					break
-		self.setOutputDevice(name=name)
+		def script_switchingMethod(self, gesture: InputGesture) -> None:
+			"""Switch NVDA audio output to the specified sound device.
+			@param gesture: gesture assigned to this method
+			@type gesture: InputGesture
+			"""
+			self.setOutputDevice(name=deviceName)
+		# Translators: The name of the method that displayed in the NVDA input gestures dialog
+		script_switchingMethod.__doc__ = _("Switch the output to the device {number} ({name})").format(number=index, name=deviceName)
+		return script_switchingMethod
 
+	def bindSwitchingMethods(self) -> None:
+		"""Bind all created switching methods to the current global plugin class instance,
+		should be called in the class constructor.
+		"""
+		outputDevices = getOutputDeviceNames()
+		for i in range(len(outputDevices)):
+			name = f"script_switchToDevice{i}"
+			setattr(self.__class__, name, self.switchingMethodsFactory(i, outputDevices[i]))
+			config.conf[addonName]['gestures'] and i<12 and self.bindGesture("kb:NVDA+windows+f%d" % (i+1), name.split('_', 1)[1])
 
 	__defaultGestures = {
+		# Volume level
 		"kb:NVDA+windows+upArrow": "volumeUp",
 		"kb:NVDA+windows+downArrow": "volumeDown",
 		"kb:NVDA+windows+home": "volumeMax",
@@ -370,9 +386,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"kb:NVDA+windows+escape": "mute",
 		"kb:NVDA+windows+rightArrow": "next",
 		"kb:NVDA+windows+leftArrow": "prev",
+		# Output audio devices
 		"kb:NVDA+windows+pageUp": "nextOutputDevice",
-		"kb:NVDA+windows+pageDown": "prevOutputDevice",
-		"kb:NVDA+windows+d": "switchToDefault"
+		"kb:NVDA+windows+pageDown": "prevOutputDevice"
 	}
-	for key in range(1, min(len(getOutputDeviceNames()), 12)+1):
-		__defaultGestures["kb:NVDA+windows+f%d" % key] = "switchTo"
