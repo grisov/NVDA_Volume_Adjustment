@@ -73,6 +73,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._process: str = ''
 		# Bind default gestures if necessary
 		config.conf[addonName]['gestures'] and self.bindGestures(self.__defaultGestures)
+		# Creating individual switching methods for each output audio device detected in the system
 		self.bindSwitchingMethods()
 		devices.scan(cfg.devices)
 
@@ -128,6 +129,19 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""Announce that the sound was muted."""
 		# Translators: The message is announced during volume control
 		ui.message(_("The sound is muted"))
+
+	def announceChannel(self, number: int) -> None:
+		"""Announce the number of selected audio channel.
+		@param number: the number of audio channel
+		@type number: int
+		"""
+		# Translators: Message about the number of the selected audio channel
+		ui.message(_("Channel %d") % number)
+
+	def announceNotSupported(self) -> None:
+		"""Announce that the feature currently is not supported."""
+		# Translators: The message when feature currently is not supported
+		ui.message(_("Not supported"))
 
 	def getAllSessions(self) -> List[str]:
 		"""List of all running processes that available in the list of audio sessions
@@ -377,6 +391,38 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			setattr(self.__class__, name, self.switchingMethodsFactory(i, outputDevices[i]))
 			config.conf[addonName]['gestures'] and i<12 and self.bindGesture("kb:NVDA+windows+f%d" % (i+1), name.split('_', 1)[1])
 
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Select next channel"))
+	def script_nextChannel(self, gesture: InputGesture) -> None:
+		"""Select the next channel of the current audio source.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		if self._index<0 and not self.selectProcessInFocus():
+			return
+		source = self.getAudioSource()
+		if source.channelCount<=0:
+			self.announceNotSupported()
+			return
+		source.channel += 1
+		self.announceChannel(source.channel)
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Select previous channel"))
+	def script_prevChannel(self, gesture: InputGesture) -> None:
+		"""Select the previous channel of the current audio source.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		if self._index<0 and not self.selectProcessInFocus():
+			return
+		source = self.getAudioSource()
+		if source.channelCount<=0:
+			self.announceNotSupported()
+			return
+		source.channel -= 1
+		self.announceChannel(source.channel)
+
 	__defaultGestures = {
 		# Volume level
 		"kb:NVDA+windows+upArrow": "volumeUp",
@@ -388,5 +434,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"kb:NVDA+windows+leftArrow": "prev",
 		# Output audio devices
 		"kb:NVDA+windows+pageUp": "nextOutputDevice",
-		"kb:NVDA+windows+pageDown": "prevOutputDevice"
+		"kb:NVDA+windows+pageDown": "prevOutputDevice",
+		# Customize channels volume
+		"kb:NVDA+shift+windows+rightArrow": "nextChannel",
+		"kb:NVDA+shift+windows+leftArrow": "prevChannel"
 	}

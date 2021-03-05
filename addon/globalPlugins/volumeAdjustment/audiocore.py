@@ -192,6 +192,7 @@ class AudioSource(metaclass=ABCMeta):
 		self._id = id
 		self._name = name
 		self._volume = volume
+		self._channel: int = 0
 		self._default: bool = False
 
 	@property
@@ -219,6 +220,26 @@ class AudioSource(metaclass=ABCMeta):
 		return self._volume
 
 	@property
+	def channel(self) -> int:
+		"""Get selected channel of the audio source.
+		@return: the number of the audio channel
+		@rtype: int
+		"""
+		return self._channel
+
+	@channel.setter
+	def channel(self, number: int) -> None:
+		"""Select the channel of the audio source.
+		@param number: the number of the audio channel
+		@type number: int
+		"""
+		try:
+			number %= self.channelCount
+		except ZeroDivisionError:
+			number = 0
+		self._channel = number
+
+	@property
 	def default(self) -> bool:
 		"""Check if the current audio source is the default output device.
 		@return: default output audio device or not
@@ -226,7 +247,9 @@ class AudioSource(metaclass=ABCMeta):
 		"""
 		return self._default
 
-	@property
+	# MyPy 0.812 is not supported type hints for abstract property getters and setters
+	# https://github.com/python/mypy/issues/4165
+	@property	# type: ignore
 	@abstractmethod
 	def volumeLevel(self) -> float:
 		"""Get the volume level of the sound source.
@@ -236,7 +259,9 @@ class AudioSource(metaclass=ABCMeta):
 		"""
 		raise NotImplementedError("This property must be overridden in the child class!")
 
-	@volumeLevel.setter
+	# Decorated property is not supported by MyPy 0.812
+# https://github.com/python/mypy/issues/1362
+	@volumeLevel.setter	# type: ignore
 	@abstractmethod
 	def volumeLevel(self, level: float) -> None:
 		"""Set the volume level of the sound source.
@@ -252,7 +277,8 @@ class AudioSource(metaclass=ABCMeta):
 		@rtype: float
 		"""
 		self.isMuted and self.unmute()
-		level = self.volumeLevel = min(1.0, float(round(self.volumeLevel*100) + config.conf[addonName]["step"])/100.0)
+		# Ignore MyPy type hint because setter volumeLevel is not read-only
+		level = self.volumeLevel = min(1.0, float(round(self.volumeLevel*100) + config.conf[addonName]["step"])/100.0) # type: ignore
 		return level
 
 	def volumeDown(self) -> float:
@@ -261,7 +287,8 @@ class AudioSource(metaclass=ABCMeta):
 		@rtype: float
 		"""
 		self.isMuted and self.unmute()
-		level = self.volumeLevel = max(0.0, float(round(self.volumeLevel*100) - config.conf[addonName]["step"])/100.0)
+		# Ignore MyPy type hint because setter volumeLevel is not read-only
+		level = self.volumeLevel = max(0.0, float(round(self.volumeLevel*100) - config.conf[addonName]["step"])/100.0) # type: ignore
 		return level
 
 	def volumeMax(self) -> float:
@@ -270,7 +297,8 @@ class AudioSource(metaclass=ABCMeta):
 		@rtype: float
 		"""
 		self.isMuted and self.unmute()
-		self.volumeLevel = 1.0
+		# Ignore MyPy type hint because setter volumeLevel is not read-only
+		self.volumeLevel = 1.0	# type: ignore
 		return self.volumeLevel
 
 	def volumeMin(self) -> float:
@@ -279,7 +307,8 @@ class AudioSource(metaclass=ABCMeta):
 		@rtype: float
 		"""
 		self.isMuted and self.unmute()
-		self.volumeLevel = 0.0
+		# Ignore MyPy type hint because setter volumeLevel is not read-only
+		self.volumeLevel = 0.0	# type: ignore
 		return self.volumeLevel
 
 	@property
@@ -300,10 +329,10 @@ class AudioSource(metaclass=ABCMeta):
 		"""
 		try:
 			if config.conf[addonName]['muteCompletely']:
-				# The getattr() function is used for correct processing by the MyPy analyzer
-				getattr(self.volume, 'SetMute')(True, None)
+				self.volume.SetMute(True, None)	# type: ignore
 			elif not self.isMuted:
-				self.volumeLevel = (self.volumeLevel*(100-config.conf[addonName]['mutePercentage']))/100.0
+				# Incorrect handling of AttributeError by MyPy 0.812: https://github.com/python/mypy/issues/8056
+				self.volumeLevel = (self.volumeLevel*(100-config.conf[addonName]['mutePercentage']))/100.0	# type: ignore
 		except AttributeError:
 			return False
 		else:
@@ -319,12 +348,22 @@ class AudioSource(metaclass=ABCMeta):
 			# The getattr() function is used for correct processing by the MyPy analyzer
 			getattr(self.volume, 'SetMute')(False, None)
 			if self.isMuted:
-				self.volumeLevel = min(1.0, round(self.volumeLevel*100.0)/(100.0-config.conf[addonName]['mutePercentage']))
+				# Setter volumeLevel is not read-only, MyPy issue
+				self.volumeLevel = min(1.0, round(self.volumeLevel*100.0)/(100.0-config.conf[addonName]['mutePercentage']))	# type: ignore
 		except AttributeError:
 			return False
 		else:
 			cfg.delMuted(self.id).save()
 			return True
+
+	@property
+	@abstractmethod
+	def channelCount(self) -> int:
+		"""Get the number of channels available in the current audio source.
+		@return: the number of channels
+		@rtype: int
+		"""
+		raise NotImplementedError("This property must be overridden in the child class!")
 
 
 class AudioDevice(AudioSource):
@@ -337,7 +376,8 @@ class AudioDevice(AudioSource):
 		@rtype: float [-1.0, 0.0...1.0]
 		"""
 		try:
-			return self.volume.GetMasterVolumeLevelScalar()
+			# Incorrect handling of AttributeError by MyPy 0.812: https://github.com/python/mypy/issues/8056
+			return self.volume.GetMasterVolumeLevelScalar()	# type: ignore
 		except (AttributeError, TypeError,):
 			return -1.0
 
@@ -348,9 +388,22 @@ class AudioDevice(AudioSource):
 		@type level: float [0.0...1.0]
 		"""
 		try:
-			self.volume.SetMasterVolumeLevelScalar(level, None)
+			# Incorrect handling of AttributeError by MyPy
+			self.volume.SetMasterVolumeLevelScalar(level, None)	# type: ignore
 		except (AttributeError, TypeError,):
 			pass
+
+	@property
+	def channelCount(self) -> int:
+		"""Get the number of channels available in the current audio device.
+		@return: the number of channels
+		@rtype: int
+		"""
+		try:
+			# Incorrect handling of AttributeError by MyPy
+			return self.volume.GetChannelCount()	# type: ignore
+		except (AttributeError, TypeError,):
+			return 0
 
 
 class AudioDevices(object):
@@ -516,7 +569,8 @@ class AudioSession(AudioSource):
 		@rtype: float [-1.0, 0.0...1.0]
 		"""
 		try:
-			return self.volume.GetMasterVolume()
+			# Incorrect handling of AttributeError by MyPy
+			return self.volume.GetMasterVolume()	# type: ignore
 		except (AttributeError, TypeError,):
 			return -1.0
 
@@ -527,9 +581,18 @@ class AudioSession(AudioSource):
 		@type level: float [0.0...1.0]
 		"""
 		try:
-			self.volume.SetMasterVolume(level, None)
+			# Incorrect handling of AttributeError by MyPy
+			self.volume.SetMasterVolume(level, None)	# type: ignore
 		except (AttributeError, TypeError,):
 			pass
+
+	@property
+	def channelCount(self) -> int:
+		"""Get the number of channels available in the current audio device.
+		@return: the number of channels
+		@rtype: int
+		"""
+		return -1
 
 
 # global instance to avoid multiple scans of all audio devices
