@@ -14,6 +14,7 @@ from globalVars import appArgs
 import config
 from ctypes import cast, POINTER
 from comtypes import CoCreateInstance, CLSCTX_ALL, CLSCTX_INPROC_SERVER, pointer
+from abc import ABCMeta, abstractmethod
 from . import pycaw
 
 addonName = path.basename(path.dirname(__file__))
@@ -173,7 +174,7 @@ class ExtendedAudioUtilities(pycaw.AudioUtilities):
 		return speakers
 
 
-class AudioSource(object):
+class AudioSource(metaclass=ABCMeta):
 	"""Represents the basic properties of audio source."""
 
 	def __init__(self,
@@ -225,17 +226,8 @@ class AudioSource(object):
 		"""
 		return self._default
 
-	def volumeControl(self, volumeControlFunction: str) -> Callable:
-		"""Link to the audio source volume level setting function.
-		Used due to the difference between the appropriate methods in audio devices and audio sessions.
-		@param volumeControlFunction: name of the volume control function
-		@type volumeControlFunction: str
-		@return: link to the volume control function
-		@rtype: Callable
-		"""
-		return getattr(self.volume, volumeControlFunction, lambda: None)
-
 	@property
+	@abstractmethod
 	def volumeLevel(self) -> float:
 		"""Get the volume level of the sound source.
 		The method must be overridden for each type of sound source.
@@ -245,6 +237,7 @@ class AudioSource(object):
 		raise NotImplementedError("This property must be overridden in the child class!")
 
 	@volumeLevel.setter
+	@abstractmethod
 	def volumeLevel(self, level: float) -> None:
 		"""Set the volume level of the sound source.
 		The method must be overridden for each type of sound source.
@@ -344,7 +337,7 @@ class AudioDevice(AudioSource):
 		@rtype: float [-1.0, 0.0...1.0]
 		"""
 		try:
-			return super(AudioDevice, self).volumeControl("GetMasterVolumeLevelScalar")()
+			return self.volume.GetMasterVolumeLevelScalar()
 		except (AttributeError, TypeError,):
 			return -1.0
 
@@ -355,7 +348,7 @@ class AudioDevice(AudioSource):
 		@type level: float [0.0...1.0]
 		"""
 		try:
-			super(AudioDevice, self).volumeControl("SetMasterVolumeLevelScalar")(level, None)
+			self.volume.SetMasterVolumeLevelScalar(level, None)
 		except (AttributeError, TypeError,):
 			pass
 
@@ -523,7 +516,7 @@ class AudioSession(AudioSource):
 		@rtype: float [-1.0, 0.0...1.0]
 		"""
 		try:
-			return super(AudioSession, self).volumeControl("GetMasterVolume")()
+			return self.volume.GetMasterVolume()
 		except (AttributeError, TypeError,):
 			return -1.0
 
@@ -534,7 +527,7 @@ class AudioSession(AudioSource):
 		@type level: float [0.0...1.0]
 		"""
 		try:
-			super(AudioSession, self).volumeControl("SetMasterVolume")(level, None)
+			self.volume.SetMasterVolume(level, None)
 		except (AttributeError, TypeError,):
 			pass
 
