@@ -406,6 +406,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return
 		source.channel += 1
 		self.announceChannel(source.channel)
+		if config.conf[addonName]['status']:
+			self.announceMuted() if source.isMuted else self.announceVolumeLevel(source.getChannelVolumeLevel())
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Select previous channel"))
@@ -422,6 +424,38 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return
 		source.channel -= 1
 		self.announceChannel(source.channel)
+		if config.conf[addonName]['status']:
+			self.announceMuted() if source.isMuted else self.announceVolumeLevel(source.getChannelVolumeLevel())
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Decrease the volume of selected channel"))
+	def script_channelVolumeDown(self, gesture: InputGesture) -> None:
+		"""Decrease the volume level of the selected audio channel.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		if self._index<0 and not self.selectProcessInFocus():
+			return
+		level = self.getAudioSource().channelVolumeDown()
+		if level<0:
+			self.announceNotSupported()
+			return
+		self.announceVolumeLevel(level)
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Increase the volume of selected channel"))
+	def script_channelVolumeUp(self, gesture: InputGesture) -> None:
+		"""Increase the volume level of the selected audio channel.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		if self._index<0 and not self.selectProcessInFocus():
+			return
+		level = self.getAudioSource().channelVolumeUp()
+		if level<0:
+			self.announceNotSupported()
+			return
+		self.announceVolumeLevel(level)
 
 	__defaultGestures = {
 		# Volume level
@@ -437,5 +471,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"kb:NVDA+windows+pageDown": "prevOutputDevice",
 		# Customize channels volume
 		"kb:NVDA+shift+windows+rightArrow": "nextChannel",
-		"kb:NVDA+shift+windows+leftArrow": "prevChannel"
+		"kb:NVDA+shift+windows+leftArrow": "prevChannel",
+		"kb:NVDA+shift+windows+upArrow": "channelVolumeUp",
+		"kb:NVDA+shift+windows+downArrow": "channelVolumeDown"
 	}

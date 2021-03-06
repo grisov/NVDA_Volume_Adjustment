@@ -253,9 +253,9 @@ class AudioSource(metaclass=ABCMeta):
 	@abstractmethod
 	def volumeLevel(self) -> float:
 		"""Get the volume level of the sound source.
-		The method must be overridden for each type of sound source.
+		The method must be overridden for each type of sound sources.
 		@return: current volume level
-		@rtype: float
+		@rtype: float [0.0..1.0]
 		"""
 		raise NotImplementedError("This property must be overridden in the child class!")
 
@@ -265,9 +265,9 @@ class AudioSource(metaclass=ABCMeta):
 	@abstractmethod
 	def volumeLevel(self, level: float) -> None:
 		"""Set the volume level of the sound source.
-		The method must be overridden for each type of sound source.
+		The method must be overridden for each type of sound sources.
 		@param level: target volume level
-		@type level: float
+		@type level: float [0.0..1.0]
 		"""
 		raise NotImplementedError("This property must be overridden in the child class!")
 
@@ -278,7 +278,7 @@ class AudioSource(metaclass=ABCMeta):
 		"""
 		self.isMuted and self.unmute()
 		# Ignore MyPy type hint because setter volumeLevel is not read-only
-		level = self.volumeLevel = min(1.0, float(round(self.volumeLevel*100) + config.conf[addonName]["step"])/100.0) # type: ignore
+		level = self.volumeLevel = min(1.0, float(round(self.volumeLevel*100.0) + config.conf[addonName]["step"])/100.0) # type: ignore
 		return level
 
 	def volumeDown(self) -> float:
@@ -288,7 +288,7 @@ class AudioSource(metaclass=ABCMeta):
 		"""
 		self.isMuted and self.unmute()
 		# Ignore MyPy type hint because setter volumeLevel is not read-only
-		level = self.volumeLevel = max(0.0, float(round(self.volumeLevel*100) - config.conf[addonName]["step"])/100.0) # type: ignore
+		level = self.volumeLevel = max(0.0, float(round(self.volumeLevel*100.0) - config.conf[addonName]["step"])/100.0) # type: ignore
 		return level
 
 	def volumeMax(self) -> float:
@@ -360,10 +360,63 @@ class AudioSource(metaclass=ABCMeta):
 	@abstractmethod
 	def channelCount(self) -> int:
 		"""Get the number of channels available in the current audio source.
+		The method must be overridden for each type of sound sources.
 		@return: the number of channels
 		@rtype: int
 		"""
 		raise NotImplementedError("This property must be overridden in the child class!")
+
+	@abstractmethod
+	def getChannelVolumeLevel(self, channel: int) -> float:
+		"""Get the volume level of the specified audio source channel.
+		The method must be overridden for each type of sound sources.
+		@param channel: the number of the specified audio channel
+		@type channel: int
+		@return: the volume level
+		@rtype: float
+		"""
+		raise NotImplementedError("This property must be overridden in the child class!")
+
+	@abstractmethod
+	def setChannelVolumeLevel(self, level: float, channel: int = 0) -> None:
+		"""Set the volume level of the specified audio source channel.
+		The method must be overridden for each type of sound sources.
+		@param channel: the number of the specified audio channel
+		@type channel: int
+		@param level: target volume level
+		@type level: float [0.0..1.0]
+		"""
+		raise NotImplementedError("This property must be overridden in the child class!")
+
+	def channelVolumeUp(self, channel: int = 0) -> float:
+		"""Increase the volume level for selected channel by the specified step.
+		@return: current volume level
+		@rtype: float [0.0..1.0]
+		"""
+		self.isMuted and self.unmute()
+		if channel==0:
+			channel=self.channel
+		current = self.getChannelVolumeLevel(channel)
+		if current<0:
+			return current
+		level = min(1.0, float(round(current*100.0) + config.conf[addonName]["step"])/100.0)
+		self.setChannelVolumeLevel(level, channel)
+		return level
+
+	def channelVolumeDown(self, channel: int = 0) -> float:
+		"""Decrease the volume level for selected channel by the specified step.
+		@return: current volume level
+		@rtype: float [0.0..1.0]
+		"""
+		self.isMuted and self.unmute()
+		if channel==0:
+			channel=self.channel
+		current = self.getChannelVolumeLevel(channel)
+		if current<0:
+			return current
+		level = max(0.0, float(round(current*100.0) - config.conf[addonName]["step"])/100.0)
+		self.setChannelVolumeLevel(level, channel)
+		return level
 
 
 class AudioDevice(AudioSource):
@@ -373,7 +426,7 @@ class AudioDevice(AudioSource):
 	def volumeLevel(self) -> float:
 		"""Get the volume level of the audio device.
 		@return: current volume level
-		@rtype: float [-1.0, 0.0...1.0]
+		@rtype: float [-1.0, 0.0..1.0]
 		"""
 		try:
 			# Incorrect handling of AttributeError by MyPy 0.812: https://github.com/python/mypy/issues/8056
@@ -385,7 +438,7 @@ class AudioDevice(AudioSource):
 	def volumeLevel(self, level: float) -> None:
 		"""Set the volume level of the audio device.
 		@param level: target volume level
-		@type level: float [0.0...1.0]
+		@type level: float [0.0..1.0]
 		"""
 		try:
 			# Incorrect handling of AttributeError by MyPy
@@ -404,6 +457,36 @@ class AudioDevice(AudioSource):
 			return self.volume.GetChannelCount()	# type: ignore
 		except (AttributeError, TypeError,):
 			return 0
+
+	def getChannelVolumeLevel(self, channel: int = 0) -> float:
+		"""Get the volume level of the specified audio source channel.
+		@param channel: the number of the specified audio channel
+		@type channel: int
+		@return: the volume level
+		@rtype: float
+		"""
+		if channel==0:
+			channel=self.channel
+		try:
+			# Incorrect handling of AttributeError by MyPy 0.812: https://github.com/python/mypy/issues/8056
+			return self.volume.GetChannelVolumeLevelScalar(channel)	# type: ignore
+		except (AttributeError, TypeError,):
+			return -1.0
+
+	def setChannelVolumeLevel(self, level: float, channel: int = 0) -> None:
+		"""Set the volume level of the specified audio source channel.
+		@param channel: the number of the specified audio channel
+		@type channel: int
+		@param level: target volume level
+		@type level: float [0.0..1.0]
+		"""
+		if channel==0:
+			channel=self.channel
+		try:
+			# Incorrect handling of AttributeError by MyPy
+			self.volume.SetChannelVolumeLevelScalar(channel, level, None)	# type: ignore
+		except (AttributeError, TypeError,):
+			pass
 
 
 class AudioDevices(object):
@@ -566,7 +649,7 @@ class AudioSession(AudioSource):
 	def volumeLevel(self) -> float:
 		"""Get the volume level of the audio session.
 		@return: current volume level
-		@rtype: float [-1.0, 0.0...1.0]
+		@rtype: float [-1.0, 0.0..1.0]
 		"""
 		try:
 			# Incorrect handling of AttributeError by MyPy
@@ -578,7 +661,7 @@ class AudioSession(AudioSource):
 	def volumeLevel(self, level: float) -> None:
 		"""Set the volume level of the audio session.
 		@param level: target volume level
-		@type level: float [0.0...1.0]
+		@type level: float [0.0..1.0]
 		"""
 		try:
 			# Incorrect handling of AttributeError by MyPy
@@ -593,6 +676,24 @@ class AudioSession(AudioSource):
 		@rtype: int
 		"""
 		return -1
+
+	def getChannelVolumeLevel(self, channel: int = 0) -> float:
+		"""Get the volume level of the specified audio source channel.
+		@param channel: the number of the specified audio channel
+		@type channel: int
+		@return: the volume level
+		@rtype: float
+		"""
+		return -1.0
+
+	def setChannelVolumeLevel(self, level: float, channel: int = 0) -> None:
+		"""Set the volume level of the specified audio source channel.
+		@param channel: the number of the specified audio channel
+		@type channel: int
+		@param level: target volume level
+		@type level: float [0.0..1.0]
+		"""
+		pass
 
 
 # global instance to avoid multiple scans of all audio devices
