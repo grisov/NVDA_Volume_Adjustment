@@ -390,33 +390,63 @@ class AudioSource(metaclass=ABCMeta):
 
 	def channelVolumeUp(self, channel: int = 0) -> float:
 		"""Increase the volume level for selected channel by the specified step.
+		@param channel: the number of the specified audio channel
+		@type channel: int
 		@return: current volume level
-		@rtype: float [0.0..1.0]
+		@rtype: float [-1.0, 0.0..1.0]
 		"""
 		self.isMuted and self.unmute()
 		if channel==0:
 			channel=self.channel
-		current = self.getChannelVolumeLevel(channel)
-		if current<0:
-			return current
-		level = min(1.0, float(round(current*100.0) + config.conf[addonName]["step"])/100.0)
+		level: float = self.getChannelVolumeLevel(channel)
+		if level<0:
+			return level
+		level = min(1.0, float(round(level*100.0) + config.conf[addonName]["step"])/100.0)
 		self.setChannelVolumeLevel(level, channel)
 		return level
 
 	def channelVolumeDown(self, channel: int = 0) -> float:
 		"""Decrease the volume level for selected channel by the specified step.
+		@param channel: the number of the specified audio channel
+		@type channel: int
 		@return: current volume level
-		@rtype: float [0.0..1.0]
+		@rtype: float [-1.0, 0.0..1.0]
 		"""
 		self.isMuted and self.unmute()
 		if channel==0:
 			channel=self.channel
-		current = self.getChannelVolumeLevel(channel)
-		if current<0:
-			return current
-		level = max(0.0, float(round(current*100.0) - config.conf[addonName]["step"])/100.0)
+		level: float = self.getChannelVolumeLevel(channel)
+		if level<0:
+			return level
+		level = max(0.0, float(round(level*100.0) - config.conf[addonName]["step"])/100.0)
 		self.setChannelVolumeLevel(level, channel)
 		return level
+
+	def channelVolumeMax(self, channel: int = 0) -> float:
+		"""Set the maximum volume level of the selected channel.
+		@param channel: the number of the specified audio channel
+		@type channel: int
+		@return: current volume level
+		@rtype: float [-1.0, 1.0]
+		"""
+		self.isMuted and self.unmute()
+		if channel==0:
+			channel=self.channel
+		self.setChannelVolumeLevel(1.0, channel)
+		return self.getChannelVolumeLevel(channel)
+
+	def channelVolumeMin(self, channel: int = 0) -> float:
+		"""Set the minimum volume level of the selected channel.
+		@param channel: the number of the specified audio channel
+		@type channel: int
+		@return: current volume level
+		@rtype: float [-1.0, 0.0]
+		"""
+		self.isMuted and self.unmute()
+		if channel==0:
+			channel=self.channel
+		self.setChannelVolumeLevel(0.0, channel)
+		return self.getChannelVolumeLevel(channel)
 
 
 class AudioDevice(AudioSource):

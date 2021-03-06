@@ -233,7 +233,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.announceMuted()
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
-	@script(description=_("Set maximum volume level"))
+	@script(description=_("Set the maximum volume level"))
 	def script_volumeMax(self, gesture: InputGesture) -> None:
 		"""Set the maximum volume level for the selected audio source.
 		@param gesture: the input gesture in question
@@ -244,7 +244,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.announceVolumeLevel(self.getAudioSource().volumeMax())
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
-	@script(description=_("Set minimum volume level"))
+	@script(description=_("Set the minimum volume level"))
 	def script_volumeMin(self, gesture: InputGesture) -> None:
 		"""Set the minimum volume level for the selected audio source.
 		@param gesture: the input gesture in question
@@ -400,7 +400,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		if self._index<0 and not self.selectProcessInFocus():
 			return
-		source = self.getAudioSource()
+		source: Union[AudioDevice, AudioSession] = self.getAudioSource()
 		if source.channelCount<=0:
 			self.announceNotSupported()
 			return
@@ -418,7 +418,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		if self._index<0 and not self.selectProcessInFocus():
 			return
-		source = self.getAudioSource()
+		source: Union[AudioDevice, AudioSession] = self.getAudioSource()
 		if source.channelCount<=0:
 			self.announceNotSupported()
 			return
@@ -426,21 +426,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.announceChannel(source.channel)
 		if config.conf[addonName]['status']:
 			self.announceMuted() if source.isMuted else self.announceVolumeLevel(source.getChannelVolumeLevel())
-
-	# Translators: The name of the method that displayed in the NVDA input gestures dialog
-	@script(description=_("Decrease the volume of selected channel"))
-	def script_channelVolumeDown(self, gesture: InputGesture) -> None:
-		"""Decrease the volume level of the selected audio channel.
-		@param gesture: the input gesture in question
-		@type gesture: InputGesture
-		"""
-		if self._index<0 and not self.selectProcessInFocus():
-			return
-		level = self.getAudioSource().channelVolumeDown()
-		if level<0:
-			self.announceNotSupported()
-			return
-		self.announceVolumeLevel(level)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Increase the volume of selected channel"))
@@ -451,7 +436,52 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		if self._index<0 and not self.selectProcessInFocus():
 			return
-		level = self.getAudioSource().channelVolumeUp()
+		level: float = self.getAudioSource().channelVolumeUp()
+		if level<0:
+			self.announceNotSupported()
+			return
+		self.announceVolumeLevel(level)
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Decrease the volume of selected channel"))
+	def script_channelVolumeDown(self, gesture: InputGesture) -> None:
+		"""Decrease the volume level of the selected audio channel.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		if self._index<0 and not self.selectProcessInFocus():
+			return
+		level: float = self.getAudioSource().channelVolumeDown()
+		if level<0:
+			self.announceNotSupported()
+			return
+		self.announceVolumeLevel(level)
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Set the maximum volume level for the selected channel"))
+	def script_channelVolumeMax(self, gesture: InputGesture) -> None:
+		"""Set the maximum volume level for the selected audio channel.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		if self._index<0 and not self.selectProcessInFocus():
+			return
+		level: float = self.getAudioSource().channelVolumeMax()
+		if level<0:
+			self.announceNotSupported()
+			return
+		self.announceVolumeLevel(level)
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Set the minimum volume level for the selected channel"))
+	def script_channelVolumeMin(self, gesture: InputGesture) -> None:
+		"""Set the minimum volume level for the selected audio channel.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		if self._index<0 and not self.selectProcessInFocus():
+			return
+		level: float = self.getAudioSource().channelVolumeMin()
 		if level<0:
 			self.announceNotSupported()
 			return
@@ -473,5 +503,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"kb:NVDA+shift+windows+rightArrow": "nextChannel",
 		"kb:NVDA+shift+windows+leftArrow": "prevChannel",
 		"kb:NVDA+shift+windows+upArrow": "channelVolumeUp",
-		"kb:NVDA+shift+windows+downArrow": "channelVolumeDown"
+		"kb:NVDA+shift+windows+downArrow": "channelVolumeDown",
+		"kb:NVDA+shift+windows+home": "channelVolumeMax",
+		"kb:NVDA+shift+windows+end": "channelVolumeMin"
 	}
