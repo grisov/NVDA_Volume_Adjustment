@@ -131,7 +131,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		ui.message(_("The sound is muted"))
 
 	def announceChannel(self, number: int) -> None:
-		"""Announce the number of selected audio channel.
+		"""Announce the number of the selected audio channel.
 		@param number: the number of audio channel
 		@type number: int
 		"""
@@ -428,7 +428,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self.announceMuted() if source.isMuted else self.announceVolumeLevel(source.getChannelVolumeLevel())
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
-	@script(description=_("Increase the volume of selected channel"))
+	@script(description=_("Increase the volume of the selected channel"))
 	def script_channelVolumeUp(self, gesture: InputGesture) -> None:
 		"""Increase the volume level of the selected audio channel.
 		@param gesture: the input gesture in question
@@ -443,7 +443,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.announceVolumeLevel(level)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
-	@script(description=_("Decrease the volume of selected channel"))
+	@script(description=_("Decrease the volume of the selected channel"))
 	def script_channelVolumeDown(self, gesture: InputGesture) -> None:
 		"""Decrease the volume level of the selected audio channel.
 		@param gesture: the input gesture in question
@@ -487,6 +487,21 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return
 		self.announceVolumeLevel(level)
 
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Set the average volume level for all channels"))
+	def script_channelVolumeAverage(self, gesture: InputGesture) -> None:
+		"""Set the average volume level for all audio channels.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		if self._index<0 and not self.selectProcessInFocus():
+			return
+		level: float = self.getAudioSource().channelVolumeAverage()
+		if level<0:
+			self.announceNotSupported()
+			return
+		self.announceVolumeLevel(level)
+
 	__defaultGestures = {
 		# Volume level
 		"kb:NVDA+windows+upArrow": "volumeUp",
@@ -505,5 +520,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"kb:NVDA+shift+windows+upArrow": "channelVolumeUp",
 		"kb:NVDA+shift+windows+downArrow": "channelVolumeDown",
 		"kb:NVDA+shift+windows+home": "channelVolumeMax",
-		"kb:NVDA+shift+windows+end": "channelVolumeMin"
+		"kb:NVDA+shift+windows+end": "channelVolumeMin",
+		"kb:NVDA+shift+windows+escape": "channelVolumeAverage"
 	}

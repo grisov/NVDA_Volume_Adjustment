@@ -378,7 +378,7 @@ class AudioSource(metaclass=ABCMeta):
 		raise NotImplementedError("This property must be overridden in the child class!")
 
 	@abstractmethod
-	def setChannelVolumeLevel(self, level: float, channel: int = 0) -> None:
+	def setChannelVolumeLevel(self, level: float, channel: int = -1) -> None:
 		"""Set the volume level of the specified audio source channel.
 		The method must be overridden for each type of sound sources.
 		@param channel: the number of the specified audio channel
@@ -388,7 +388,7 @@ class AudioSource(metaclass=ABCMeta):
 		"""
 		raise NotImplementedError("This property must be overridden in the child class!")
 
-	def channelVolumeUp(self, channel: int = 0) -> float:
+	def channelVolumeUp(self, channel: int = -1) -> float:
 		"""Increase the volume level for selected channel by the specified step.
 		@param channel: the number of the specified audio channel
 		@type channel: int
@@ -396,7 +396,7 @@ class AudioSource(metaclass=ABCMeta):
 		@rtype: float [-1.0, 0.0..1.0]
 		"""
 		self.isMuted and self.unmute()
-		if channel==0:
+		if channel<0:
 			channel=self.channel
 		level: float = self.getChannelVolumeLevel(channel)
 		if level<0:
@@ -405,7 +405,7 @@ class AudioSource(metaclass=ABCMeta):
 		self.setChannelVolumeLevel(level, channel)
 		return level
 
-	def channelVolumeDown(self, channel: int = 0) -> float:
+	def channelVolumeDown(self, channel: int = -1) -> float:
 		"""Decrease the volume level for selected channel by the specified step.
 		@param channel: the number of the specified audio channel
 		@type channel: int
@@ -413,7 +413,7 @@ class AudioSource(metaclass=ABCMeta):
 		@rtype: float [-1.0, 0.0..1.0]
 		"""
 		self.isMuted and self.unmute()
-		if channel==0:
+		if channel<0:
 			channel=self.channel
 		level: float = self.getChannelVolumeLevel(channel)
 		if level<0:
@@ -422,7 +422,7 @@ class AudioSource(metaclass=ABCMeta):
 		self.setChannelVolumeLevel(level, channel)
 		return level
 
-	def channelVolumeMax(self, channel: int = 0) -> float:
+	def channelVolumeMax(self, channel: int = -1) -> float:
 		"""Set the maximum volume level of the selected channel.
 		@param channel: the number of the specified audio channel
 		@type channel: int
@@ -430,12 +430,12 @@ class AudioSource(metaclass=ABCMeta):
 		@rtype: float [-1.0, 1.0]
 		"""
 		self.isMuted and self.unmute()
-		if channel==0:
+		if channel<0:
 			channel=self.channel
 		self.setChannelVolumeLevel(1.0, channel)
 		return self.getChannelVolumeLevel(channel)
 
-	def channelVolumeMin(self, channel: int = 0) -> float:
+	def channelVolumeMin(self, channel: int = -1) -> float:
 		"""Set the minimum volume level of the selected channel.
 		@param channel: the number of the specified audio channel
 		@type channel: int
@@ -443,10 +443,22 @@ class AudioSource(metaclass=ABCMeta):
 		@rtype: float [-1.0, 0.0]
 		"""
 		self.isMuted and self.unmute()
-		if channel==0:
+		if channel<0:
 			channel=self.channel
 		self.setChannelVolumeLevel(0.0, channel)
 		return self.getChannelVolumeLevel(channel)
+
+	def channelVolumeAverage(self) -> float:
+		"""Set the average volume level for all audio channels.
+		@return: average volume level
+		@rtype: float [-1.0, 0.0..1.0]
+		"""
+		if self.channelCount<=0:
+			return -1.0
+		level: float = sum((self.getChannelVolumeLevel(channel) for channel in range(self.channelCount))) / self.channelCount
+		for channel in range(self.channelCount):
+			self.setChannelVolumeLevel(level, channel)
+		return level
 
 
 class AudioDevice(AudioSource):
@@ -488,14 +500,14 @@ class AudioDevice(AudioSource):
 		except (AttributeError, TypeError,):
 			return 0
 
-	def getChannelVolumeLevel(self, channel: int = 0) -> float:
+	def getChannelVolumeLevel(self, channel: int = -1) -> float:
 		"""Get the volume level of the specified audio source channel.
 		@param channel: the number of the specified audio channel
 		@type channel: int
 		@return: the volume level
 		@rtype: float
 		"""
-		if channel==0:
+		if channel<0:
 			channel=self.channel
 		try:
 			# Incorrect handling of AttributeError by MyPy 0.812: https://github.com/python/mypy/issues/8056
@@ -503,14 +515,14 @@ class AudioDevice(AudioSource):
 		except (AttributeError, TypeError,):
 			return -1.0
 
-	def setChannelVolumeLevel(self, level: float, channel: int = 0) -> None:
+	def setChannelVolumeLevel(self, level: float, channel: int = -1) -> None:
 		"""Set the volume level of the specified audio source channel.
 		@param channel: the number of the specified audio channel
 		@type channel: int
 		@param level: target volume level
 		@type level: float [0.0..1.0]
 		"""
-		if channel==0:
+		if channel<0:
 			channel=self.channel
 		try:
 			# Incorrect handling of AttributeError by MyPy
@@ -707,7 +719,7 @@ class AudioSession(AudioSource):
 		"""
 		return -1
 
-	def getChannelVolumeLevel(self, channel: int = 0) -> float:
+	def getChannelVolumeLevel(self, channel: int = -1) -> float:
 		"""Get the volume level of the specified audio source channel.
 		@param channel: the number of the specified audio channel
 		@type channel: int
@@ -716,7 +728,7 @@ class AudioSession(AudioSource):
 		"""
 		return -1.0
 
-	def setChannelVolumeLevel(self, level: float, channel: int = 0) -> None:
+	def setChannelVolumeLevel(self, level: float, channel: int = -1) -> None:
 		"""Set the volume level of the specified audio source channel.
 		@param channel: the number of the specified audio channel
 		@type channel: int
