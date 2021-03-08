@@ -38,7 +38,7 @@ class AddonsReloadDialog(wx.Dialog):
 		sHelper = guiHelper.BoxSizerHelper(self, orientation=wx.VERTICAL)
 		# Translators: The message displayed when addon gestures has been changed.
 		sHelper.addItem(wx.StaticText(self, label=_("NVDA add-ons must be reloaded for the new gestures to take effect.")))
-		if config.conf[addonName]['gestures']:
+		if not config.conf[addonName]['gestures']:
 			# Translators: The warning is displayed before switching on default addon gestures
 			sHelper.addItem(wx.StaticText(self, label=_("Warning! Using the feature to set the maximum volume level may damage your hearing.")))
 
@@ -59,13 +59,14 @@ class AddonsReloadDialog(wx.Dialog):
 		mainSizer.Fit(self)
 		self.CentreOnScreen()
 
-	def onReloadNowButton(self, eventt: wx._core.PyEvent) -> None:
+	def onReloadNowButton(self, eventt: wx.PyEvent) -> None:
 		"""Executed when the appropriate button in the dialog box is pressed.
 		@param event: event that occurs when a wx.Button is pressed
-		@type event: wx._core.PyEvent
+		@type event: wx.PyEvent
 		"""
+		config.conf[addonName]['gestures'] = self.GetParent().defaultGesturesChk.GetValue()
+		self.EndModal(1)
 		self.Destroy()
-		config.conf.save()
 		queueFunction(eventQueue, reloadGlobalPlugins)
 
 
@@ -80,10 +81,10 @@ class VASettingsPanel(SettingsPanel):
 		"""
 		super(VASettingsPanel, self).__init__(parent)
 
-	def makeSettings(self, sizer: wx._core.Sizer) -> None:
+	def makeSettings(self, sizer: wx.Sizer) -> None:
 		"""Populate the panel with settings controls.
 		@param sizer: The sizer to which to add the settings controls.
-		@type sizer: wx._core.Sizer
+		@type sizer: wx.Sizer
 		"""
 		self.sizer = sizer
 		addonHelper = guiHelper.BoxSizerHelper(self, sizer=sizer)
@@ -115,14 +116,11 @@ class VASettingsPanel(SettingsPanel):
 			self.hideProcesses.SetCheckedStrings(cfg.processes)
 			self.hideProcesses.SetSelection(0)
 
-		procButtons = wx.BoxSizer(wx.HORIZONTAL)
-		self.updateProcessesButton = wx.Button(self, id=wx.ID_REFRESH)
+		procButtons = addonHelper.addDialogDismissButtons(guiHelper.ButtonHelper(wx.HORIZONTAL))
+		self.updateProcessesButton = procButtons.addButton(self, id=wx.ID_REFRESH)
 		self.updateProcessesButton.Bind(wx.EVT_BUTTON, self.onUpdateProcessesButton)
-		procButtons.Add(self.updateProcessesButton)
-		self.clearProcessesButton = wx.Button(self, id=wx.ID_CLEAR)
+		self.clearProcessesButton = procButtons.addButton(self, id=wx.ID_CLEAR)
 		self.clearProcessesButton.Bind(wx.EVT_BUTTON, self.onClearProcessesButton)
-		procButtons.Add(self.clearProcessesButton)
-		sizer.Add(procButtons, flag=wx.RIGHT)
 
 		self.advancedChk = addonHelper.addItem(
 		# Translators: This is the label for a checkbox in the settings panel.
@@ -141,15 +139,12 @@ class VASettingsPanel(SettingsPanel):
 			self.hideDevices.SetSelection(0)
 		self.hideDevices.Show(show=self.advancedChk.GetValue())
 
-		self.devButtons = wx.BoxSizer(wx.HORIZONTAL)
-		self.updateDevicesButton = wx.Button(self, id=wx.ID_REFRESH)
+		self.devButtons = addonHelper.addDialogDismissButtons(guiHelper.ButtonHelper(wx.HORIZONTAL))
+		self.updateDevicesButton = self.devButtons.addButton(self, id=wx.ID_REFRESH)
 		self.updateDevicesButton.Bind(wx.EVT_BUTTON, self.onUpdateDevicesButton)
-		self.devButtons.Add(self.updateDevicesButton)
-		self.clearDevicesButton = wx.Button(self, id=wx.ID_CLEAR)
+		self.clearDevicesButton = self.devButtons.addButton(self, id=wx.ID_CLEAR)
 		self.clearDevicesButton.Bind(wx.EVT_BUTTON, self.onClearDevicesButton)
-		self.devButtons.Add(self.clearDevicesButton)
-		sizer.Add(self.devButtons, flag=wx.RIGHT)
-		sizer.Show(self.devButtons, show=self.advancedChk.GetValue())
+		sizer.Show(self.devButtons.sizer, show=self.advancedChk.GetValue())
 
 		self.muteMode = addonHelper.addLabeledControl(
 			# Translators: This is the label for a choice list in the settings panel.
@@ -181,11 +176,11 @@ class VASettingsPanel(SettingsPanel):
 		self.defaultGesturesChk.SetValue(config.conf[addonName]['gestures'])
 		self.defaultGesturesChk.Bind(wx.EVT_CHECKBOX, self.onGesturesCheckbox)
 
-	def onAdvancedCheckbox(self, event: wx._core.PyEvent) -> None:
+	def onAdvancedCheckbox(self, event: wx.PyEvent) -> None:
 		"""Enabling or disabling advanced add-on features.
 		Ability to adjust volume level of all detected audio devices (experimental function).
 		@param event: event binder object which processes changing of the wx.Checkbox
-		@type event: wx._core.PyEvent
+		@type event: wx.PyEvent
 		"""
 		config.conf[addonName]['advanced'] = event.IsChecked()
 		devices.initialize(cfg.devices)
@@ -198,33 +193,34 @@ class VASettingsPanel(SettingsPanel):
 			self.hideDevices.SetCheckedStrings([self.devs[id] for id in cfg.devices])
 			self.hideDevices.SetSelection(0)
 		self.hideDevices.Show(show=event.IsChecked())
-		self.sizer.Show(self.devButtons, show=event.IsChecked())
+		self.sizer.Show(self.devButtons.sizer, show=event.IsChecked())
 		self.sizer.Fit(self)
 		self.hideDevices.GetParent().Layout()
 
-	def onMuteModeChoice(self, event: wx._core.PyEvent) -> None:
+	def onMuteModeChoice(self, event: wx.PyEvent) -> None:
 		"""Select the mute mode - completely turn off or partial decrease of the volume level,
 		dynamically controls the showing of the volume mute slider.
 		@param event: event binder object which processes changing of the wx.Choice
-		@type event: wx._core.PyEvent
+		@type event: wx.PyEvent
 		"""
 		mode: int = self.muteMode.GetClientData(self.muteMode.GetSelection())
 		self.mutePercentageSlider.Show(show=mode)
 		self.mutePercentageSlider.GetParent().Layout()
 		self.sizer.Fit(self)
 
-	def onGesturesCheckbox(self, event: wx._core.PyEvent) -> None:
+	def onGesturesCheckbox(self, event: wx.PyEvent) -> None:
 		"""Enabling or disabling default keyboard shortcuts.
 		@param event: event binder object which processes changing of the wx.Checkbox
-		@type event: wx._core.PyEvent
+		@type event: wx.PyEvent
 		"""
-		config.conf[addonName]['gestures'] = event.IsChecked()
-		AddonsReloadDialog(self).ShowModal()
+		if not AddonsReloadDialog(self).ShowModal():
+			self.defaultGesturesChk.SetValue(not event.IsChecked())
+		self.defaultGesturesChk.SetFocus()
 
-	def onUpdateDevicesButton(self, event: wx._core.PyEvent) -> None:
+	def onUpdateDevicesButton(self, event: wx.PyEvent) -> None:
 		"""Update the list of connected audio devices when the appropriate button is pressed.
 		@param event: event that occurs when a wx.Button is pressed
-		@type event: wx._core.PyEvent
+		@type event: wx.PyEvent
 		"""
 		devices.initialize()
 		self.hideDevices.Clear()
@@ -237,10 +233,10 @@ class VASettingsPanel(SettingsPanel):
 			self.hideDevices.SetSelection(0)
 		self.hideDevices.SetFocus()
 
-	def onClearDevicesButton(self, event: wx._core.PyEvent) -> None:
+	def onClearDevicesButton(self, event: wx.PyEvent) -> None:
 		"""Uncheck all installed checkboxes and remove unnecessary audio devices.
 		@param event: event that occurs when a wx.Button is pressed
-		@type event: wx._core.PyEvent
+		@type event: wx.PyEvent
 		"""
 		self.hideDevices.Clear()
 		for dev in devices:
@@ -249,10 +245,10 @@ class VASettingsPanel(SettingsPanel):
 			self.hideDevices.SetSelection(0)
 		self.hideDevices.SetFocus()
 
-	def onUpdateProcessesButton(self, event: wx._core.PyEvent) -> None:
+	def onUpdateProcessesButton(self, event: wx.PyEvent) -> None:
 		"""Update the list of currently running processes when the appropriate button is pressed.
 		@param event: event that occurs when a wx.Button is pressed
-		@type event: wx._core.PyEvent
+		@type event: wx.PyEvent
 		"""
 		procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
 		self.procs = list(set(procs)) if config.conf[addonName]['duplicates'] else procs
@@ -264,10 +260,10 @@ class VASettingsPanel(SettingsPanel):
 			self.hideProcesses.SetSelection(0)
 		self.hideProcesses.SetFocus()
 
-	def onClearProcessesButton(self, event: wx._core.PyEvent) -> None:
+	def onClearProcessesButton(self, event: wx.PyEvent) -> None:
 		"""Uncheck all installed checkboxes and remove unnecessary processes.
 		@param event: event that occurs when a wx.Button is pressed
-		@type event: wx._core.PyEvent
+		@type event: wx.PyEvent
 		"""
 		self.procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
 		self.hideProcesses.Clear()
