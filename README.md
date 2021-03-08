@@ -12,7 +12,8 @@ You can always change the default keyboard shortcuts to your preferred ones thro
 ## Features
 * adjust the volume level of all audio devices in the system;
 * volume control for each running program separately;
-* quickly switch to the maximum or minimum volume level of any audio source;
+* the ability to adjust the volume of each channel of the selected audio device or set the average value for all channels;
+* quickly switch to the maximum or minimum volume level of any audio source or the selected channel;
 * two modes of the sound source mutting - full switching off or decrease in volume in percent;
 * the ability to restore the volume level of all available muted audio sources at the NVDA shutdown;
 * flexible settings for announcing the list of detected audio devices and running programs;
@@ -39,13 +40,28 @@ When the sound source is selected you can change its volume level using the foll
 
 Note: The volume changes by one percent per one keypress by default. This value can be changed in the settings panel in the range from 1 to 20.
 
+## Adjust the volume of the selected channel
+For the selected sound source is also available to adjust the volume of its individual channels:
+
+* switch between all available channels of the selected audio source - NVDA+Shift+Windows+ right or left arrows;
+* increase or decrease the volume level of the selected channel - NVDA+Shift+Windows+ up or down arrows;
+* set the maximum or minimum volume level of the selected channel - NVDA+Shift+Windows+ Home or End;
+* set the average volume level for all channels - NVDA+Shift+Windows+Escape.
+
+Note: Channel volume control is currently available only for audio devices.
+
 ## Quick switching between audio output devices
 To switch the output of all NVDA sounds to the next available audio device, simply press NVDA+Windows+PageUp.  
 And to return to the previous audio device, use NVDA+Windows+PageDown.  
 In addition, to quickly switch the NVDA audio output to the selected audio device, you can use the NVDA+Windows+ function keys from F1.
 
+Note: The separate switching functions are created for all output audio devices detected in the system. All of these features are displayed in the "Input Gestures" dialog, where you can assign activation commands to each of the detected devices.
+
 ## Add-on settings panel
 The following options allows to flexibly adjust the behavior of the add-on and the list of audio resources to switch between them.
+
+### Announce the state of the sound source when switching
+If this checkbox is checked, during the switching between audio sources or between channels, their current status will be announced, namely the volume level or mute indicator.
 
 ### Step to change the volume level
 The minimum value to which the volume level will be changed with a one keypress. You can set value from 1 to 20 points.
@@ -74,7 +90,7 @@ The "Update" button is used to scan all audio devices on the system and display 
 ### Mute the volume
 The volume mute feature can work in two modes:
 
-1. Completely turn off the audio source. To enable this mode, you must check the appropriate checkbox in the add-on settings panel.
+1. Completely turn off the audio source. To enable this mode, you must select the appropriate option in the mutting mode selection list.
 2. Decrease the volume level by the percentage value that can be adjusted with the slider in the add-on settings panel.
 
 Note: It is possible to restore the volume level for all available muted audio sources when NVDA shutdown. Because the list of audio sessions changes dynamically, the volume will only be restored for currently available programs that play audio.
@@ -88,7 +104,7 @@ We are very grateful to everyone who made the effort to develop, translate and m
 * Dang Manh Cuong - Vietnamese translation;
 * Cagri Dogan - Turkish translation;
 * Christianlm - Italian translation;
-* Cary Rowen - simplified Chinese translation;
+* Cary Rowen - simplified Chinese translation, a lot of good ideas and testing of pre-releases;
 * Stefan Banita - Polish translation.
 
 ## Known issues
@@ -97,11 +113,14 @@ In some systems, the scanning function of all available audio devices causes err
 ## Change log
 
 ### Version 1.3
+* added a set of functions to control the volume level of each channel of audio devices;
+* added the ability to inform about the status of the sound source or channel when switching between them;
+* in the "Input Gestures" dialog displays a separate switching function for each output audio device detected in the system;
 * added feature to completely or partially temporarily mute the selected audio source;
 * added the ability to restore volume level for all available muted audio sources when NVDA shutdown;
 * mute parameters have been added to the settings panel;
 * added a warning about possible hearing damage when using the feature to set the maximum volume level;
-* the source code is significantly optimized and added MyPy type annotations;
+* the source code is significantly optimized and added MyPy type hints;
 * the add-on is adapted to support Python versions 3.7 and 3.8;
 * updated third-party module ** psutil **;
 * updated translations into Chinese and Ukrainian.
@@ -138,5 +157,5 @@ These can be installed with pip:
 1. Open a command line, change to the root of this repo
 2. Run the **scons** command. The created add-on, if there were no errors, is placed in the current directory.
 
-[1]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/latest/volumeAdjustment.nvda-addon
-[2]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/latest/volumeAdjustment.nvda-addon
+[1]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/latest/volumeAdjustment-1.3.nvda-addon
+[2]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/latest/volumeAdjustment-1.3.1-dev.nvda-addon
