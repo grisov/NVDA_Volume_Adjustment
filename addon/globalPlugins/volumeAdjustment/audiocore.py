@@ -1,4 +1,4 @@
-#audiocore.py
+# audiocore.py
 # The main components for working with system audio devices and audio sessions of running processes
 # A part of the NVDA Volume Adjustment add-on
 # This file is covered by the GNU General Public License.
@@ -6,7 +6,7 @@
 # Copyright (C) 2020-2021 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
 
 from __future__ import annotations
-from typing import Optional, Callable, List, Dict, Union, Iterator
+from typing import Optional, List, Dict, Union, Iterator
 import json
 from os import path
 from threading import Thread
@@ -102,7 +102,7 @@ class Configuration(object):
 		@return: indication of whether the data are different
 		@rtype: bool
 		"""
-		return bool(set(self.devices)^set(devices))
+		return bool(set(self.devices) ^ set(devices))
 
 	def isChangedProcesses(self, processes: List[str]) -> bool:
 		"""Determine if the new processes list differs from the existing one.
@@ -111,7 +111,7 @@ class Configuration(object):
 		@return: indication of whether the data are different
 		@rtype: bool
 		"""
-		return bool(set(self.processes)^set(processes))
+		return bool(set(self.processes) ^ set(processes))
 
 	@property
 	def muted(self) -> List[str]:
@@ -148,6 +148,7 @@ class Configuration(object):
 			self._data["muted"] = self.muted
 		return self
 
+
 # Global Configuration instance
 cfg = Configuration()
 
@@ -156,7 +157,7 @@ class ExtendedAudioUtilities(pycaw.AudioUtilities):
 	"""Improved Audio Utilities object which gives more opportunities."""
 
 	@staticmethod
-	def GetSpeaker(id: Optional[str]=None) -> pycaw.IMMDevice:
+	def GetSpeaker(id: Optional[str] = None) -> pycaw.IMMDevice:
 		"""Get speakers by its ID (render + multimedia) device.
 		@param id: audio device ID
 		@type id: str
@@ -170,17 +171,21 @@ class ExtendedAudioUtilities(pycaw.AudioUtilities):
 		if id is not None:
 			speakers = device_enumerator.GetDevice(id)
 		else:
-			speakers = device_enumerator.GetDefaultAudioEndpoint(pycaw.EDataFlow.eRender.value, pycaw.ERole.eMultimedia.value)
+			speakers = device_enumerator.GetDefaultAudioEndpoint(
+				pycaw.EDataFlow.eRender.value,
+				pycaw.ERole.eMultimedia.value
+			)
 		return speakers
 
 
 class AudioSource(metaclass=ABCMeta):
 	"""Represents the basic properties of audio source."""
 
-	def __init__(self,
-		id: str,
-		name: str,
-		volume: Union[pycaw.ISimpleAudioVolume, pointer[pycaw.IAudioEndpointVolume], None] = None) -> None:
+	def __init__(
+			self,
+			id: str,
+			name: str,
+			volume: Union[pycaw.ISimpleAudioVolume, pointer[pycaw.IAudioEndpointVolume], None] = None) -> None:
 		"""The main properties of an audio source.
 		@param id: audio source ID (audio device ID or audio session name)
 		@type id: str
@@ -249,7 +254,7 @@ class AudioSource(metaclass=ABCMeta):
 
 	# MyPy 0.812 is not supported type hints for abstract property getters and setters
 	# https://github.com/python/mypy/issues/4165
-	@property	# type: ignore
+	@property  # type: ignore
 	@abstractmethod
 	def volumeLevel(self) -> float:
 		"""Get the volume level of the sound source.
@@ -261,7 +266,7 @@ class AudioSource(metaclass=ABCMeta):
 
 	# Decorated property is not supported by MyPy 0.812
 # https://github.com/python/mypy/issues/1362
-	@volumeLevel.setter	# type: ignore
+	@volumeLevel.setter  # type: ignore
 	@abstractmethod
 	def volumeLevel(self, level: float) -> None:
 		"""Set the volume level of the sound source.
@@ -278,7 +283,9 @@ class AudioSource(metaclass=ABCMeta):
 		"""
 		self.isMuted and self.unmute()
 		# Ignore MyPy type hint because setter volumeLevel is not read-only
-		level = self.volumeLevel = min(1.0, float(round(self.volumeLevel*100.0) + config.conf[addonName]["step"])/100.0) # type: ignore
+		level = self.volumeLevel = min(  # type: ignore
+			1.0,
+			float(round(self.volumeLevel * 100.0) + config.conf[addonName]["step"]) / 100.0)
 		return level
 
 	def volumeDown(self) -> float:
@@ -288,7 +295,9 @@ class AudioSource(metaclass=ABCMeta):
 		"""
 		self.isMuted and self.unmute()
 		# Ignore MyPy type hint because setter volumeLevel is not read-only
-		level = self.volumeLevel = max(0.0, float(round(self.volumeLevel*100.0) - config.conf[addonName]["step"])/100.0) # type: ignore
+		level = self.volumeLevel = max(  # type: ignore
+			0.0,
+			float(round(self.volumeLevel * 100.0) - config.conf[addonName]["step"]) / 100.0)
 		return level
 
 	def volumeMax(self) -> float:
@@ -298,7 +307,7 @@ class AudioSource(metaclass=ABCMeta):
 		"""
 		self.isMuted and self.unmute()
 		# Ignore MyPy type hint because setter volumeLevel is not read-only
-		self.volumeLevel = 1.0	# type: ignore
+		self.volumeLevel = 1.0  # type: ignore
 		return self.volumeLevel
 
 	def volumeMin(self) -> float:
@@ -308,7 +317,7 @@ class AudioSource(metaclass=ABCMeta):
 		"""
 		self.isMuted and self.unmute()
 		# Ignore MyPy type hint because setter volumeLevel is not read-only
-		self.volumeLevel = 0.0	# type: ignore
+		self.volumeLevel = 0.0  # type: ignore
 		return self.volumeLevel
 
 	@property
@@ -317,7 +326,7 @@ class AudioSource(metaclass=ABCMeta):
 		@return: a state of the audio source (muted or no)
 		@rtype: bool
 		"""
-		state = False if self.volume is None else self.volume.GetMute() 
+		state = False if self.volume is None else self.volume.GetMute()
 		if not config.conf[addonName]['muteCompletely']:
 			return (self.id in cfg.muted) or state
 		return state
@@ -329,10 +338,10 @@ class AudioSource(metaclass=ABCMeta):
 		"""
 		try:
 			if config.conf[addonName]['muteCompletely']:
-				self.volume.SetMute(True, None)	# type: ignore
+				self.volume.SetMute(True, None)  # type: ignore
 			elif not self.isMuted:
 				# Incorrect handling of AttributeError by MyPy 0.812: https://github.com/python/mypy/issues/8056
-				self.volumeLevel = (self.volumeLevel*(100-config.conf[addonName]['mutePercentage']))/100.0	# type: ignore
+				self.volumeLevel *= (100 - config.conf[addonName]['mutePercentage']) / 100.0  # type: ignore
 		except AttributeError:
 			return False
 		else:
@@ -349,7 +358,9 @@ class AudioSource(metaclass=ABCMeta):
 			getattr(self.volume, 'SetMute')(False, None)
 			if self.isMuted:
 				# Setter volumeLevel is not read-only, MyPy issue
-				self.volumeLevel = min(1.0, round(self.volumeLevel*100.0)/(100.0-config.conf[addonName]['mutePercentage']))	# type: ignore
+				self.volumeLevel = min(  # type: ignore
+					1.0,
+					round(self.volumeLevel * 100.0) / (100.0 - config.conf[addonName]['mutePercentage']))
 		except AttributeError:
 			return False
 		else:
@@ -396,12 +407,12 @@ class AudioSource(metaclass=ABCMeta):
 		@rtype: float [-1.0, 0.0..1.0]
 		"""
 		self.isMuted and self.unmute()
-		if channel<0:
-			channel=self.channel
+		if channel < 0:
+			channel = self.channel
 		level: float = self.getChannelVolumeLevel(channel)
-		if level<0:
+		if level < 0:
 			return level
-		level = min(1.0, float(round(level*100.0) + config.conf[addonName]["step"])/100.0)
+		level = min(1.0, float(round(level * 100.0) + config.conf[addonName]["step"]) / 100.0)
 		self.setChannelVolumeLevel(level, channel)
 		return level
 
@@ -413,12 +424,12 @@ class AudioSource(metaclass=ABCMeta):
 		@rtype: float [-1.0, 0.0..1.0]
 		"""
 		self.isMuted and self.unmute()
-		if channel<0:
-			channel=self.channel
+		if channel < 0:
+			channel = self.channel
 		level: float = self.getChannelVolumeLevel(channel)
-		if level<0:
+		if level < 0:
 			return level
-		level = max(0.0, float(round(level*100.0) - config.conf[addonName]["step"])/100.0)
+		level = max(0.0, float(round(level * 100.0) - config.conf[addonName]["step"]) / 100.0)
 		self.setChannelVolumeLevel(level, channel)
 		return level
 
@@ -430,8 +441,8 @@ class AudioSource(metaclass=ABCMeta):
 		@rtype: float [-1.0, 1.0]
 		"""
 		self.isMuted and self.unmute()
-		if channel<0:
-			channel=self.channel
+		if channel < 0:
+			channel = self.channel
 		self.setChannelVolumeLevel(1.0, channel)
 		return self.getChannelVolumeLevel(channel)
 
@@ -443,8 +454,8 @@ class AudioSource(metaclass=ABCMeta):
 		@rtype: float [-1.0, 0.0]
 		"""
 		self.isMuted and self.unmute()
-		if channel<0:
-			channel=self.channel
+		if channel < 0:
+			channel = self.channel
 		self.setChannelVolumeLevel(0.0, channel)
 		return self.getChannelVolumeLevel(channel)
 
@@ -453,9 +464,11 @@ class AudioSource(metaclass=ABCMeta):
 		@return: average volume level
 		@rtype: float [-1.0, 0.0..1.0]
 		"""
-		if self.channelCount<=0:
+		if self.channelCount <= 0:
 			return -1.0
-		level: float = sum((self.getChannelVolumeLevel(channel) for channel in range(self.channelCount))) / self.channelCount
+		level: float = sum(
+			(self.getChannelVolumeLevel(channel) for channel in range(self.channelCount))
+		) / self.channelCount
 		for channel in range(self.channelCount):
 			self.setChannelVolumeLevel(level, channel)
 		return level
@@ -472,7 +485,7 @@ class AudioDevice(AudioSource):
 		"""
 		try:
 			# Incorrect handling of AttributeError by MyPy 0.812: https://github.com/python/mypy/issues/8056
-			return self.volume.GetMasterVolumeLevelScalar()	# type: ignore
+			return self.volume.GetMasterVolumeLevelScalar()  # type: ignore
 		except (AttributeError, TypeError,):
 			return -1.0
 
@@ -484,7 +497,7 @@ class AudioDevice(AudioSource):
 		"""
 		try:
 			# Incorrect handling of AttributeError by MyPy
-			self.volume.SetMasterVolumeLevelScalar(level, None)	# type: ignore
+			self.volume.SetMasterVolumeLevelScalar(level, None)  # type: ignore
 		except (AttributeError, TypeError,):
 			pass
 
@@ -496,7 +509,7 @@ class AudioDevice(AudioSource):
 		"""
 		try:
 			# Incorrect handling of AttributeError by MyPy
-			return self.volume.GetChannelCount()	# type: ignore
+			return self.volume.GetChannelCount()  # type: ignore
 		except (AttributeError, TypeError,):
 			return 0
 
@@ -507,11 +520,11 @@ class AudioDevice(AudioSource):
 		@return: the volume level
 		@rtype: float
 		"""
-		if channel<0:
-			channel=self.channel
+		if channel < 0:
+			channel = self.channel
 		try:
 			# Incorrect handling of AttributeError by MyPy 0.812: https://github.com/python/mypy/issues/8056
-			return self.volume.GetChannelVolumeLevelScalar(channel)	# type: ignore
+			return self.volume.GetChannelVolumeLevelScalar(channel)  # type: ignore
 		except (AttributeError, TypeError,):
 			return -1.0
 
@@ -522,11 +535,11 @@ class AudioDevice(AudioSource):
 		@param level: target volume level
 		@type level: float [0.0..1.0]
 		"""
-		if channel<0:
-			channel=self.channel
+		if channel < 0:
+			channel = self.channel
 		try:
 			# Incorrect handling of AttributeError by MyPy
-			self.volume.SetChannelVolumeLevelScalar(channel, level, None)	# type: ignore
+			self.volume.SetChannelVolumeLevelScalar(channel, level, None)  # type: ignore
 		except (AttributeError, TypeError,):
 			pass
 
@@ -538,7 +551,7 @@ class AudioDevices(object):
 		"""Initial values of default audio device and a list of all detected devices."""
 		self._devices: List[AudioDevice] = []
 
-	def initialize(self, hide: Dict[str, str]={}) -> AudioDevices:
+	def initialize(self, hide: Dict[str, str] = {}) -> AudioDevices:
 		"""Detect audio devices and save them in the list.
 		Should running in a separate thread to avoid blocking NVDA.
 		@param hide: a collection of devices that needs to hide
@@ -561,12 +574,12 @@ class AudioDevices(object):
 				except Exception:
 					continue
 				device = AudioDevice(
-					id = mixer.id or '',
-					name = mixer.FriendlyName or mixer.id or '',
-					volume = cast(interface, POINTER(pycaw.IAudioEndpointVolume))
+					id=mixer.id or '',
+					name=mixer.FriendlyName or mixer.id or '',
+					volume=cast(interface, POINTER(pycaw.IAudioEndpointVolume))
 				)
 				if device.id and device.name and device.id not in hide:
-					if device.id==defaultDevice.GetId():
+					if device.id == defaultDevice.GetId():
 						device._default = True
 						self._devices.insert(0, device)
 					else:
@@ -575,9 +588,11 @@ class AudioDevices(object):
 		# for some reason on some systems it is not determined in the standard way
 		if not next(filter(lambda d: d.default, self._devices), None):
 			device = AudioDevice(
-				id = defaultDevice.GetId() or '',
-				name = self.getDeviceNameByID(defaultDevice.GetId()) or '',
-				volume = cast(defaultDevice.Activate(pycaw.IAudioEndpointVolume._iid_, CLSCTX_ALL, None), POINTER(pycaw.IAudioEndpointVolume))
+				id=defaultDevice.GetId() or '',
+				name=self.getDeviceNameByID(defaultDevice.GetId()) or '',
+				volume=cast(
+					defaultDevice.Activate(pycaw.IAudioEndpointVolume._iid_, CLSCTX_ALL, None),
+					POINTER(pycaw.IAudioEndpointVolume))
 			)
 			device._default = True
 			self._devices.insert(0, device)
@@ -594,10 +609,10 @@ class AudioDevices(object):
 			mixers: List[pycaw.AudioDevice] = [mx for mx in ExtendedAudioUtilities.GetAllDevices() if mx]
 		except Exception:
 			mixers = []
-		mixer = next(filter(lambda m: m.id==id, mixers), None)
+		mixer = next(filter(lambda m: m.id == id, mixers), None)
 		return mixer.FriendlyName if mixer else ' '
 
-	def scan(self, hide: Dict[str, str]={}) -> None:
+	def scan(self, hide: Dict[str, str] = {}) -> None:
 		"""Search for available audio devices in the system and save them in the current object.
 		@param hide: a collection of audio devices that needs to hide
 		@type hide: Dict[str, str]
@@ -637,7 +652,9 @@ class AudioSession(AudioSource):
 		@param name: the name of the running process
 		@type name: str
 		"""
-		self._sessions: List[pycaw.AudioSession] = [session for session in pycaw.AudioUtilities.GetAllSessions() if session.Process and session.Process.name()]
+		self._sessions: List[pycaw.AudioSession] = [
+			session for session in pycaw.AudioUtilities.GetAllSessions() if session.Process and session.Process.name()
+		]
 		self._current: pycaw.AudioSession = self.selectAudioSession(name)
 		super(AudioSession, self).__init__(id=name, name='', volume=None)
 
@@ -648,9 +665,9 @@ class AudioSession(AudioSource):
 		@return: an audio session related to a given process
 		@rtype: pycaw.AudioSession
 		"""
-		return next(filter(lambda s: name.lower() in s.Process.name().lower(), self._sessions),
+		return next(filter(lambda s: name.lower() in s.Process.name().lower(), self._sessions),  # noqa ET113
 			next(filter(lambda s: 'nvda.exe' in s.Process.name().lower(), self._sessions),
-				self._sessions[0]))
+			self._sessions[0]))
 
 	@property
 	def name(self) -> str:
@@ -695,7 +712,7 @@ class AudioSession(AudioSource):
 		"""
 		try:
 			# Incorrect handling of AttributeError by MyPy
-			return self.volume.GetMasterVolume()	# type: ignore
+			return self.volume.GetMasterVolume()  # type: ignore
 		except (AttributeError, TypeError,):
 			return -1.0
 
@@ -707,7 +724,7 @@ class AudioSession(AudioSource):
 		"""
 		try:
 			# Incorrect handling of AttributeError by MyPy
-			self.volume.SetMasterVolume(level, None)	# type: ignore
+			self.volume.SetMasterVolume(level, None)  # type: ignore
 		except (AttributeError, TypeError,):
 			pass
 

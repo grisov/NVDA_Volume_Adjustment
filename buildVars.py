@@ -24,7 +24,7 @@ addon_info = {
 	"addon_summary": _("Volume Adjustment"),
 	# Add-on description
 	# Translators: Long description to be shown for this add-on on add-on information from add-ons manager
-	"addon_description": _("""Adjust the volume level of all audio devices installed in the system and each running program separately using simple keyboard shortcuts."""),
+	"addon_description": _("""Adjust the volume level of all audio devices installed in the system and each running program separately using simple keyboard shortcuts."""),  # noqa E501
 	# version
 	"addon_version": "1.3.1-dev",
 	# Author(s)
