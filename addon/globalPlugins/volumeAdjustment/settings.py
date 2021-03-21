@@ -127,10 +127,11 @@ class VASettingsPanel(SettingsPanel):
 			self.hideProcesses.SetCheckedStrings(cfg.processes)
 			self.hideProcesses.SetSelection(0)
 
-		procButtons = addonHelper.addDialogDismissButtons(guiHelper.ButtonHelper(wx.HORIZONTAL))
+		procButtons = guiHelper.ButtonHelper(orientation=wx.HORIZONTAL)
 		self.updateProcessesButton = procButtons.addButton(self, id=wx.ID_REFRESH)
-		self.updateProcessesButton.Bind(wx.EVT_BUTTON, self.onUpdateProcessesButton)
 		self.clearProcessesButton = procButtons.addButton(self, id=wx.ID_CLEAR)
+		addonHelper.addItem(procButtons)
+		self.updateProcessesButton.Bind(wx.EVT_BUTTON, self.onUpdateProcessesButton)
 		self.clearProcessesButton.Bind(wx.EVT_BUTTON, self.onClearProcessesButton)
 
 		self.advancedChk = addonHelper.addItem(
@@ -154,10 +155,11 @@ class VASettingsPanel(SettingsPanel):
 			self.hideDevices.SetSelection(0)
 		self.hideDevices.Show(show=self.advancedChk.GetValue())
 
-		self.devButtons = addonHelper.addDialogDismissButtons(guiHelper.ButtonHelper(wx.HORIZONTAL))
+		self.devButtons = guiHelper.ButtonHelper(orientation=wx.HORIZONTAL)
 		self.updateDevicesButton = self.devButtons.addButton(self, id=wx.ID_REFRESH)
-		self.updateDevicesButton.Bind(wx.EVT_BUTTON, self.onUpdateDevicesButton)
 		self.clearDevicesButton = self.devButtons.addButton(self, id=wx.ID_CLEAR)
+		addonHelper.addItem(self.devButtons)
+		self.updateDevicesButton.Bind(wx.EVT_BUTTON, self.onUpdateDevicesButton)
 		self.clearDevicesButton.Bind(wx.EVT_BUTTON, self.onClearDevicesButton)
 		sizer.Show(self.devButtons.sizer, show=self.advancedChk.GetValue())
 

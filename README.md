@@ -102,7 +102,7 @@ If you don't planning to use all the features of the add-on. In the settings pan
 We are very grateful to everyone who made the effort to develop, translate and maintain this add-on:
 
 * Dang Manh Cuong - Vietnamese translation;
-* Cagri Dogan - Turkish translation;
+* Cagri Dogan - Turkish translation and testing of pre-releases;
 * Christianlm - Italian translation;
 * Cary Rowen - simplified Chinese translation, a lot of good ideas and testing of pre-releases;
 * Stefan Banita - Polish translation.
