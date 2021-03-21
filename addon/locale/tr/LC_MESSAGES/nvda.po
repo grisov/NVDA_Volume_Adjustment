@@ -4,31 +4,44 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: 'volumeAdjustment' '1.0'\n"
+"Project-Id-Version: 'volumeAdjustment' '1.3'\n"
 "Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
-"POT-Creation-Date: 2020-10-16 13:56+0300\n"
-"PO-Revision-Date: 2020-11-02 14:47+0200\n"
-"Language-Team: cagrid@hotmail.com\n"
+"POT-Creation-Date: 2021-03-08 13:17+0200\n"
+"PO-Revision-Date: 2021-03-21 16:39+0300\n"
+"Last-Translator: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
+"Language-Team: cagrid@hotmail.comk\n"
+"Language: tr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 2.4.1\n"
-"Last-Translator: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
+"X-Generator: Poedit 2.4.2\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
 "%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
-"Language: tr\n"
 
-#. Translators: Used as the default audio device name when the device name could not be determined
-msgid "Default audio device"
-msgstr "Ana ses"
+#. Translators: The current application does not pay audio
+msgid "{app} is not playing any sound."
+msgstr "{app} herhangi bir ses çalmıyor."
 
 #. Translators: The message is announced during volume control
 msgid "Volume"
-msgstr "Ses seviyesi"
+msgstr "Ses"
 
 #. Translators: The message is announced during volume control
 msgid "The sound is muted"
 msgstr "Ses kapatıldı"
+
+#. Translators: Message about the number of the selected audio channel
+#, python-format
+msgid "Channel %d"
+msgstr "Kanal %d"
+
+#. Translators: The message when feature currently is not supported
+msgid "Not supported"
+msgstr "Desteklenmiyor"
+
+#. Translators: Used as the prefix to default audio device name
+msgid "Default audio device"
+msgstr "Varsayılan ses cihazı"
 
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
 msgid "Increase the volume"
@@ -39,9 +52,162 @@ msgid "Decrease the volume"
 msgstr "Sesi azalt"
 
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set the maximum volume level"
+msgstr "Sesi maksimuma getir"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set the minimum volume level"
+msgstr "Sesi minimuma getir"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Mute selected audio source"
+msgstr "Seçili ses kaynağını sustur"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
 msgid "Switch to the next audio source"
 msgstr "Sonraki ses kaynağına geç"
 
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
 msgid "Switch to the previous audio source"
 msgstr "Önceki ses kaynağına geç"
+
+#. Translators: name for default (Microsoft Sound Mapper) audio output device.
+msgid "Microsoft Sound Mapper"
+msgstr "Microsoft Ses Eşleştiricisi"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Next audio output device"
+msgstr "Sonraki ses çıkış cihazı"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Previous audio output device"
+msgstr "Önceki ses çıkış cihazı"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch the output to the selected audio device"
+msgstr "Çıkışı seçili ses cihazına geçir"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch the output to the device {number} ({name})"
+msgstr "Çıkışı {number} ({name}) cihazına geçir "
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Select next channel"
+msgstr "Sonraki kanalı seç"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Select previous channel"
+msgstr "Önceki kanalı seç"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Increase the volume of the selected channel"
+msgstr "Seçili kanalın sesini artır"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Decrease the volume of the selected channel"
+msgstr "Seçili kanalın sesini azalt"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set the maximum volume level for the selected channel"
+msgstr "Seçili kanal için sesi maksimuma getir"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set the minimum volume level for the selected channel"
+msgstr "Seçilen kanal için sesi minimuma getir"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set the average volume level for all channels"
+msgstr "Tüm kanallar için ses seviyesini ortala"
+
+#. Translators: The title of the dialog which appears when the user enables or disables the default gestures
+msgid "Gestures Configuration Change"
+msgstr "Hareket Yapılandırma Değişikliği"
+
+#. Translators: The message displayed when addon gestures has been changed.
+msgid "NVDA add-ons must be reloaded for the new gestures to take effect."
+msgstr ""
+"Yeni hareketlerin etkin olması için NVDA eklentilerinin yeniden yüklenmesi "
+"gerekir."
+
+#. Translators: The warning is displayed before switching on default addon gestures
+msgid ""
+"Warning! Using the feature to set the maximum volume level may damage your "
+"hearing."
+msgstr ""
+"Uyarı! Maksimum ses seviyesini ayarlamak işitme duyunuza zarar verebilir."
+
+#. Translators: The label for a button  in the dialog which appears when the user changed addon's default gestures
+msgid "Reload &now"
+msgstr "Şimdi &yeniden yükle"
+
+#. Translators: The label for a button  in the dialog which appears when the user changed addon's default gestures
+msgid "Reload &later"
+msgstr "Daha &sonra yeniden yükle"
+
+# Translators: This is the label for a checkbox in the settings panel.
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "&Report the status of the sound source while switching"
+msgstr "&Geçiş yaparken ses kaynağının statüsünü bildir"
+
+#. Translators: The label of the component in the settings panel
+msgid "Volume level change &step:"
+msgstr "Ses seviyesi değiştirme &adımı:"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "Change the volume of the current &application"
+msgstr "Mevcut &uygulamanın sesini değiştir"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "Hide audio sessions with the same &names"
+msgstr "Aynı ad&lara sahip ses oturumlarını gizle"
+
+#. Translators: The label of the Checkable list in the settings panel
+msgid "Hide &processes:"
+msgstr "&Bu işlemleri gizle:"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "C&ontrol all available audio devices (experimental)"
+msgstr "Mevcut tüm ses cihazlarını &denetle (deneysel)"
+
+#. Translators: The label of the Checkable list in the settings panel
+msgid "Hide audio &devices:"
+msgstr "bu ses &cihazlarını gizle:"
+
+#. Translators: This is the label for a choice list in the settings panel.
+msgid "&Mute mode:"
+msgstr "Sessiz &mod:"
+
+#. Translators: An item in the choice list of mute modes in the settings panel
+msgid "Complete Mute"
+msgstr "Sesi Kapat"
+
+#. Translators: An item in the choice list of mute modes in the settings panel
+msgid "Volume Down"
+msgstr "Sesi kıs"
+
+#. Translators: This is the label for a slider in the settings panel.
+msgid "Decrease the volume &by, %"
+msgstr "Sesi azal&t, %"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "&Unmute all muted audio resources at NVDA shutdown"
+msgstr "NVDA kapatıldığında tüm sessiz ses kaynaklarının sesini a&ç"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "Use default &keyboard shortcuts"
+msgstr "Varsayılan klavye &kısayollarını kullan"
+
+#. Add-on summary, usually the user visible name of the addon.
+#. Translators: Summary for this add-on
+#. to be shown on installation and add-on information found in Add-ons Manager.
+msgid "Volume Adjustment"
+msgstr "Ses Ayarı"
+
+#. Add-on description
+#. Translators: Long description to be shown for this add-on on add-on information from add-ons manager
+msgid ""
+"Adjust the volume level of all audio devices installed in the system and "
+"each running program separately using simple keyboard shortcuts."
+msgstr ""
+"Basit klavye kısayollarını kullanarak sistemde kurulu tüm ses cihazlarının "
+"ve çalışan her programın ses seviyesini ayrı ayrı ayarlayın."
