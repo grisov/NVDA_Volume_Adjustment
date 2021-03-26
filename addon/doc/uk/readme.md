@@ -4,7 +4,6 @@
 * Версія: 1.3
 * Сумісність з NVDA: 2019.3 та новіші версії
 * Завантажити [стабільну версію][1]
-* Завантажити [версію в розробці][2]
 
 Відрегулюйте рівень гучності всіх аудіопристроїв, встановлених в системі, і кожної запущеної програми окремо за допомогою простих комбінацій клавіш.  
 Ви завжди можете змінити комбінації клавіш за замовчуванням на зручні для вас через діалогове вікно налаштувань жестів введення NVDA.
@@ -158,5 +157,4 @@
 1. Відкрийте командний рядок, перейдіть до кореневого каталогу цього репозиторія.
 2. Запустіть на виконання команду **scons**. Якщо не виникло помилок, згенерований додаток розміщується в поточному каталозі.
 
-[1]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/latest/volumeAdjustment-1.3.nvda-addon
-[2]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/latest/volumeAdjustment-1.3.1-dev.nvda-addon
+[1]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/latest/volumeAdjustment-1.3.2.nvda-addon

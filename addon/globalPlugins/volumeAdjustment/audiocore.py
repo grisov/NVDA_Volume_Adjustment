@@ -689,9 +689,12 @@ class AudioSession(AudioSource):
 		@rtype: str
 		"""
 		try:
-			name = self._current.DisplayName
+			name: str = self._current.DisplayName
 		except AttributeError:
-			name = None
+			name = ''
+		name = {
+			r"@%SystemRoot%\System32\AudioSrv.Dll,-202": "System Sound",
+		}.get(name, name)
 		return name or self.name.replace('.exe', '')
 
 	@property

@@ -5,7 +5,7 @@
 # See the file COPYING for more details.
 # Copyright (C) 2020-2021 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
 
-from typing import Callable
+from typing import Callable, List
 import addonHandler
 import wx
 import config
@@ -114,7 +114,9 @@ class VASettingsPanel(SettingsPanel):
 		)
 		self.hideDuplicatesChk.SetValue(config.conf[addonName]['duplicates'])
 
-		procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
+		procs: List[str] = [
+			s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()
+		]
 		self.procs = list(set(procs)) if config.conf[addonName]['duplicates'] else procs
 		self.procs.extend([proc for proc in cfg.processes if proc not in procs])
 		self.hideProcesses = addonHelper.addLabeledControl(
