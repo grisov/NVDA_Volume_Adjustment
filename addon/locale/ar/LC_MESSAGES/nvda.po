@@ -1,0 +1,227 @@
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 'volumeAdjustment' '1.0'\n"
+"Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
+"POT-Creation-Date: 2021-03-19 06:37+0200\n"
+"PO-Revision-Date: 2021-03-19 06:57+0200\n"
+"Last-Translator: Chris <llajta2012@gmail.com>\n"
+"Language-Team: \n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 1.8.12\n"
+"Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+
+#. Translators: The current application does not pay audio
+msgid "{app} is not playing any sound."
+msgstr "{app} لا يشغل أي صوت."
+
+#. Translators: The message is announced during volume control
+msgid "Volume"
+msgstr "مستوى الصوت"
+
+#. Translators: The message is announced during volume control
+msgid "The sound is muted"
+msgstr "الصوت مكتوم"
+
+#. Translators: Message about the number of the selected audio channel
+#, python-format
+msgid "Channel %d"
+msgstr "القناة %d"
+
+#. Translators: The message when feature currently is not supported
+msgid "Not supported"
+msgstr "غير مدعوم"
+
+#. Translators: Used as the prefix to default audio device name
+msgid "Default audio device"
+msgstr "جهاز الصوت الافتراضي"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Increase the volume"
+msgstr "ارتفاع الصوت"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Decrease the volume"
+msgstr "خفض مستوى الصوت"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set the maximum volume level"
+msgstr "ضبط مستوى الصوت الى الحد الأقصى"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set the minimum volume level"
+msgstr "ضبط مستوى الصوت الى الحد الأدنى"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Mute selected audio source"
+msgstr "كتم صوت مصدر الصوت المحدد"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch to the next audio source"
+msgstr "قم بالتبديل إلى مصدر الصوت التالي"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch to the previous audio source"
+msgstr "قم بالتبديل إلى مصدر الصوت السابق"
+
+#. Translators: name for default (Microsoft Sound Mapper) audio output device.
+msgid "Microsoft Sound Mapper"
+msgstr "مخطط صوت Microsoft"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Next audio output device"
+msgstr "جهاز إخراج الصوت التالي"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Previous audio output device"
+msgstr "جهاز إخراج الصوت السابق"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch the output to the selected audio device"
+msgstr "قم بتبديل الإخراج إلى جهاز الصوت المحدد"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch the output to the device {number} ({name})"
+msgstr "تبديل الإخراج إلى الجهاز {number} ({name})"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Select next channel"
+msgstr "حدد القناة التالية"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Select previous channel"
+msgstr "حدد القناة السابقة"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Increase the volume of the selected channel"
+msgstr "قم بزيادة حجم القناة المحددة"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Decrease the volume of the selected channel"
+msgstr "خفض مستوى صوت القناة المحددة"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set the maximum volume level for the selected channel"
+msgstr "ضبط مستوى الصوت الى الحد الأقصى للقناة المحددة"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set the minimum volume level for the selected channel"
+msgstr "ضبط مستوى الصوت الى الحد الأدنى للقناة المحددة"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set the average volume level for all channels"
+msgstr "اضبط متوسط ​​مستوى الصوت لجميع القنوات"
+
+#. Translators: The title of the dialog which appears when the user enables or disables the default gestures
+msgid "Gestures Configuration Change"
+msgstr "تغيير تكوين الإيماءات"
+
+#. Translators: The message displayed when addon gestures has been changed.
+msgid "NVDA add-ons must be reloaded for the new gestures to take effect."
+msgstr "يجب إعادة تحميل إضافات NVDA حتى تدخل الإيماءات الجديدة حيز التنفيذ."
+
+#. Translators: The warning is displayed before switching on default addon gestures
+msgid ""
+"Warning! Using the feature to set the maximum volume level may damage your "
+"hearing."
+msgstr ""
+"تحذير! قد يؤدي استخدام الميزة لضبط مستوى الصوت الأقصى إلى الإضرار بحاسة "
+"السمع."
+
+#. Translators: The label for a button  in the dialog which appears when the user changed addon's default gestures
+msgid "Reload &now"
+msgstr "إ&عادة التحميل الآن"
+
+#. Translators: The label for a button  in the dialog which appears when the user changed addon's default gestures
+msgid "Reload &later"
+msgstr "التحديث  لا&حقًا"
+
+# Translators: This is the label for a checkbox in the settings panel.
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "&Report the status of the sound source while switching"
+msgstr "الإ&علام عن حالة مصدر الصوت أثناء التبديل"
+
+#. Translators: The label of the component in the settings panel
+msgid "Volume level change &step:"
+msgstr "تغيي&ر مستوى الصوت والخطوة:"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "Change the volume of the current &application"
+msgstr "&تغيير حجم التطبيق الحالي"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "Hide audio sessions with the same &names"
+msgstr "إ&خفاء الجلسات الصوتية التي تحمل نفس الإسم"
+
+#. Translators: The label of the Checkable list in the settings panel
+msgid "Hide &processes:"
+msgstr "إخفاء & العمليات:"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "C&ontrol all available audio devices (experimental)"
+msgstr "الت&حكم في  جميع أجهزة الصوت المتاحة (experimental)"
+
+#. Translators: The label of the Checkable list in the settings panel
+msgid "Hide audio &devices:"
+msgstr "إ&خفاء الصوت والأجهزة:"
+
+#. Translators: This is the label for a choice list in the settings panel.
+msgid "&Mute mode:"
+msgstr "وضع &كتم الصوت:"
+
+#. Translators: An item in the choice list of mute modes in the settings panel
+msgid "Complete Mute"
+msgstr "تم كتم الصوت"
+
+#. Translators: An item in the choice list of mute modes in the settings panel
+msgid "Volume Down"
+msgstr "خفض الصوت"
+
+#. Translators: This is the label for a slider in the settings panel.
+msgid "Decrease the volume &by, %"
+msgstr "&خفض الصوت بنسبة بالمئة"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "&Unmute all muted audio resources at NVDA shutdown"
+msgstr "إل&غاء كتم صوت جميع مصادر الصوت المكتومة عند إيقاف تشغيل NVDA"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "Use default &keyboard shortcuts"
+msgstr "ا&ستخدم اختصارات لوحة المفاتيح الافتراضية"
+
+#. Add-on summary, usually the user visible name of the addon.
+#. Translators: Summary for this add-on
+#. to be shown on installation and add-on information found in Add-ons Manager.
+msgid "Volume Adjustment"
+msgstr "تعديل حجم الصوت"
+
+#. Add-on description
+#. Translators: Long description to be shown for this add-on on add-on information from add-ons manager
+msgid ""
+"Adjust the volume level of all audio devices installed in the system and "
+"each running program separately using simple keyboard shortcuts."
+msgstr ""
+"اضبط مستوى الصوت لجميع أجهزة الصوت المثبتة في النظام وكل برنامج قيد التشغيل "
+"على حدة باستخدام اختصارات لوحة المفاتيح البسيطة."
+
+#~ msgid "Set maximum volume level"
+#~ msgstr "تعيين مستوى الصوت الأقصى"
+
+#~ msgid "Set minimum volume level"
+#~ msgstr "تعيين مستوى الصوت الأدنى"
+
+#~ msgid "&Control all available audio devices (experimental)"
+#~ msgstr "&التحكم في جميع أجهزة الصوت المتاحة (تجريبي)"
+
+#~ msgid "Update"
+#~ msgstr "تحديث"
+
+#~ msgid "Clear"
+#~ msgstr "ازالة"

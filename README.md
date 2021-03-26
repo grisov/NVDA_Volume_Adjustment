@@ -105,7 +105,8 @@ We are very grateful to everyone who made the effort to develop, translate and m
 * Cagri Dogan - Turkish translation and testing of pre-releases;
 * Christianlm - Italian translation;
 * Cary Rowen - simplified Chinese translation, a lot of good ideas and testing of pre-releases;
-* Stefan Banita - Polish translation.
+* Stefan Banita - Polish translation;
+* Wafiqtaher - Arabic translation.
 
 ## Known issues
 In some systems, the scanning function of all available audio devices causes errors for unknown reasons. This is a known issue with the third-party PyCaw module that has not yet been resolved.
