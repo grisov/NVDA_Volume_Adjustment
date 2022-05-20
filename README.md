@@ -5,7 +5,8 @@
 * NVDA compatibility: 2019.3 and beyond
 * Download [stable version][1]
 
-Adjust the volume level of all audio devices installed in the system and each running program separately using simple keyboard shortcuts.  
+Adjust the volume level of all audio devices installed in the system and each running program separately using simple keyboard shortcuts.
+
 You can always change the default keyboard shortcuts to your preferred ones through the NVDA input gestures dialog.
 
 ## Features
@@ -21,8 +22,10 @@ You can always change the default keyboard shortcuts to your preferred ones thro
 * quick switching the output to other available audio devices.
 
 ## Switch between audio sources
-To go to the previous or next audio source you can use the NVDA+Windows+ left or right arrow key combinations. The list consists of two parts - system audio devices and running audio sessions. Switching occurs cyclically in a circle like NVDA settings circle.  
-Through the add-on settings panel you can hide any items in this list.  
+To go to the previous or next audio source you can use the NVDA+Windows+ left or right arrow key combinations. The list consists of two parts - system audio devices and running audio sessions. Switching occurs cyclically in a circle like NVDA settings circle.
+
+Through the add-on settings panel you can hide any items in this list.
+
 Switching between audio sessions can occur automatically when switching to the window of the corresponding program - this mode can be enabled in the add-on settings panel.
 
 Note: The list of audio sessions changes dinamicly and depends on the running programs.
@@ -50,8 +53,10 @@ For the selected sound source is also available to adjust the volume of its indi
 Note: Channel volume control is currently available only for audio devices.
 
 ## Quick switching between audio output devices
-To switch the output of all NVDA sounds to the next available audio device, simply press NVDA+Windows+PageUp.  
-And to return to the previous audio device, use NVDA+Windows+PageDown.  
+To switch the output of all NVDA sounds to the next available audio device, simply press NVDA+Windows+PageUp.
+
+And to return to the previous audio device, use NVDA+Windows+PageDown.
+
 In addition, to quickly switch the NVDA audio output to the selected audio device, you can use the NVDA+Windows+ function keys from F1.
 
 Note: The separate switching functions are created for all output audio devices detected in the system. All of these features are displayed in the "Input Gestures" dialog, where you can assign activation commands to each of the detected devices.
@@ -66,24 +71,30 @@ If this checkbox is checked, during the switching between audio sources or betwe
 The minimum value to which the volume level will be changed with a one keypress. You can set value from 1 to 20 points.
 
 ### Automatic audio session switching
-If this check box is checked, the add-on will be automatically switching to the audio session that corresponds to the program in focus.  
+If this check box is checked, the add-on will be automatically switching to the audio session that corresponds to the program in focus.
+
 For example, if you are currently browsing a website in Firefox, the add-on will detect this and automatically switch to the Firefox audio session. And you can immediately adjust the volume level for the current process without finding it in the list.
 
 ### Hide audio sessions with the same names
 Sometimes, when runs some programs, there are openning multiple audio sessions with the same names. This option allows to hide such audio sessions.
 
 ### Hide processes
-In this list of check boxes you can mark the processes that you want to hide from the main list. These can be, for example, service programs.  
-The "Update" button is used to update the list of all running processes and available audio sessions. The all checked elements remain as marked.  
+In this list of check boxes you can mark the processes that you want to hide from the main list. These can be, for example, service programs.
+
+The "Update" button is used to update the list of all running processes and available audio sessions. The all checked elements remain as marked.
+
 "Clear" button - uncheck all checked elements and removes obsolete items.
 
 ### Control all available audio devices
-Enables advanced features of the add-on, namely the ability to adjust the volume of all audio devices detected in the system.  
+Enables advanced features of the add-on, namely the ability to adjust the volume of all audio devices detected in the system.
+
 For unknown reasons, this feature causes errors on some systems, so it is marked as experimental.
 
 ### Hide audio devices
-If you don't use one or more audio devices and do not want them to be present when switching between audio sources, you can easily remove them from the main list by simply checking them in the settings panel.  
-The "Update" button is used to scan all audio devices on the system and display updated information. And all checked elements are remain as marked.  
+If you don't use one or more audio devices and do not want them to be present when switching between audio sources, you can easily remove them from the main list by simply checking them in the settings panel.
+
+The "Update" button is used to scan all audio devices on the system and display updated information. And all checked elements are remain as marked.
+
 "Clear" button - uncheck all checked elements and removes obsolete items.
 
 ### Mute the volume
@@ -112,7 +123,8 @@ In some systems, the scanning function of all available audio devices causes err
 
 ## Change log
 
-### Version 1.3
+### Version 1.3.3
+* the add-on has been tested for compatibility with NVDA 2022.1;
 * added a set of functions to control the volume level of each channel of audio devices;
 * added the ability to inform about the status of the sound source or channel when switching between them;
 * in the "Input Gestures" dialog displays a separate switching function for each output audio device detected in the system;
@@ -131,7 +143,7 @@ In some systems, the scanning function of all available audio devices causes err
 
 ### Version 1.1
 * fixed bug duplication of audio sessions for one running process;
-* fixed the method of  detecting current audio session;
+* fixed the method of detecting current audio session;
 * improved the method for determining the name of the current process;
 * overriding the default output device in another way if the first attempt was unsuccessful;
 * improved add-on settings panel;
