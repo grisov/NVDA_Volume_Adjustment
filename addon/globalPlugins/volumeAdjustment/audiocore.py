@@ -182,10 +182,11 @@ class AudioSource(metaclass=ABCMeta):
 	"""Represents the basic properties of audio source."""
 
 	def __init__(
-			self,
-			id: str,
-			name: str,
-			volume: Union[pycaw.ISimpleAudioVolume, pointer[pycaw.IAudioEndpointVolume], None] = None) -> None:
+		self,
+		id: str,
+		name: str,
+		volume: Union[pycaw.ISimpleAudioVolume, pointer[pycaw.IAudioEndpointVolume], None] = None
+	) -> None:
 		"""The main properties of an audio source.
 		@param id: audio source ID (audio device ID or audio session name)
 		@type id: str
@@ -666,8 +667,8 @@ class AudioSession(AudioSource):
 		@rtype: pycaw.AudioSession
 		"""
 		return next(filter(lambda s: name.lower() in s.Process.name().lower(), self._sessions),  # noqa ET113
-			next(filter(lambda s: 'nvda.exe' in s.Process.name().lower(), self._sessions),
-			self._sessions[0]))
+			next(filter(lambda s: 'nvda.exe' in s.Process.name().lower(), self._sessions),  # noqa E128
+			self._sessions[0]))  # noqa E128
 
 	@property
 	def name(self) -> str:
