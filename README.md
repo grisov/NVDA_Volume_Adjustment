@@ -123,6 +123,9 @@ In some systems, the scanning function of all available audio devices causes err
 
 ## Change log
 
+### Version 1.3.4
+* the add-on has been tested for compatibility with NVDA 2023.1.
+
 ### Version 1.3.3
 * the add-on has been tested for compatibility with NVDA 2022.1;
 * added a set of functions to control the volume level of each channel of audio devices;
