@@ -13,6 +13,7 @@ import ui
 import gui
 import config
 import tones
+import globalVars
 from globalVars import appArgs
 from api import getFocusObject
 from scriptHandler import script
@@ -42,6 +43,12 @@ from .settings import VASettingsPanel  # noqa E402
 UNDEFINED_APP: str = "UndefinedCurrentApplicationName"
 
 
+def disableInSecureMode(decoratedCls):
+	if globalVars.appArgs.secure:
+		return globalPluginHandler.GlobalPlugin
+	return decoratedCls
+
+@disableInSecureMode
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	"""Implementation global commands of NVDA Volume Adjustment add-on."""
 	scriptCategory: str = addonSummary
