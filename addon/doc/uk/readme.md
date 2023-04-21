@@ -172,4 +172,4 @@
 1. Відкрийте командний рядок, перейдіть до кореневого каталогу цього репозиторія.
 2. Запустіть на виконання команду **scons**. Якщо не виникло помилок, згенерований додаток розміщується в поточному каталозі.
 
-[1]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/v1.3.4/volumeAdjustment-1.3.4.nvda-addon
+[1]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/v1.3.5/volumeAdjustment-1.3.5.nvda-addon

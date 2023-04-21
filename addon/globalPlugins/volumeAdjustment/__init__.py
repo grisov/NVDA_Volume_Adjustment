@@ -5,7 +5,7 @@
 # Copyright (C) 2020-2023 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
 
 from __future__ import annotations
-from typing import Callable, List, Union
+from typing import Callable, List, TypeVar, Union
 import os.path
 import addonHandler
 import globalPluginHandler
@@ -13,7 +13,6 @@ import ui
 import gui
 import config
 import tones
-import globalVars
 from globalVars import appArgs
 from api import getFocusObject
 from scriptHandler import script
@@ -30,6 +29,7 @@ try:
 except addonHandler.AddonError:
 	log.warning("Unable to init translations. This may be because the addon is running from NVDA scratchpad.")
 _: Callable[[str], str]
+GlobalPluginType = TypeVar("GlobalPluginType", bound=globalPluginHandler.GlobalPlugin)
 
 _addonDir = os.path.join(os.path.dirname(__file__), "..", "..")
 if isinstance(_addonDir, bytes):
@@ -43,10 +43,11 @@ from .settings import VASettingsPanel  # noqa E402
 UNDEFINED_APP: str = "UndefinedCurrentApplicationName"
 
 
-def disableInSecureMode(decoratedCls):
-	if globalVars.appArgs.secure:
+def disableInSecureMode(decoratedCls: GlobalPluginType) -> GlobalPluginType:
+	if appArgs.secure:
 		return globalPluginHandler.GlobalPlugin
 	return decoratedCls
+
 
 @disableInSecureMode
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
@@ -56,8 +57,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def __init__(self, *args, **kwargs) -> None:
 		"""Initializing initial configuration values ​​and other fields."""
 		super(GlobalPlugin, self).__init__(*args, **kwargs)
-		if appArgs.secure or config.isAppX:
-			return
 		confspec = {
 			"status": "boolean(default=true)",
 			"step": "integer(default=1,min=1,max=20)",
