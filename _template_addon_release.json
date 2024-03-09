@@ -25,5 +25,5 @@
 	"sha256": "a248b885c5f49c1de846f857f301d1906579ec037e07565fb32115b4ebe1a7b3",
 	"sourceURL": "https://github.com/grisov/NVDA_Volume_Adjustment",
 	"license": "GPL v2",
-	"licenseURL": "https://github.com/grisov/NVDA_Volume_Adjustment/blob/main/COPYING.txt"
+	"licenseURL": "https://www.gnu.org/licenses/gpl-2.0.html"
 }
