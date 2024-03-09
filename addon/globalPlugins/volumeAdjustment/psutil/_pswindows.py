@@ -249,7 +249,7 @@ def swap_memory():
     free_system = mem[3]
 
     # Despite the name PageFile refers to total system memory here
-    # thus physical memory values need to be substracted to get swap values
+    # thus physical memory values need to be subtracted to get swap values
     total = total_system - total_phys
     free = min(total, free_system - free_phys)
     used = total - free
@@ -386,7 +386,7 @@ def net_if_stats():
         isup, duplex, speed, mtu = items
         if hasattr(_common, 'NicDuplex'):
             duplex = _common.NicDuplex(duplex)
-        ret[name] = _common.snicstats(isup, duplex, speed, mtu)
+        ret[name] = _common.snicstats(isup, duplex, speed, mtu, '')
     return ret
 
 

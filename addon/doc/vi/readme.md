@@ -1,4 +1,4 @@
-﻿# NVDA Bật âm thanh
+# NVDA Bật âm thanh
 
 * Tác giả: Oleksandr Gryshchenko
 * Phiên bản: 1.3

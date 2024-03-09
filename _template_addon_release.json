@@ -1,0 +1,29 @@
+{
+	"addonId": "volumeAdjustment",
+	"addonVersionNumber": {
+		"major": 1,
+		"minor": 3,
+		"patch": 6
+	},
+	"addonVersionName": "1.3.6",
+	"displayName": "Volume Adjustment",
+	"publisher": "Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>",
+	"description": "Adjust the volume level of all audio devices installed in the system and each running program separately using simple keyboard shortcuts",
+	"homepage": "https://github.com/grisov/NVDA_Volume_Adjustment",
+	"minNVDAVersion": {
+		"major": 2019,
+		"minor": 3,
+		"patch": 0
+	},
+	"lastTestedVersion": {
+		"major": 2024,
+		"minor": 1,
+		"patch": 0
+	},
+	"channel": "beta",
+	"URL": "https://github.com/nvaccess/addon-datastore/releases/download/v0.1.0/myAddon.nvda-addon",
+	"sha256": "264c739ab9ee9a101ebbae0a8e09ac1cbd4ca38f26a7bd087c27d243eae43141",
+	"sourceURL": "https://github.com/grisov/NVDA_Volume_Adjustment",
+	"license": "GPL v2",
+	"licenseURL": "https://github.com/grisov/NVDA_Volume_Adjustment/blob/main/COPYING.txt"
+}
