@@ -173,4 +173,4 @@ These can be installed with pip:
 1. Open a command line, change to the root of this repo
 2. Run the **scons** command. The created add-on, if there were no errors, is placed in the current directory.
 
-[1]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/v1.3.5/volumeAdjustment-1.3.5.nvda-addon
+[1]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/v1.3.6/volumeAdjustment-1.3.6.nvda-addon

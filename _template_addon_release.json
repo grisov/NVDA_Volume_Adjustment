@@ -21,8 +21,8 @@
 		"patch": 0
 	},
 	"channel": "beta",
-	"URL": "https://github.com/nvaccess/addon-datastore/releases/download/v0.1.0/myAddon.nvda-addon",
-	"sha256": "264c739ab9ee9a101ebbae0a8e09ac1cbd4ca38f26a7bd087c27d243eae43141",
+	"URL": "https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/v1.3.6/volumeAdjustment-1.3.6.nvda-addon",
+	"sha256": "a248b885c5f49c1de846f857f301d1906579ec037e07565fb32115b4ebe1a7b3",
 	"sourceURL": "https://github.com/grisov/NVDA_Volume_Adjustment",
 	"license": "GPL v2",
 	"licenseURL": "https://github.com/grisov/NVDA_Volume_Adjustment/blob/main/COPYING.txt"
