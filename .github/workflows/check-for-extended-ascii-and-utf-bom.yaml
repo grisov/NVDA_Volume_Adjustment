@@ -12,7 +12,7 @@ jobs:
       run: find  . -type f | grep -vP "^./.git" | xargs file | grep -iP "bom|extended|iso"
     - name: 
       if: failure()
-      uses: unsplash/comment-on-pr@master
+      uses: unsplash/comment-on-pr@main
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
