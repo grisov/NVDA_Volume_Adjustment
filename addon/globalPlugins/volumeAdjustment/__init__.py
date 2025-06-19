@@ -1,28 +1,27 @@
-# -*- coding:utf-8 -*-
 # A part of the NVDA Volume Adjustment add-on
 # This file is covered by the GNU General Public License.
 # See the file COPYING for more details.
-# Copyright (C) 2020-2023 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
+# Copyright (C) 2020-2025 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
 
 from __future__ import annotations
-from typing import Callable, List, TypeVar, Union
 import os.path
-import addonHandler
-import globalPluginHandler
-import ui
-import gui
-import config
-import tones
-from globalVars import appArgs
-from api import getFocusObject
-from scriptHandler import script
-from nvwave import getOutputDeviceNames
-from synthDriverHandler import getSynth, setSynth
-from inputCore import InputGesture
-from NVDAObjects import NVDAObject
-from logHandler import log
 from threading import Thread
-from .audiocore import ExtendedAudioUtilities, AudioDevice, AudioSession, cfg, devices
+from typing import Callable, List, TypeVar, Union
+import addonHandler
+import config
+import globalPluginHandler
+import tones
+import ui
+from api import getFocusObject
+from globalVars import appArgs
+from gui import settingsDialogs
+from inputCore import InputGesture
+from logHandler import log
+from NVDAObjects import NVDAObject
+from scriptHandler import script
+from synthDriverHandler import getSynth, setSynth
+from utils.mmdevice import AudioOutputDevice, getOutputDevices
+from .audiocore import (ExtendedAudioUtilities, VAAudioDevice, VAAudioSession, cfg, devices)
 
 try:
 	addonHandler.initTranslation()
@@ -55,7 +54,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	scriptCategory: str = addonSummary
 
 	def __init__(self, *args, **kwargs) -> None:
-		"""Initializing initial configuration values ​​and other fields."""
+		"""Initializing initial configuration values and other fields."""
 		super(GlobalPlugin, self).__init__(*args, **kwargs)
 		confspec = {
 			"status": "boolean(default=true)",
@@ -69,9 +68,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			"gestures": "boolean(default=true)"
 		}
 		config.conf.spec[addonName] = confspec
-		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(VASettingsPanel)
+		settingsDialogs.NVDASettingsDialog.categoryClasses.append(VASettingsPanel)
 		# Remember the default output audio device
-		self._defaultOutputDevice: str = config.conf["speech"]["outputDevice"]
+		self._defaultOutputDevice: str = config.conf["audio"]["outputDevice"]
 		# Switching between processes
 		self._index: int = 0  # index of current audio source
 		# Remember the name of the audio session of the previous process
@@ -89,7 +88,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if config.conf[addonName]["unmuteOnExit"]:
 			Thread(target=self.unmuteAllAudioSources).start()
 		try:
-			gui.settingsDialogs.NVDASettingsDialog.categoryClasses.remove(VASettingsPanel)
+			settingsDialogs.NVDASettingsDialog.categoryClasses.remove(VASettingsPanel)
 		except IndexError:
 			log.warning("Can't remove %s Settings panel from NVDA settings dialogs", addonSummary)
 		super(GlobalPlugin, self).terminate(*args, **kwargs)
@@ -116,7 +115,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			appName = obj.appModule.appName
 		except AttributeError:
 			appName = UNDEFINED_APP
-		session = AudioSession(appName)
+		session = VAAudioSession(appName)
 		if not session.name:
 			# Translators: The current application does not pay audio
 			ui.message(_("{app} is not playing any sound.").format(app=appName))
@@ -166,7 +165,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		for device in devices:
 			device.isMuted and device.unmute()
 		for sessionName in self.getAllSessions():
-			session = AudioSession(sessionName)
+			session = VAAudioSession(sessionName)
 			session.isMuted and session.unmute()
 
 	def selectAudioSource(self, sessions: List[str]) -> None:
@@ -176,7 +175,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@type sessions: List[str]
 		"""
 		if 0 <= self._index < len(devices):
-			source: Union[AudioDevice, AudioSession] = devices[self._index]
+			source: Union[VAAudioDevice, VAAudioSession] = devices[self._index]
 			title: str = source.name
 			if source.default:
 				# Translators: Used as the prefix to default audio device name
@@ -190,24 +189,24 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				except IndexError:
 					self._process = UNDEFINED_APP
 			self._previous = self._process
-			source = AudioSession(self._process)
+			source = VAAudioSession(self._process)
 			title = source.title
 		ui.message(title)
 		if config.conf[addonName]['status']:
 			self.announceMuted() if source.isMuted else self.announceVolumeLevel(source.volumeLevel)
 
-	def getAudioSource(self) -> Union[AudioDevice, AudioSession]:
+	def getAudioSource(self) -> Union[VAAudioDevice, VAAudioSession]:
 		"""Get the object of selected audio source (device or process),
 		this can be instance inherited from the audiocore.AudioSource class.
 		Also announces the name of the audio session at the first treatment.
 		@return: instance of selected audio source
-		@rtype: Union[AudioDevice, AudioSession]
+		@rtype: Union[VAAudioDevice, VAAudioSession]
 		"""
 		if 0 <= self._index < len(devices):
-			source: Union[AudioDevice, AudioSession] = devices[self._index]
+			source: Union[VAAudioDevice, VAAudioSession] = devices[self._index]
 			self._previous = UNDEFINED_APP
 		else:
-			source = AudioSession(self._process)
+			source = VAAudioSession(self._process)
 			if source.name != self._previous:
 				ui.message(source.title)
 				self._previous = source.name
@@ -312,31 +311,30 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._index = self._index - 1 if self._index > 0 else len(devices) + len(sessions) - 1
 		self.selectAudioSource(sessions)
 
-	def setOutputDevice(self, name: str) -> None:
-		"""Switche the NVDA output to the audio device with the specified name.
-		@param name: name of the audio output device
-		@type name: str
+	def setOutputDevice(self, device: AudioOutputDevice) -> None:
+		"""Switche the NVDA output to the specified audio device.
+		@param device: audio output device
+		@type device: AudioOutputDevice
 		"""
-		config.conf['speech']['outputDevice'] = name
+		config.conf["audio"]["outputDevice"] = device.id
 		status: bool = setSynth(getSynth().name)
 		if status:
 			tones.terminate()
 			tones.initialize()
-		ui.message(name)
+		ui.message(device.friendlyName)
 
-	def selectOutputDevice(self, step: int) -> str:
+	def selectOutputDevice(self, step: int) -> AudioOutputDevice:
 		"""Select an audio device from the list with an offset to the specified step.
 		@param step: offset step in the list of available audio devices
 		@type step: int (usually 1 or -1)
-		@return: the name of the selected audio device
-		@rtype: str
+		@return: selected audio device
+		@rtype: AudioOutputDevice
 		"""
-		devices: List[str] = getOutputDeviceNames()
-		if devices[0] in ("", "Microsoft Sound Mapper"):
-			# Translators: name for default (Microsoft Sound Mapper) audio output device.
-			devices[0] = _("Microsoft Sound Mapper")
+		devices: List[AudioOutputDevice] = [device for device in getOutputDevices(includeDefault=True)]
+		if devices[0].id == "":
+			devices[0].id = "default"
 		try:
-			current: int = devices.index(config.conf["speech"]["outputDevice"])
+			current: int = [dev.id for dev in devices].index(config.conf["audio"]["outputDevice"])
 		except ValueError:
 			current = 0
 		return devices[(current + step) % len(devices)]
@@ -348,8 +346,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		device: str = self.selectOutputDevice(step=1)
-		self.setOutputDevice(name=device)
+		device: AudioOutputDevice = self.selectOutputDevice(step=1)
+		self.setOutputDevice(device)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Previous audio output device"))
@@ -358,8 +356,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		device: str = self.selectOutputDevice(step=-1)
-		self.setOutputDevice(name=device)
+		device: AudioOutputDevice = self.selectOutputDevice(step=-1)
+		self.setOutputDevice(device)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Switch the output to the selected audio device"))
@@ -369,14 +367,18 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@type gesture: InputGesture
 		"""
 		index = int(gesture.displayName.lower()[-2:].replace('f', '')) - 1
-		self.setOutputDevice(name=getOutputDeviceNames()[index])
+		self.setOutputDevice(device=[dev for dev in getOutputDevices(includeDefault=True)][index])
 
-	def switchingMethodsFactory(self, index: int, device: str) -> Callable[[GlobalPlugin, InputGesture], None]:
+	def switchingMethodsFactory(
+		self,
+		index: int,
+		device: AudioOutputDevice
+	) -> Callable[[GlobalPlugin, InputGesture], None]:
 		"""Create a separate switching method for each output audio device detected in the system.
 		@param index: sequence number of the detected audio device
 		@type index: int, index>=0
-		@param device: the name of the output audio device in the system
-		@type device: str
+		@param device: output audio device in the system
+		@type device: AudioOutputDevice
 		@return: the instance of the method to switch to the specified audio device
 		@rtype: Callable[[GlobalPlugin, InputGesture], None]
 		"""
@@ -385,20 +387,20 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			@param gesture: gesture assigned to this method
 			@type gesture: InputGesture
 			"""
-			self.setOutputDevice(name=device)
+			self.setOutputDevice(device)
 		# Translators: The name of the method that displayed in the NVDA input gestures dialog
-		script_switchingMethod.__doc__ = _("Switch the output to the device {number} ({name})").format(number=index, name=device)  # noqa E501
+		script_switchingMethod.__doc__ = _("Switch the output to the device {number} ({name})").format(number=index, name=device.friendlyName)  # noqa E501
 		return script_switchingMethod
 
 	def bindSwitchingMethods(self) -> None:
 		"""Bind all created switching methods to the current global plugin class instance,
 		should be called in the class constructor.
 		"""
-		outputDevices = getOutputDeviceNames()
+		outputDevices: List[AudioOutputDevice] = [device for device in getOutputDevices(includeDefault=True)]
 		for i in range(len(outputDevices)):
 			name = f"script_switchToDevice{i}"
 			setattr(self.__class__, name, self.switchingMethodsFactory(i, outputDevices[i]))
-			if config.conf[addonName]['gestures'] and i < 12:
+			if config.conf[addonName]["gestures"] and i < 12:
 				self.bindGesture("kb:NVDA+windows+f%d" % (i + 1), name.split('_', 1)[1])
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
@@ -410,13 +412,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		if self._index < 0 and not self.selectProcessInFocus():
 			return
-		source: Union[AudioDevice, AudioSession] = self.getAudioSource()
+		source: Union[VAAudioDevice, VAAudioSession] = self.getAudioSource()
 		if source.channelCount <= 0:
 			self.announceNotSupported()
 			return
 		source.channel += 1
 		self.announceChannel(source.channel)
-		if config.conf[addonName]['status']:
+		if config.conf[addonName]["status"]:
 			self.announceMuted() if source.isMuted else self.announceVolumeLevel(source.getChannelVolumeLevel())
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
@@ -428,13 +430,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		if self._index < 0 and not self.selectProcessInFocus():
 			return
-		source: Union[AudioDevice, AudioSession] = self.getAudioSource()
+		source: Union[VAAudioDevice, VAAudioSession] = self.getAudioSource()
 		if source.channelCount <= 0:
 			self.announceNotSupported()
 			return
 		source.channel -= 1
 		self.announceChannel(source.channel)
-		if config.conf[addonName]['status']:
+		if config.conf[addonName]["status"]:
 			self.announceMuted() if source.isMuted else self.announceVolumeLevel(source.getChannelVolumeLevel())
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog

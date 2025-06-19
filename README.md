@@ -1,8 +1,8 @@
 # NVDA Volume Adjustment
 
 * Author: Oleksandr Gryshchenko
-* Version: 1.3
-* NVDA compatibility: 2019.3 and beyond
+* Version: 1.4
+* NVDA compatibility: 2025.1 and beyond
 * Download [stable version][1]
 
 Adjust the volume level of all audio devices installed in the system and each running program separately using simple keyboard shortcuts.
@@ -173,4 +173,4 @@ These can be installed with pip:
 1. Open a command line, change to the root of this repo
 2. Run the **scons** command. The created add-on, if there were no errors, is placed in the current directory.
 
-[1]: https://github.com/grisov/NVDA_Volume_Adjustment/releases/download/v1.3.6/volumeAdjustment-1.3.6.nvda-addon
+[1]: https://addons.nvda-project.org/files/get.php?file=volumeAdjustment

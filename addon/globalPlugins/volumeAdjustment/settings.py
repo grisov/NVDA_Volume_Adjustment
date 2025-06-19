@@ -3,18 +3,19 @@
 # A part of the NVDA Volume Adjustment add-on
 # This file is covered by the GNU General Public License.
 # See the file COPYING for more details.
-# Copyright (C) 2020-2023 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
+# Copyright (C) 2020-2025 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
 
 from typing import Callable, List
 import addonHandler
-import wx
 import config
-from gui import SettingsPanel, guiHelper, nvdaControls
+import wx
 from globalPluginHandler import reloadGlobalPlugins
-from queueHandler import queueFunction, eventQueue
+from gui import guiHelper, nvdaControls
+from gui.settingsDialogs import SettingsPanel
 from logHandler import log
+from pycaw.utils import AudioUtilities
+from queueHandler import eventQueue, queueFunction
 from . import addonName, addonSummary
-from .pycaw import AudioUtilities
 from .audiocore import cfg, devices
 
 try:
