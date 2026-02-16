@@ -1,7 +1,7 @@
 # A part of the NVDA Volume Adjustment add-on
 # This file is covered by the GNU General Public License.
 # See the file COPYING for more details.
-# Copyright (C) 2020-2025 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
+# Copyright (C) 2020-2026 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
 
 from __future__ import annotations
 import os.path
@@ -21,7 +21,7 @@ from NVDAObjects import NVDAObject
 from scriptHandler import script
 from synthDriverHandler import getSynth, setSynth
 from utils.mmdevice import AudioOutputDevice, getOutputDevices
-from .audiocore import (ExtendedAudioUtilities, VAAudioDevice, VAAudioSession, cfg, devices)
+from .audiocore import ExtendedAudioUtilities, VAAudioDevice, VAAudioSession, cfg, devices
 
 try:
 	addonHandler.initTranslation()
@@ -34,8 +34,8 @@ _addonDir = os.path.join(os.path.dirname(__file__), "..", "..")
 if isinstance(_addonDir, bytes):
 	_addonDir = _addonDir.decode("mbcs")
 _curAddon = addonHandler.Addon(_addonDir)
-addonName: str = _curAddon.manifest['name']
-addonSummary: str = _curAddon.manifest['summary']
+addonName: str = _curAddon.manifest["name"]
+addonSummary: str = _curAddon.manifest["summary"]
 
 from .settings import VASettingsPanel  # noqa E402
 
@@ -51,6 +51,7 @@ def disableInSecureMode(decoratedCls: GlobalPluginType) -> GlobalPluginType:
 @disableInSecureMode
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	"""Implementation global commands of NVDA Volume Adjustment add-on."""
+
 	scriptCategory: str = addonSummary
 
 	def __init__(self, *args, **kwargs) -> None:
@@ -65,7 +66,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			"muteCompletely": "boolean(default=false)",
 			"mutePercentage": "integer(default=75,min=1,max=99)",
 			"unmuteOnExit": "boolean(default=true)",
-			"gestures": "boolean(default=true)"
+			"gestures": "boolean(default=true)",
 		}
 		config.conf.spec[addonName] = confspec
 		settingsDialogs.NVDASettingsDialog.categoryClasses.append(VASettingsPanel)
@@ -74,11 +75,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Switching between processes
 		self._index: int = 0  # index of current audio source
 		# Remember the name of the audio session of the previous process
-		self._previous: str = ''
+		self._previous: str = ""
 		# Name of the current process
-		self._process: str = ''
+		self._process: str = ""
 		# Bind default gestures if necessary
-		config.conf[addonName]['gestures'] and self.bindGestures(self.__defaultGestures)
+		config.conf[addonName]["gestures"] and self.bindGestures(self.__defaultGestures)
 		# Creating individual switching methods for each output audio device detected in the system
 		self.bindSwitchingMethods()
 		devices.scan(cfg.devices)
@@ -100,7 +101,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param nextHandler: next event handler
 		@type nextHandler: Callable
 		"""
-		if config.conf[addonName]['focus']:
+		if config.conf[addonName]["focus"]:
 			self._index = -1
 			self._previous = UNDEFINED_APP
 		NextHandler()
@@ -156,9 +157,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@rtype: List[str]
 		"""
 		procs = [
-			s.Process.name() for s in ExtendedAudioUtilities.GetAllSessions() if s.Process and s.Process.name() and s.Process.name() not in cfg.processes  # noqa E502
+			s.Process.name()
+			for s in ExtendedAudioUtilities.GetAllSessions()
+			if s.Process and s.Process.name() and s.Process.name() not in cfg.processes  # noqa E502
 		]
-		return list(set(procs)) if config.conf[addonName]['duplicates'] else procs
+		return list(set(procs)) if config.conf[addonName]["duplicates"] else procs
 
 	def unmuteAllAudioSources(self) -> None:
 		"""Unmute all muted audio devices and audio sessions."""
@@ -192,7 +195,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			source = VAAudioSession(self._process)
 			title = source.title
 		ui.message(title)
-		if config.conf[addonName]['status']:
+		if config.conf[addonName]["status"]:
 			self.announceMuted() if source.isMuted else self.announceVolumeLevel(source.volumeLevel)
 
 	def getAudioSource(self) -> Union[VAAudioDevice, VAAudioSession]:
@@ -289,7 +292,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		sessions: List[str] = self.getAllSessions()
 		if self._index < 0:
 			try:
-				self._index = len(devices) + sessions.index(next(filter(lambda s: self._process in s, sessions), ''))
+				self._index = len(devices) + sessions.index(
+					next(filter(lambda s: self._process in s, sessions), "")
+				)
 			except (ValueError, TypeError):
 				self._index = len(devices) - 1
 		self._index = self._index + 1 if self._index < (len(devices) + len(sessions) - 1) else 0
@@ -305,7 +310,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		sessions: List[str] = self.getAllSessions()
 		if self._index < 0:
 			try:
-				self._index = len(devices) + sessions.index(next(filter(lambda s: self._process in s, sessions), ''))
+				self._index = len(devices) + sessions.index(
+					next(filter(lambda s: self._process in s, sessions), "")
+				)
 			except (ValueError, TypeError):
 				pass
 		self._index = self._index - 1 if self._index > 0 else len(devices) + len(sessions) - 1
@@ -366,13 +373,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: gesture assigned to this method
 		@type gesture: InputGesture
 		"""
-		index = int(gesture.displayName.lower()[-2:].replace('f', '')) - 1
+		index = int(gesture.displayName.lower()[-2:].replace("f", "")) - 1
 		self.setOutputDevice(device=[dev for dev in getOutputDevices(includeDefault=True)][index])
 
 	def switchingMethodsFactory(
 		self,
 		index: int,
-		device: AudioOutputDevice
+		device: AudioOutputDevice,
 	) -> Callable[[GlobalPlugin, InputGesture], None]:
 		"""Create a separate switching method for each output audio device detected in the system.
 		@param index: sequence number of the detected audio device
@@ -382,14 +389,18 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@return: the instance of the method to switch to the specified audio device
 		@rtype: Callable[[GlobalPlugin, InputGesture], None]
 		"""
+
 		def script_switchingMethod(self, gesture: InputGesture) -> None:
 			"""Switch NVDA audio output to the specified sound device.
 			@param gesture: gesture assigned to this method
 			@type gesture: InputGesture
 			"""
 			self.setOutputDevice(device)
+
 		# Translators: The name of the method that displayed in the NVDA input gestures dialog
-		script_switchingMethod.__doc__ = _("Switch the output to the device {number} ({name})").format(number=index, name=device.friendlyName)  # noqa E501
+		script_switchingMethod.__doc__ = _("Switch the output to the device {number} ({name})").format(
+			number=index, name=device.friendlyName
+		)  # noqa E501
 		return script_switchingMethod
 
 	def bindSwitchingMethods(self) -> None:
@@ -401,7 +412,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			name = f"script_switchToDevice{i}"
 			setattr(self.__class__, name, self.switchingMethodsFactory(i, outputDevices[i]))
 			if config.conf[addonName]["gestures"] and i < 12:
-				self.bindGesture("kb:NVDA+windows+f%d" % (i + 1), name.split('_', 1)[1])
+				self.bindGesture("kb:NVDA+windows+f%d" % (i + 1), name.split("_", 1)[1])
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Select next channel"))
@@ -419,7 +430,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		source.channel += 1
 		self.announceChannel(source.channel)
 		if config.conf[addonName]["status"]:
-			self.announceMuted() if source.isMuted else self.announceVolumeLevel(source.getChannelVolumeLevel())
+			self.announceMuted() if source.isMuted else self.announceVolumeLevel(
+				source.getChannelVolumeLevel()
+			)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Select previous channel"))
@@ -437,7 +450,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		source.channel -= 1
 		self.announceChannel(source.channel)
 		if config.conf[addonName]["status"]:
-			self.announceMuted() if source.isMuted else self.announceVolumeLevel(source.getChannelVolumeLevel())
+			self.announceMuted() if source.isMuted else self.announceVolumeLevel(
+				source.getChannelVolumeLevel()
+			)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Increase the volume of the selected channel"))
@@ -533,5 +548,5 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"kb:NVDA+shift+windows+downArrow": "channelVolumeDown",
 		"kb:NVDA+shift+windows+home": "channelVolumeMax",
 		"kb:NVDA+shift+windows+end": "channelVolumeMin",
-		"kb:NVDA+shift+windows+escape": "channelVolumeAverage"
+		"kb:NVDA+shift+windows+escape": "channelVolumeAverage",
 	}

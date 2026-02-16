@@ -1,8 +1,8 @@
 # NVDA Volume Adjustment
 
 * Author: Oleksandr Gryshchenko
-* Version: 1.4
-* NVDA compatibility: 2025.1 and beyond
+* Version: 1.5
+* NVDA compatibility: 2026.1 and beyond
 * Download [stable version][1]
 
 Adjust the volume level of all audio devices installed in the system and each running program separately using simple keyboard shortcuts.
@@ -122,6 +122,9 @@ We are very grateful to everyone who made the effort to develop, translate and m
 In some systems, the scanning function of all available audio devices causes errors for unknown reasons. This is a known issue with the third-party PyCaw module that has not yet been resolved.
 
 ## Change log
+
+### Version 1.5.0
+* the add-on has been tested for compatibility with NVDA 2026.1.
 
 ### Version 1.3.5
 * the add-on is disabled on secure screens;

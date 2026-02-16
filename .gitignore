@@ -2,9 +2,16 @@ addon/doc/*.css
 addon/doc/en/
 *_docHandler.py
 *.html
-*.ini
-*.mo
-*.pot
-*.py[co]
+manifest.ini
 *.nvda-addon
 .sconsign.dblite
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[co]
+*$py.class
+/[0-9]*.[0-9]*.[0-9]*.json
+
+# Translations
+*.mo
+*.pot

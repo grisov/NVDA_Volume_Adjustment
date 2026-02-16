@@ -1,0 +1,1 @@
+- Fully adapted the add-on for compatibility with NVDA 2026.

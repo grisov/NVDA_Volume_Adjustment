@@ -3,7 +3,7 @@
 # A part of the NVDA Volume Adjustment add-on
 # This file is covered by the GNU General Public License.
 # See the file COPYING for more details.
-# Copyright (C) 2020-2025 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
+# Copyright (C) 2020-2026 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
 
 from typing import Callable, List
 import addonHandler
@@ -39,12 +39,19 @@ class AddonsReloadDialog(wx.Dialog):
 		sHelper = guiHelper.BoxSizerHelper(self, orientation=wx.VERTICAL)
 		sHelper.addItem(
 			# Translators: The message displayed when addon gestures has been changed.
-			wx.StaticText(self, label=_("NVDA add-ons must be reloaded for the new gestures to take effect."))
+			wx.StaticText(
+				self, label=_("NVDA add-ons must be reloaded for the new gestures to take effect.")
+			),
 		)
-		if not config.conf[addonName]['gestures']:
+		if not config.conf[addonName]["gestures"]:
 			sHelper.addItem(
 				# Translators: The warning is displayed before switching on default addon gestures
-				wx.StaticText(self, label=_("Warning! Using the feature to set the maximum volume level may damage your hearing."))  # noqa E501
+				wx.StaticText(
+					self,
+					label=_(
+						"Warning! Using the feature to set the maximum volume level may damage your hearing."
+					),
+				),  # noqa E501
 			)
 
 		bHelper = sHelper.addDialogDismissButtons(guiHelper.ButtonHelper(wx.HORIZONTAL))
@@ -69,7 +76,7 @@ class AddonsReloadDialog(wx.Dialog):
 		@param event: event that occurs when a wx.Button is pressed
 		@type event: wx.PyEvent
 		"""
-		config.conf[addonName]['gestures'] = self.GetParent().defaultGesturesChk.GetValue()
+		config.conf[addonName]["gestures"] = self.GetParent().defaultGesturesChk.GetValue()
 		self.EndModal(1)
 		self.Destroy()
 		queueFunction(eventQueue, reloadGlobalPlugins)
@@ -77,6 +84,7 @@ class AddonsReloadDialog(wx.Dialog):
 
 class VASettingsPanel(SettingsPanel):
 	"""Add-on settings panel object"""
+
 	title: str = addonSummary
 
 	def __init__(self, parent: wx.Window) -> None:
@@ -95,36 +103,38 @@ class VASettingsPanel(SettingsPanel):
 		addonHelper = guiHelper.BoxSizerHelper(self, sizer=sizer)
 		self.reportStatusChk = addonHelper.addItem(
 			# Translators: This is the label for a checkbox in the settings panel.
-			wx.CheckBox(self, label=_("&Report the status of the sound source while switching"))
+			wx.CheckBox(self, label=_("&Report the status of the sound source while switching")),
 		)
-		self.reportStatusChk.SetValue(config.conf[addonName]['status'])
+		self.reportStatusChk.SetValue(config.conf[addonName]["status"])
 		self.volumeStep = addonHelper.addLabeledControl(
 			# Translators: The label of the component in the settings panel
 			_("Volume level change &step:"),
 			nvdaControls.SelectOnFocusSpinCtrl,
-			value=str(config.conf[addonName]['step']), min=1, max=20
+			value=str(config.conf[addonName]["step"]),
+			min=1,
+			max=20,
 		)
 		self.followFocusChk = addonHelper.addItem(
 			# Translators: This is the label for a checkbox in the settings panel.
-			wx.CheckBox(self, label=_("Change the volume of the current &application"))
+			wx.CheckBox(self, label=_("Change the volume of the current &application")),
 		)
-		self.followFocusChk.SetValue(config.conf[addonName]['focus'])
+		self.followFocusChk.SetValue(config.conf[addonName]["focus"])
 		self.hideDuplicatesChk = addonHelper.addItem(
 			# Translators: This is the label for a checkbox in the settings panel.
-			wx.CheckBox(self, label=_("Hide audio sessions with the same &names"))
+			wx.CheckBox(self, label=_("Hide audio sessions with the same &names")),
 		)
-		self.hideDuplicatesChk.SetValue(config.conf[addonName]['duplicates'])
+		self.hideDuplicatesChk.SetValue(config.conf[addonName]["duplicates"])
 
 		procs: List[str] = [
 			s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()
 		]
-		self.procs = list(set(procs)) if config.conf[addonName]['duplicates'] else procs
+		self.procs = list(set(procs)) if config.conf[addonName]["duplicates"] else procs
 		self.procs.extend([proc for proc in cfg.processes if proc not in procs])
 		self.hideProcesses = addonHelper.addLabeledControl(
 			# Translators: The label of the Checkable list in the settings panel
 			_("Hide &processes:"),
 			nvdaControls.CustomCheckListBox,
-			choices=self.procs
+			choices=self.procs,
 		)
 		if len(self.procs) > 0:
 			self.hideProcesses.SetCheckedStrings(cfg.processes)
@@ -139,15 +149,15 @@ class VASettingsPanel(SettingsPanel):
 
 		self.advancedChk = addonHelper.addItem(
 			# Translators: This is the label for a checkbox in the settings panel.
-			wx.CheckBox(self, label=_("C&ontrol all available audio devices (experimental)"))
+			wx.CheckBox(self, label=_("C&ontrol all available audio devices (experimental)")),
 		)
-		self.advancedChk.SetValue(config.conf[addonName]['advanced'])
+		self.advancedChk.SetValue(config.conf[addonName]["advanced"])
 		self.advancedChk.Bind(wx.EVT_CHECKBOX, self.onAdvancedCheckbox)
 		self.hideDevices = addonHelper.addLabeledControl(
 			# Translators: The label of the Checkable list in the settings panel
 			_("Hide audio &devices:"),
 			nvdaControls.CustomCheckListBox,
-			choices=[]
+			choices=[],
 		)
 		self.devs = dict(cfg.devices)
 		self.devs.update({devices[i].id: devices[i].name for i in range(len(devices))})
@@ -169,31 +179,35 @@ class VASettingsPanel(SettingsPanel):
 		self.muteMode = addonHelper.addLabeledControl(
 			# Translators: This is the label for a choice list in the settings panel.
 			labelText=_("&Mute mode:"),
-			wxCtrlClass=wx.Choice, choices=[]
+			wxCtrlClass=wx.Choice,
+			choices=[],
 		)
 		# Translators: An item in the choice list of mute modes in the settings panel
 		self.muteMode.Append(_("Complete Mute"), 0)
 		# Translators: An item in the choice list of mute modes in the settings panel
 		self.muteMode.Append(_("Volume Down"), 1)
-		self.muteMode.Select(int(not config.conf[addonName]['muteCompletely']))
+		self.muteMode.Select(int(not config.conf[addonName]["muteCompletely"]))
 		self.muteMode.Bind(wx.EVT_CHOICE, self.onMuteModeChoice)
 		self.mutePercentageSlider = addonHelper.addLabeledControl(
 			# Translators: This is the label for a slider in the settings panel.
 			labelText=_("Decrease the volume &by, %"),
-			wxCtrlClass=nvdaControls.EnhancedInputSlider, value=config.conf[addonName]['mutePercentage'],
-			minValue=1, maxValue=99, size=(250, -1)
+			wxCtrlClass=nvdaControls.EnhancedInputSlider,
+			value=config.conf[addonName]["mutePercentage"],
+			minValue=1,
+			maxValue=99,
+			size=(250, -1),
 		)
-		self.mutePercentageSlider.Show(show=not config.conf[addonName]['muteCompletely'])
+		self.mutePercentageSlider.Show(show=not config.conf[addonName]["muteCompletely"])
 		self.unmuteOnExitChk = addonHelper.addItem(
 			# Translators: This is the label for a checkbox in the settings panel.
-			wx.CheckBox(self, label=_("&Unmute all muted audio resources at NVDA shutdown"))
+			wx.CheckBox(self, label=_("&Unmute all muted audio resources at NVDA shutdown")),
 		)
-		self.unmuteOnExitChk.SetValue(config.conf[addonName]['unmuteOnExit'])
+		self.unmuteOnExitChk.SetValue(config.conf[addonName]["unmuteOnExit"])
 		self.defaultGesturesChk = addonHelper.addItem(
 			# Translators: This is the label for a checkbox in the settings panel.
-			wx.CheckBox(self, label=_("Use default &keyboard shortcuts"))
+			wx.CheckBox(self, label=_("Use default &keyboard shortcuts")),
 		)
-		self.defaultGesturesChk.SetValue(config.conf[addonName]['gestures'])
+		self.defaultGesturesChk.SetValue(config.conf[addonName]["gestures"])
 		self.defaultGesturesChk.Bind(wx.EVT_CHECKBOX, self.onGesturesCheckbox)
 
 	def onAdvancedCheckbox(self, event: wx.PyEvent) -> None:
@@ -202,7 +216,7 @@ class VASettingsPanel(SettingsPanel):
 		@param event: event binder object which processes changing of the wx.Checkbox
 		@type event: wx.PyEvent
 		"""
-		config.conf[addonName]['advanced'] = event.IsChecked()
+		config.conf[addonName]["advanced"] = event.IsChecked()
 		devices.initialize(cfg.devices)
 		self.hideDevices.Clear()
 		self.devs = dict(cfg.devices)
@@ -271,7 +285,7 @@ class VASettingsPanel(SettingsPanel):
 		@type event: wx.PyEvent
 		"""
 		procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
-		self.procs = list(set(procs)) if config.conf[addonName]['duplicates'] else procs
+		self.procs = list(set(procs)) if config.conf[addonName]["duplicates"] else procs
 		self.procs.extend([proc for proc in cfg.processes if proc not in procs])
 		self.hideProcesses.Clear()
 		self.hideProcesses.SetItems(self.procs)
@@ -285,7 +299,9 @@ class VASettingsPanel(SettingsPanel):
 		@param event: event that occurs when a wx.Button is pressed
 		@type event: wx.PyEvent
 		"""
-		self.procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
+		self.procs = [
+			s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()
+		]
 		self.hideProcesses.Clear()
 		self.hideProcesses.SetItems(self.procs)
 		if len(self.procs) > 0:
@@ -298,13 +314,15 @@ class VASettingsPanel(SettingsPanel):
 
 	def onSave(self) -> None:
 		"""Update Configuration when clicking OK."""
-		config.conf[addonName]['status'] = self.reportStatusChk.GetValue()
-		config.conf[addonName]['step'] = self.volumeStep.GetValue()
-		config.conf[addonName]['focus'] = self.followFocusChk.GetValue()
-		config.conf[addonName]['duplicates'] = self.hideDuplicatesChk.GetValue()
-		config.conf[addonName]['muteCompletely'] = not self.muteMode.GetClientData(self.muteMode.GetSelection())
-		config.conf[addonName]['mutePercentage'] = self.mutePercentageSlider.GetValue()
-		config.conf[addonName]['unmuteOnExit'] = self.unmuteOnExitChk.GetValue()
+		config.conf[addonName]["status"] = self.reportStatusChk.GetValue()
+		config.conf[addonName]["step"] = self.volumeStep.GetValue()
+		config.conf[addonName]["focus"] = self.followFocusChk.GetValue()
+		config.conf[addonName]["duplicates"] = self.hideDuplicatesChk.GetValue()
+		config.conf[addonName]["muteCompletely"] = not self.muteMode.GetClientData(
+			self.muteMode.GetSelection()
+		)
+		config.conf[addonName]["mutePercentage"] = self.mutePercentageSlider.GetValue()
+		config.conf[addonName]["unmuteOnExit"] = self.unmuteOnExitChk.GetValue()
 		devs = {}
 		for checked in self.hideDevices.GetCheckedItems():
 			id = self.hideDevices.GetClientData(checked)
