@@ -3,7 +3,7 @@
 # A part of the NVDA Volume Adjustment add-on
 # This file is covered by the GNU General Public License.
 # See the file COPYING for more details.
-# Copyright (C) 2020-2025 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
+# Copyright (C) 2020-2026 Olexandr Gryshchenko <grisov.nvaccess@mailnull.com>
 
 from __future__ import annotations
 import json
@@ -13,12 +13,18 @@ from os import path
 from threading import Thread
 from typing import Dict, Iterator, List, Optional, Union
 import config
-from comtypes import (CLSCTX_ALL, CLSCTX_INPROC_SERVER, CoCreateInstance, pointer)
+from comtypes import CLSCTX_ALL, CLSCTX_INPROC_SERVER, CoCreateInstance, pointer
 from globalVars import appArgs
 from pycaw.utils import (
-	AudioDevice, AudioSession, AudioUtilities,
-	CLSID_MMDeviceEnumerator, EDataFlow, ERole,
-	IAudioEndpointVolume, IMMDeviceEnumerator, ISimpleAudioVolume
+	AudioDevice,
+	AudioSession,
+	AudioUtilities,
+	CLSID_MMDeviceEnumerator,
+	EDataFlow,
+	ERole,
+	IAudioEndpointVolume,
+	IMMDeviceEnumerator,
+	ISimpleAudioVolume,
 )
 
 addonName = path.basename(path.dirname(__file__))
@@ -31,7 +37,7 @@ class Configuration(object):
 
 	def __init__(self) -> None:
 		"""File name for saving data and loading previously saved data."""
-		self._file = path.join(appArgs.configPath, path.basename(path.dirname(__file__)) + '.json')
+		self._file = path.join(appArgs.configPath, path.basename(path.dirname(__file__)) + ".json")
 		self._data: Dict = {}
 		self.load()
 
@@ -41,12 +47,12 @@ class Configuration(object):
 		@rtype: Configuration
 		"""
 		try:
-			with open(self._file, 'r', encoding='utf-8') as f:
+			with open(self._file, "r", encoding="utf-8") as f:
 				self._data = json.load(f)
 		except Exception:
 			pass
-		if 'version' not in self._data:
-			self._data = {'version': 0}
+		if "version" not in self._data:
+			self._data = {"version": 0}
 		return self
 
 	def save(self) -> bool:
@@ -55,7 +61,7 @@ class Configuration(object):
 		@rtype: bool
 		"""
 		try:
-			with open(self._file, 'w', encoding='utf-8') as f:
+			with open(self._file, "w", encoding="utf-8") as f:
 				f.write(json.dumps(self._data, skipkeys=True, ensure_ascii=False, indent=4))
 		except Exception:
 			return False
@@ -77,7 +83,7 @@ class Configuration(object):
 		@return: updated self object
 		@rtype: Configuration
 		"""
-		self._data['devices'] = devices
+		self._data["devices"] = devices
 		return self
 
 	@property
@@ -96,7 +102,7 @@ class Configuration(object):
 		@return: updated self object
 		@rtype: Configuration
 		"""
-		self._data['processes'] = list(processes)
+		self._data["processes"] = list(processes)
 		return self
 
 	def isChangedDevices(self, devices: Dict[str, str]) -> bool:
@@ -171,13 +177,14 @@ class ExtendedAudioUtilities(AudioUtilities):
 		device_enumerator = CoCreateInstance(
 			CLSID_MMDeviceEnumerator,
 			IMMDeviceEnumerator,
-			CLSCTX_INPROC_SERVER)
+			CLSCTX_INPROC_SERVER,
+		)
 		if id is not None:
 			speakers = device_enumerator.GetDevice(id)
 		else:
 			speakers = device_enumerator.GetDefaultAudioEndpoint(
 				EDataFlow.eRender.value,
-				ERole.eMultimedia.value
+				ERole.eMultimedia.value,
 			)
 		return speakers
 
@@ -189,7 +196,7 @@ class AudioSource(metaclass=ABCMeta):
 		self,
 		id: str,
 		name: str,
-		volume: Union[ISimpleAudioVolume, pointer[IAudioEndpointVolume], None] = None
+		volume: Union[ISimpleAudioVolume, pointer[IAudioEndpointVolume], None] = None,
 	) -> None:
 		"""The main properties of an audio source.
 		@param id: audio source ID (audio device ID or audio session name)
@@ -270,7 +277,7 @@ class AudioSource(metaclass=ABCMeta):
 		raise NotImplementedError("This property must be overridden in the child class!")
 
 	# Decorated property is not supported by MyPy 0.812
-# https://github.com/python/mypy/issues/1362
+	# https://github.com/python/mypy/issues/1362
 	@volumeLevel.setter  # type: ignore
 	@abstractmethod
 	def volumeLevel(self, level: float) -> None:
@@ -290,7 +297,8 @@ class AudioSource(metaclass=ABCMeta):
 		# Ignore MyPy type hint because setter volumeLevel is not read-only
 		level = self.volumeLevel = min(  # type: ignore
 			1.0,
-			float(round(self.volumeLevel * 100.0) + config.conf[addonName]["step"]) / 100.0)
+			float(round(self.volumeLevel * 100.0) + config.conf[addonName]["step"]) / 100.0,
+		)
 		return level
 
 	def volumeDown(self) -> float:
@@ -302,7 +310,8 @@ class AudioSource(metaclass=ABCMeta):
 		# Ignore MyPy type hint because setter volumeLevel is not read-only
 		level = self.volumeLevel = max(  # type: ignore
 			0.0,
-			float(round(self.volumeLevel * 100.0) - config.conf[addonName]["step"]) / 100.0)
+			float(round(self.volumeLevel * 100.0) - config.conf[addonName]["step"]) / 100.0,
+		)
 		return level
 
 	def volumeMax(self) -> float:
@@ -332,7 +341,7 @@ class AudioSource(metaclass=ABCMeta):
 		@rtype: bool
 		"""
 		state = False if self.volume is None else self.volume.GetMute()
-		if not config.conf[addonName]['muteCompletely']:
+		if not config.conf[addonName]["muteCompletely"]:
 			return (self.id in cfg.muted) or state
 		return state
 
@@ -342,11 +351,11 @@ class AudioSource(metaclass=ABCMeta):
 		@rtype: bool
 		"""
 		try:
-			if config.conf[addonName]['muteCompletely']:
+			if config.conf[addonName]["muteCompletely"]:
 				self.volume.SetMute(True, None)  # type: ignore
 			elif not self.isMuted:
 				# Incorrect handling of AttributeError by MyPy 0.812: https://github.com/python/mypy/issues/8056
-				self.volumeLevel *= (100 - config.conf[addonName]['mutePercentage']) / 100.0  # type: ignore
+				self.volumeLevel *= (100 - config.conf[addonName]["mutePercentage"]) / 100.0  # type: ignore
 		except AttributeError:
 			return False
 		else:
@@ -360,12 +369,13 @@ class AudioSource(metaclass=ABCMeta):
 		"""
 		try:
 			# The getattr() function is used for correct processing by the MyPy analyzer
-			getattr(self.volume, 'SetMute')(False, None)
+			getattr(self.volume, "SetMute")(False, None)
 			if self.isMuted:
 				# Setter volumeLevel is not read-only, MyPy issue
 				self.volumeLevel = min(  # type: ignore
 					1.0,
-					round(self.volumeLevel * 100.0) / (100.0 - config.conf[addonName]['mutePercentage']))
+					round(self.volumeLevel * 100.0) / (100.0 - config.conf[addonName]["mutePercentage"]),
+				)
 		except AttributeError:
 			return False
 		else:
@@ -471,9 +481,10 @@ class AudioSource(metaclass=ABCMeta):
 		"""
 		if self.channelCount <= 0:
 			return -1.0
-		level: float = sum(
-			(self.getChannelVolumeLevel(channel) for channel in range(self.channelCount))
-		) / self.channelCount
+		level: float = (
+			sum((self.getChannelVolumeLevel(channel) for channel in range(self.channelCount)))
+			/ self.channelCount
+		)
 		for channel in range(self.channelCount):
 			self.setChannelVolumeLevel(level, channel)
 		return level
@@ -491,7 +502,7 @@ class VAAudioDevice(AudioSource):
 		try:
 			# Incorrect handling of AttributeError by MyPy 0.812: https://github.com/python/mypy/issues/8056
 			return self.volume.GetMasterVolumeLevelScalar()  # type: ignore
-		except (AttributeError, TypeError,):
+		except (AttributeError, TypeError):
 			return -1.0
 
 	@volumeLevel.setter
@@ -503,7 +514,7 @@ class VAAudioDevice(AudioSource):
 		try:
 			# Incorrect handling of AttributeError by MyPy
 			self.volume.SetMasterVolumeLevelScalar(level, None)  # type: ignore
-		except (AttributeError, TypeError,):
+		except (AttributeError, TypeError):
 			pass
 
 	@property
@@ -515,7 +526,7 @@ class VAAudioDevice(AudioSource):
 		try:
 			# Incorrect handling of AttributeError by MyPy
 			return self.volume.GetChannelCount()  # type: ignore
-		except (AttributeError, TypeError,):
+		except (AttributeError, TypeError):
 			return 0
 
 	def getChannelVolumeLevel(self, channel: int = -1) -> float:
@@ -530,7 +541,7 @@ class VAAudioDevice(AudioSource):
 		try:
 			# Incorrect handling of AttributeError by MyPy 0.812: https://github.com/python/mypy/issues/8056
 			return self.volume.GetChannelVolumeLevelScalar(channel)  # type: ignore
-		except (AttributeError, TypeError,):
+		except (AttributeError, TypeError):
 			return -1.0
 
 	def setChannelVolumeLevel(self, level: float, channel: int = -1) -> None:
@@ -545,7 +556,7 @@ class VAAudioDevice(AudioSource):
 		try:
 			# Incorrect handling of AttributeError by MyPy
 			self.volume.SetChannelVolumeLevelScalar(channel, level, None)  # type: ignore
-		except (AttributeError, TypeError,):
+		except (AttributeError, TypeError):
 			pass
 
 
@@ -578,13 +589,16 @@ class VAAudioDevices(object):
 				immDevice = ExtendedAudioUtilities.GetSpeaker(mixer.id)
 				try:
 					interface = immDevice.Activate(
-						IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+						IAudioEndpointVolume._iid_,
+						CLSCTX_ALL,
+						None,
+					)
 				except Exception:
 					continue
 				device = VAAudioDevice(
-					id=mixer.id or '',
-					name=mixer.FriendlyName or mixer.id or '',
-					volume=cast(interface, POINTER(IAudioEndpointVolume))
+					id=mixer.id or "",
+					name=mixer.FriendlyName or mixer.id or "",
+					volume=cast(interface, POINTER(IAudioEndpointVolume)),
 				)
 				if device.id and device.name and device.id not in hide:
 					if device.id == defaultDevice.GetId():
@@ -597,10 +611,11 @@ class VAAudioDevices(object):
 		if not next(filter(lambda d: d.default, self._devices), None):
 			device = VAAudioDevice(
 				id=defaultDevice.GetId() or "default",
-				name=self.getDeviceNameByID(defaultDevice.GetId()) or '',
+				name=self.getDeviceNameByID(defaultDevice.GetId()) or "",
 				volume=cast(
 					defaultDevice.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None),
-					POINTER(IAudioEndpointVolume))
+					POINTER(IAudioEndpointVolume),
+				),
 			)
 			device._default = True
 			self._devices.insert(0, device)
@@ -618,7 +633,7 @@ class VAAudioDevices(object):
 		except Exception:
 			mixers = []
 		mixer = next(filter(lambda m: m.id == id, mixers), None)
-		return mixer.FriendlyName if mixer else ' '
+		return mixer.FriendlyName if mixer else " "
 
 	def scan(self, hide: Dict[str, str] = {}) -> None:
 		"""Search for available audio devices in the system and save them in the current object.
@@ -661,21 +676,27 @@ class VAAudioSession(AudioSource):
 		@type name: str
 		"""
 		self._sessions: List[AudioSession] = [
-			session for session in AudioUtilities.GetAllSessions() if session.Process and session.Process.name()
+			session
+			for session in AudioUtilities.GetAllSessions()
+			if session.Process and session.Process.name()
 		]
 		self._current: AudioSession = self.selectAudioSession(name)
-		super(VAAudioSession, self).__init__(id=name, name='', volume=None)
+		super(VAAudioSession, self).__init__(id=name, name="", volume=None)
 
-	def selectAudioSession(self, name: str = 'nvda.exe') -> AudioSession:
+	def selectAudioSession(self, name: str = "nvda.exe") -> AudioSession:
 		"""Find and return an audio session by its specified name.
 		@param name: full name or part of the process name
 		@type name: str
 		@return: an audio session related to a given process
 		@rtype: pycaw.AudioSession
 		"""
-		return next(filter(lambda s: name.lower() in s.Process.name().lower(), self._sessions),  # noqa ET113
-			next(filter(lambda s: 'nvda.exe' in s.Process.name().lower(), self._sessions),  # noqa E128
-			self._sessions[0]))  # noqa E128
+		return next(
+			filter(lambda s: name.lower() in s.Process.name().lower(), self._sessions),  # noqa ET113
+			next(
+				filter(lambda s: "nvda.exe" in s.Process.name().lower(), self._sessions),  # noqa E128
+				self._sessions[0],
+			),
+		)  # noqa E128
 
 	@property
 	def name(self) -> str:
@@ -687,7 +708,7 @@ class VAAudioSession(AudioSource):
 			try:
 				self._name = self._current.Process.name()
 			except AttributeError:
-				self._name = ''
+				self._name = ""
 		return self._name
 
 	@property
@@ -699,11 +720,11 @@ class VAAudioSession(AudioSource):
 		try:
 			name: str = self._current.DisplayName
 		except AttributeError:
-			name = ''
+			name = ""
 		name = {
 			r"@%SystemRoot%\System32\AudioSrv.Dll,-202": "System Sound",
 		}.get(name, name)
-		return name or self.name.replace('.exe', '')
+		return name or self.name.replace(".exe", "")
 
 	@property
 	def volume(self) -> Union[ISimpleAudioVolume, IAudioEndpointVolume, None]:
@@ -724,7 +745,7 @@ class VAAudioSession(AudioSource):
 		try:
 			# Incorrect handling of AttributeError by MyPy
 			return self.volume.GetMasterVolume()  # type: ignore
-		except (AttributeError, TypeError,):
+		except (AttributeError, TypeError):
 			return -1.0
 
 	@volumeLevel.setter
@@ -736,7 +757,7 @@ class VAAudioSession(AudioSource):
 		try:
 			# Incorrect handling of AttributeError by MyPy
 			self.volume.SetMasterVolume(level, None)  # type: ignore
-		except (AttributeError, TypeError,):
+		except (AttributeError, TypeError):
 			pass
 
 	@property
