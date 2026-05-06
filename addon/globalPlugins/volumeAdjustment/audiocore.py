@@ -575,7 +575,10 @@ class VAAudioDevices(object):
 		@return: collection of the detected audio devices
 		@rtype: VAAudioDevices
 		"""
-		defaultDevice = AudioUtilities.GetSpeakers()
+		# pycaw 20251023+ wraps GetSpeakers() result in an AudioDevice (no GetId/Activate);
+		# our own GetSpeaker() helper still returns the raw IMMDevice COM interface,
+		# which is what the rest of this method expects.
+		defaultDevice = ExtendedAudioUtilities.GetSpeaker()
 		self._devices = []
 		if config.conf[addonName]["advanced"]:
 			try:
