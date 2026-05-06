@@ -41,14 +41,14 @@ jobs:
     - name: Build add-on
       run: scons
     - name: Upload add-on
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v7
       with:
         name: nvda-addon
         path: "*.nvda-addon"
     - name: Build pot
       run: scons pot
     - name: Upload pot
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v7
       with:
         name: pot-file
         path: "*.pot"
@@ -101,7 +101,7 @@ jobs:
         pythonw.exe nvda.pyw -q
         ping 127.0.0.1 /n 20
     - name: Upload log
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v7
       with:
         name: nvda-log
         path: source\nvda.log
