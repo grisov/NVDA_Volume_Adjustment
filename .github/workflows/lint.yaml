@@ -28,7 +28,7 @@ jobs:
         git diff -U0 origin/main...HEAD -- addon/. > flake8.diff
         type flake8.diff | flake8 --diff --output-file=flake8.txt --tee
     - name: Comment on PR
-      uses: actions/github-script@v3
+      uses: actions/github-script@v9
       if: failure()
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
