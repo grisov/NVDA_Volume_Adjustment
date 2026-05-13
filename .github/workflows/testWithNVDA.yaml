@@ -80,11 +80,11 @@ jobs:
       run: scons source
       shell: cmd
     - name: Download add-on
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v8
       with:
         name: nvda-addon
     - name: Download pot
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v8
       with:
         name: pot-file
     - name: Copy add-on
