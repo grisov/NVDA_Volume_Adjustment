@@ -113,7 +113,7 @@ jobs:
         python checkPot.py nvda.pot > potResults.txt
         If (Select-String -Path potResults.txt -Pattern 'Message has no translator comment' -SimpleMatch) {exit 1}
     - name: Comment on PR
-      uses: actions/github-script@v3
+      uses: actions/github-script@v9
       if: failure()
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
