@@ -1,1 +1,1 @@
-- Fully adapted the add-on for compatibility with NVDA 2026.
+- Updated the add-on build tooling to the latest NV Access addonTemplate.

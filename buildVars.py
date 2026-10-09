@@ -1,7 +1,7 @@
 # Build customizations
 # Change this file instead of sconstruct or manifest files, whenever possible.
 
-from site_scons.site_tools.NVDATool.typings import AddonInfo, BrailleTables, SymbolDictionaries
+from site_scons.site_tools.NVDATool.typings import AddonInfo, BrailleTables, SymbolDictionaries, SpeechDictionaries
 
 # Since some strings in `addon_info` are translatable,
 # we need to include them in the .po files.
@@ -9,7 +9,6 @@ from site_scons.site_tools.NVDATool.typings import AddonInfo, BrailleTables, Sym
 # To avoid initializing translations in this module we simply import a "fake" `_` function
 # which returns whatever is given to it as an argument.
 from site_scons.site_tools.NVDATool.utils import _
-
 
 # Add-on information variables
 addon_info = AddonInfo(
@@ -23,10 +22,10 @@ addon_info = AddonInfo(
 	# Translators: Long description to be shown for this add-on on add-on information from add-on store
 	addon_description=_("""Adjust the volume level of all audio devices installed in the system and each running program separately using simple keyboard shortcuts."""),
 	# version
-	addon_version="1.5.0",
+	addon_version="1.5.1",
 	# Brief changelog for this version
 	# Translators: what's new content for the add-on version to be shown in the add-on store
-	addon_changelog=_("""Fully adapted the add-on for compatibility with NVDA 2026."""),
+	addon_changelog=_("""Updated the add-on build tooling to the latest NV Access addonTemplate."""),
 	# Author(s)
 	addon_author="Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>",
 	# URL for the add-on documentation support
@@ -38,7 +37,7 @@ addon_info = AddonInfo(
 	# Minimum NVDA version supported (e.g. "2019.3.0", minor version is optional)
 	addon_minimumNVDAVersion="2026.1",
 	# Last NVDA version supported/tested (e.g. "2024.4.0", ideally more recent than minimum version)
-	addon_lastTestedNVDAVersion="2026.1",
+	addon_lastTestedNVDAVersion="2026.2",
 	# Add-on update channel (default is None, denoting stable releases,
 	# and for development releases, use "dev".)
 	# Do not change unless you know what you are doing!
@@ -58,7 +57,7 @@ addon_info = AddonInfo(
 # For more information on SCons Glob expressions please take a look at:
 # https://scons.org/doc/production/HTML/scons-user/apd.html
 pythonSources: list[str] = [
-	"addon/globalPlugins/*/*.py"
+	"addon/globalPlugins/*/*.py",
 ]
 
 # Files that contain strings for translation. Usually your python sources
@@ -99,5 +98,14 @@ brailleTables: BrailleTables = {}
 # Each key is the name of the dictionary,
 # with keys inside recording the following attributes:
 # displayName (name of the speech dictionary shown to users and translatable),
-# mandatory (True when always enabled, False when not.
+# mandatory (True when always enabled, False when not).
 symbolDictionaries: SymbolDictionaries = {}
+
+# Custom speech dictionaries (distinct from symbol dictionaries above)
+# Speech dictionary files reside in the speechDicts folder and are named `name.dic`.
+# If your add-on includes custom speech (pronunciation) dictionaries (most will not), fill out this dictionary.
+# Each key is the name of the dictionary,
+# with keys inside recording the following attributes:
+# displayName (name of the speech dictionary shown to users and translatable),
+# mandatory (True when always enabled, False when not).
+speechDictionaries: SpeechDictionaries = {}

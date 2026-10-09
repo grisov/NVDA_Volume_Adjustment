@@ -293,7 +293,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if self._index < 0:
 			try:
 				self._index = len(devices) + sessions.index(
-					next(filter(lambda s: self._process in s, sessions), "")
+					next(filter(lambda s: self._process in s, sessions), ""),
 				)
 			except (ValueError, TypeError):
 				self._index = len(devices) - 1
@@ -311,7 +311,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if self._index < 0:
 			try:
 				self._index = len(devices) + sessions.index(
-					next(filter(lambda s: self._process in s, sessions), "")
+					next(filter(lambda s: self._process in s, sessions), ""),
 				)
 			except (ValueError, TypeError):
 				pass
@@ -399,7 +399,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 		# Translators: The name of the method that displayed in the NVDA input gestures dialog
 		script_switchingMethod.__doc__ = _("Switch the output to the device {number} ({name})").format(
-			number=index, name=device.friendlyName
+			number=index,
+			name=device.friendlyName,
 		)  # noqa E501
 		return script_switchingMethod
 
@@ -431,7 +432,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.announceChannel(source.channel)
 		if config.conf[addonName]["status"]:
 			self.announceMuted() if source.isMuted else self.announceVolumeLevel(
-				source.getChannelVolumeLevel()
+				source.getChannelVolumeLevel(),
 			)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
@@ -451,7 +452,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.announceChannel(source.channel)
 		if config.conf[addonName]["status"]:
 			self.announceMuted() if source.isMuted else self.announceVolumeLevel(
-				source.getChannelVolumeLevel()
+				source.getChannelVolumeLevel(),
 			)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog

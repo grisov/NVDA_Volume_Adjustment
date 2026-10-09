@@ -123,6 +123,9 @@ In some systems, the scanning function of all available audio devices causes err
 
 ## Change log
 
+### Version 1.5.1
+* updated the add-on build tooling to the latest NV Access addonTemplate.
+
 ### Version 1.5.0
 * the add-on has been tested for compatibility with NVDA 2026.1.
 

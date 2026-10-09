@@ -3,15 +3,10 @@ addon/doc/en/
 *_docHandler.py
 *.html
 manifest.ini
-*.nvda-addon
-.sconsign.dblite
-
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[co]
-*$py.class
-/[0-9]*.[0-9]*.[0-9]*.json
-
-# Translations
 *.mo
 *.pot
+*.py[co]
+*.nvda-addon
+.sconsign.dblite
+/[0-9]*.[0-9]*.[0-9]*.json
+*.egg-info

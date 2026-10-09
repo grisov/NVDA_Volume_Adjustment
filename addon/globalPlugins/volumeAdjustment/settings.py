@@ -40,7 +40,8 @@ class AddonsReloadDialog(wx.Dialog):
 		sHelper.addItem(
 			# Translators: The message displayed when addon gestures has been changed.
 			wx.StaticText(
-				self, label=_("NVDA add-ons must be reloaded for the new gestures to take effect.")
+				self,
+				label=_("NVDA add-ons must be reloaded for the new gestures to take effect."),
 			),
 		)
 		if not config.conf[addonName]["gestures"]:
@@ -49,7 +50,7 @@ class AddonsReloadDialog(wx.Dialog):
 				wx.StaticText(
 					self,
 					label=_(
-						"Warning! Using the feature to set the maximum volume level may damage your hearing."
+						"Warning! Using the feature to set the maximum volume level may damage your hearing.",
 					),
 				),  # noqa E501
 			)
@@ -319,7 +320,7 @@ class VASettingsPanel(SettingsPanel):
 		config.conf[addonName]["focus"] = self.followFocusChk.GetValue()
 		config.conf[addonName]["duplicates"] = self.hideDuplicatesChk.GetValue()
 		config.conf[addonName]["muteCompletely"] = not self.muteMode.GetClientData(
-			self.muteMode.GetSelection()
+			self.muteMode.GetSelection(),
 		)
 		config.conf[addonName]["mutePercentage"] = self.mutePercentageSlider.GetValue()
 		config.conf[addonName]["unmuteOnExit"] = self.unmuteOnExitChk.GetValue()
