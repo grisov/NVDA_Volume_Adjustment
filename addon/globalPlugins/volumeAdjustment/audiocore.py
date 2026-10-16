@@ -17,6 +17,7 @@ from comtypes import CLSCTX_ALL, CLSCTX_INPROC_SERVER, COMError, CoCreateInstanc
 from globalVars import appArgs
 from logHandler import log
 from pycaw.api.audiopolicy import IAudioSessionControl2, IAudioSessionManager2
+from pycaw.constants import AudioSessionState
 from pycaw.utils import (
 	AudioDevice,
 	AudioSession,
@@ -754,6 +755,19 @@ class VAAudioSession(AudioSource):
 			r"@%SystemRoot%\System32\AudioSrv.Dll,-202": "System Sound",
 		}.get(name, name)
 		return name or self.name.replace(".exe", "")
+
+	@property
+	def isExpired(self) -> bool:
+		"""Check whether the audio session can no longer be used.
+		A session expires when its process exits or closes all its audio streams.
+		Volume calls on an expired session do not fail, they just have no effect.
+		@return: whether the audio session has expired or is not available anymore
+		@rtype: bool
+		"""
+		try:
+			return self._current.State == AudioSessionState.Expired
+		except (AttributeError, COMError):
+			return True
 
 	@property
 	def volume(self) -> Union[ISimpleAudioVolume, IAudioEndpointVolume, None]:
