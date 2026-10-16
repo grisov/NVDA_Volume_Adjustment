@@ -21,7 +21,7 @@ from NVDAObjects import NVDAObject
 from scriptHandler import script
 from synthDriverHandler import getSynth, setSynth
 from utils.mmdevice import AudioOutputDevice, getOutputDevices
-from .audiocore import ExtendedAudioUtilities, VAAudioDevice, VAAudioSession, cfg, devices
+from .audiocore import VAAudioDevice, VAAudioSession, cfg, devices, getDefaultOutputSessions
 
 try:
 	addonHandler.initTranslation()
@@ -158,7 +158,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		procs = [
 			s.Process.name()
-			for s in ExtendedAudioUtilities.GetAllSessions()
+			for s in getDefaultOutputSessions()
 			if s.Process and s.Process.name() and s.Process.name() not in cfg.processes  # noqa E502
 		]
 		return list(set(procs)) if config.conf[addonName]["duplicates"] else procs
