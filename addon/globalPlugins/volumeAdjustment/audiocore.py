@@ -10,23 +10,21 @@ import json
 from abc import ABCMeta, abstractmethod
 from ctypes import POINTER, cast
 from os import path
-from threading import Thread
 from typing import Dict, Iterator, List, Optional, Union
 import config
-from comtypes import CLSCTX_ALL, CLSCTX_INPROC_SERVER, COMError, CoCreateInstance, pointer
+from comtypes import CLSCTX_ALL, GUID, COMError, pointer
 from globalVars import appArgs
 from logHandler import log
 from pycaw.api.audiopolicy import IAudioSessionControl2, IAudioSessionManager2
-from pycaw.constants import AudioSessionState
+from pycaw.api.mmdeviceapi import IMMDevice
+from pycaw.api.mmdeviceapi.depend.structures import PROPERTYKEY
+from pycaw.constants import DEVICE_STATE, STGM, AudioSessionState
 from pycaw.utils import (
-	AudioDevice,
 	AudioSession,
 	AudioUtilities,
-	CLSID_MMDeviceEnumerator,
 	EDataFlow,
 	ERole,
 	IAudioEndpointVolume,
-	IMMDeviceEnumerator,
 	ISimpleAudioVolume,
 )
 
@@ -195,30 +193,35 @@ def getDefaultOutputSessions() -> List[AudioSession]:
 	return sessions
 
 
-class ExtendedAudioUtilities(AudioUtilities):
-	"""Improved Audio Utilities object which gives more opportunities."""
+# Format ID of the device property keys PKEY_Device_FriendlyName (14) and PKEY_Device_DeviceDesc (2)
+DEVICE_PROPERTIES_FMTID = GUID("{a45c254e-df1c-4efd-8020-67d146a850e0}")
 
-	@staticmethod
-	def GetSpeaker(id: Optional[str] = None):
-		"""Get speakers by its ID (render + multimedia) device.
-		@param id: audio device ID
-		@type id: str
-		@return: pointer to the detected audio device
-		@rtype: pycaw.IMMDevice
-		"""
-		device_enumerator = CoCreateInstance(
-			CLSID_MMDeviceEnumerator,
-			IMMDeviceEnumerator,
-			CLSCTX_INPROC_SERVER,
-		)
-		if id is not None:
-			speakers = device_enumerator.GetDevice(id)
-		else:
-			speakers = device_enumerator.GetDefaultAudioEndpoint(
-				EDataFlow.eRender.value,
-				ERole.eMultimedia.value,
-			)
-		return speakers
+
+def getDeviceName(immDevice: IMMDevice) -> str:
+	"""Get the human friendly name of the audio device.
+	Only the name is read, unlike AudioUtilities.CreateDevice() which reads the whole property store.
+	@param immDevice: audio device
+	@type immDevice: pycaw.IMMDevice
+	@return: friendly name of the device, its description if there is no friendly name, or empty string
+	@rtype: str
+	"""
+	try:
+		store = immDevice.OpenPropertyStore(STGM.STGM_READ.value)
+	except COMError:
+		return ""
+	for pid in (14, 2):
+		key = PROPERTYKEY()
+		key.fmtid = DEVICE_PROPERTIES_FMTID
+		key.pid = pid
+		try:
+			value = store.GetValue(key)
+		except COMError:
+			continue
+		name = value.GetValue()
+		value.clear()
+		if isinstance(name, str) and name:
+			return name
+	return ""
 
 
 class AudioSource(metaclass=ABCMeta):
@@ -601,78 +604,72 @@ class VAAudioDevices(object):
 
 	def initialize(self, hide: Dict[str, str] = {}) -> VAAudioDevices:
 		"""Detect audio devices and save them in the list.
-		Should running in a separate thread to avoid blocking NVDA.
+		Only active devices are listed: disabled, unplugged and not present devices are skipped.
+		The default output device is always the first one in the list.
 		@param hide: a collection of devices that needs to hide
 		@type hide: Dict[str, str]
 		@return: collection of the detected audio devices
 		@rtype: VAAudioDevices
 		"""
-		# pycaw 20251023+ wraps GetSpeakers() result in an AudioDevice (no GetId/Activate);
-		# our own GetSpeaker() helper still returns the raw IMMDevice COM interface,
-		# which is what the rest of this method expects.
-		defaultDevice = ExtendedAudioUtilities.GetSpeaker()
 		self._devices = []
-		if config.conf[addonName]["advanced"]:
-			try:
-				mixers: List[AudioDevice] = [mx for mx in ExtendedAudioUtilities.GetAllDevices() if mx]
-			except Exception:
-				mixers = []
-			for mixer in mixers:
-				immDevice = ExtendedAudioUtilities.GetSpeaker(mixer.id)
-				try:
-					interface = immDevice.Activate(
-						IAudioEndpointVolume._iid_,
-						CLSCTX_ALL,
-						None,
-					)
-				except Exception:
-					continue
-				device = VAAudioDevice(
-					id=mixer.id or "",
-					name=mixer.FriendlyName or mixer.id or "",
-					volume=cast(interface, POINTER(IAudioEndpointVolume)),
-				)
-				if device.id and device.name and device.id not in hide:
-					if device.id == defaultDevice.GetId():
-						device._default = True
-						self._devices.insert(0, device)
-					else:
-						self._devices.append(device)
-		# Insert to the list the default audio output device if it is not listed
-		# for some reason on some systems it is not determined in the standard way
-		if not next(filter(lambda d: d.default, self._devices), None):
-			device = VAAudioDevice(
-				id=defaultDevice.GetId() or "default",
-				name=self.getDeviceNameByID(defaultDevice.GetId()) or "",
-				volume=cast(
-					defaultDevice.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None),
-					POINTER(IAudioEndpointVolume),
-				),
+		try:
+			enumerator = AudioUtilities.GetDeviceEnumerator()
+			defaultDevice = enumerator.GetDefaultAudioEndpoint(
+				EDataFlow.eRender.value,
+				ERole.eMultimedia.value,
 			)
-			device._default = True
-			self._devices.insert(0, device)
+			defaultId: str = defaultDevice.GetId()
+		except COMError:
+			log.debugWarning("Unable to get the default output audio device", exc_info=True)
+			return self
+		if config.conf[addonName]["advanced"]:
+			# All active output and input devices
+			collection = enumerator.EnumAudioEndpoints(EDataFlow.eAll.value, DEVICE_STATE.ACTIVE.value)
+			for i in range(collection.GetCount()):
+				immDevice = collection.Item(i)
+				try:
+					if immDevice.GetId() in (defaultId, *hide):
+						continue
+					device = self.createDevice(immDevice)
+				except COMError:
+					continue
+				if device.name:
+					self._devices.append(device)
+		# The default output device is listed even if it is hidden
+		try:
+			device = self.createDevice(defaultDevice)
+		except COMError:
+			log.debugWarning("Unable to activate the default output audio device", exc_info=True)
+			return self
+		device._default = True
+		self._devices.insert(0, device)
 		return self
 
-	def getDeviceNameByID(self, id: Optional[str]) -> str:
-		"""Get the name of the audio device by its ID.
-		@param id: audio device ID
-		@type id: Optional[str]
-		@return: human friendly name of audio device or empty string
-		@rtype: str
+	@staticmethod
+	def createDevice(immDevice: IMMDevice) -> VAAudioDevice:
+		"""Create the presentation of the specified audio device.
+		@param immDevice: audio device
+		@type immDevice: pycaw.IMMDevice
+		@return: audio device with the interface to adjust its volume
+		@rtype: VAAudioDevice
 		"""
-		try:
-			mixers: List[AudioDevice] = [mx for mx in ExtendedAudioUtilities.GetAllDevices() if mx]
-		except Exception:
-			mixers = []
-		mixer = next(filter(lambda m: m.id == id, mixers), None)
-		return mixer.FriendlyName if mixer else " "
+		id: str = immDevice.GetId() or "default"
+		return VAAudioDevice(
+			id=id,
+			name=getDeviceName(immDevice) or id,
+			volume=cast(
+				immDevice.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None),
+				POINTER(IAudioEndpointVolume),
+			),
+		)
 
 	def scan(self, hide: Dict[str, str] = {}) -> None:
 		"""Search for available audio devices in the system and save them in the current object.
+		It takes a few milliseconds, so it runs in the calling thread, which also uses the created COM objects.
 		@param hide: a collection of audio devices that needs to hide
 		@type hide: Dict[str, str]
 		"""
-		Thread(target=self.initialize, args=[hide]).start()
+		self.initialize(hide)
 
 	def __len__(self) -> int:
 		"""The number of audio devices detected in the system.
