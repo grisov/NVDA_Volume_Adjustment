@@ -123,13 +123,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				appName = obj.appModule.appName
 			except AttributeError:
 				appName = UNDEFINED_APP
-			session = VAAudioSession(appName)
+			# The session of the focused process itself is preferred, then the one found by the app name
+			session = VAAudioSession(appName, getattr(obj, "processID", 0))
 			if not session.name:
 				# Translators: The current application does not pay audio
 				ui.message(_("{app} is not playing any sound.").format(app=appName))
 				return False
-			# Muted audio sources are stored by session ID, so it must be the full process name
-			self._session = VAAudioSession(session.name)
+			self._session = session
 		self._process = self._session.name
 		return True
 
