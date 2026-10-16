@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 import os.path
-from threading import Thread
 from typing import Callable, List, Optional, TypeVar, Union
 import addonHandler
 import config
@@ -89,7 +88,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def terminate(self, *args, **kwargs) -> None:
 		"""This will be called when NVDA is finished with this global plugin."""
 		if config.conf[addonName]["unmuteOnExit"]:
-			Thread(target=self.unmuteAllAudioSources).start()
+			# It takes a few milliseconds and uses the COM objects of audio devices created in this thread
+			try:
+				self.unmuteAllAudioSources()
+			except Exception:
+				log.exception("Unable to unmute audio sources on exit")
 		try:
 			settingsDialogs.NVDASettingsDialog.categoryClasses.remove(VASettingsPanel)
 		except IndexError:
