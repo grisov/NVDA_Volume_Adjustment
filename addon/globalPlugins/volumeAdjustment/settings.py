@@ -13,10 +13,9 @@ from globalPluginHandler import reloadGlobalPlugins
 from gui import guiHelper, nvdaControls
 from gui.settingsDialogs import SettingsPanel
 from logHandler import log
-from pycaw.utils import AudioUtilities
 from queueHandler import eventQueue, queueFunction
 from . import addonName, addonSummary
-from .audiocore import cfg, devices
+from .audiocore import cfg, devices, getDefaultOutputSessions
 
 try:
 	addonHandler.initTranslation()
@@ -127,7 +126,7 @@ class VASettingsPanel(SettingsPanel):
 		self.hideDuplicatesChk.SetValue(config.conf[addonName]["duplicates"])
 
 		procs: List[str] = [
-			s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()
+			s.Process.name() for s in getDefaultOutputSessions() if s.Process and s.Process.name()
 		]
 		self.procs = list(set(procs)) if config.conf[addonName]["duplicates"] else procs
 		self.procs.extend([proc for proc in cfg.processes if proc not in procs])
@@ -285,7 +284,7 @@ class VASettingsPanel(SettingsPanel):
 		@param event: event that occurs when a wx.Button is pressed
 		@type event: wx.PyEvent
 		"""
-		procs = [s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()]
+		procs = [s.Process.name() for s in getDefaultOutputSessions() if s.Process and s.Process.name()]
 		self.procs = list(set(procs)) if config.conf[addonName]["duplicates"] else procs
 		self.procs.extend([proc for proc in cfg.processes if proc not in procs])
 		self.hideProcesses.Clear()
@@ -300,9 +299,7 @@ class VASettingsPanel(SettingsPanel):
 		@param event: event that occurs when a wx.Button is pressed
 		@type event: wx.PyEvent
 		"""
-		self.procs = [
-			s.Process.name() for s in AudioUtilities.GetAllSessions() if s.Process and s.Process.name()
-		]
+		self.procs = [s.Process.name() for s in getDefaultOutputSessions() if s.Process and s.Process.name()]
 		self.hideProcesses.Clear()
 		self.hideProcesses.SetItems(self.procs)
 		if len(self.procs) > 0:
