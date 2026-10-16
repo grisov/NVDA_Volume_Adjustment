@@ -22,10 +22,10 @@ addon_info = AddonInfo(
 	# Translators: Long description to be shown for this add-on on add-on information from add-on store
 	addon_description=_("""Adjust the volume level of all audio devices installed in the system and each running program separately using simple keyboard shortcuts."""),
 	# version
-	addon_version="1.5.1",
+	addon_version="1.6.0",
 	# Brief changelog for this version
 	# Translators: what's new content for the add-on version to be shown in the add-on store
-	addon_changelog=_("""Updated the add-on build tooling to the latest NV Access addonTemplate."""),
+	addon_changelog=_("""Fixed delays when adjusting the volume of applications in NVDA. Only active audio devices are listed now, and detecting them is much faster. The first muted audio source is now correctly unmuted when NVDA exits."""),
 	# Author(s)
 	addon_author="Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>",
 	# URL for the add-on documentation support
