@@ -6,7 +6,7 @@
 from __future__ import annotations
 import os.path
 from threading import Thread
-from typing import Callable, List, TypeVar, Union
+from typing import Callable, List, Optional, TypeVar, Union
 import addonHandler
 import config
 import globalPluginHandler
@@ -78,6 +78,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._previous: str = ""
 		# Name of the current process
 		self._process: str = ""
+		# Audio session of the current process, reused between keypresses
+		self._session: Optional[VAAudioSession] = None
 		# Bind default gestures if necessary
 		config.conf[addonName]["gestures"] and self.bindGestures(self.__defaultGestures)
 		# Creating individual switching methods for each output audio device detected in the system
@@ -104,25 +106,44 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if config.conf[addonName]["focus"]:
 			self._index = -1
 			self._previous = UNDEFINED_APP
+			# The application in focus may have changed, so its audio session is looked up again
+			self._session = None
 		NextHandler()
 
 	def selectProcessInFocus(self) -> bool:
 		"""Select the name of the process that is in system focus.
+		The audio session found after the last focus change is reused by subsequent keypresses.
 		@return: whether the current process is in the list of audio sessions
 		@rtype: bool
 		"""
-		obj = getFocusObject()
-		try:
-			appName = obj.appModule.appName
-		except AttributeError:
-			appName = UNDEFINED_APP
-		session = VAAudioSession(appName)
-		if not session.name:
-			# Translators: The current application does not pay audio
-			ui.message(_("{app} is not playing any sound.").format(app=appName))
-			return False
-		self._process = session.name
+		if self._session is None:
+			obj = getFocusObject()
+			try:
+				appName = obj.appModule.appName
+			except AttributeError:
+				appName = UNDEFINED_APP
+			session = VAAudioSession(appName)
+			if not session.name:
+				# Translators: The current application does not pay audio
+				ui.message(_("{app} is not playing any sound.").format(app=appName))
+				return False
+			# Muted audio sources are stored by session ID, so it must be the full process name
+			self._session = VAAudioSession(session.name)
+		self._process = self._session.name
 		return True
+
+	def getSession(self, name: str) -> VAAudioSession:
+		"""Get the audio session of the specified process.
+		The previously created session is reused while the same process stays selected,
+		so repeated keypresses do not enumerate all audio sessions again.
+		@param name: the name of the running process
+		@type name: str
+		@return: audio session of the specified process
+		@rtype: VAAudioSession
+		"""
+		if self._session is None or self._session.name != name:
+			self._session = VAAudioSession(name)
+		return self._session
 
 	def announceVolumeLevel(self, volumeLevel: float) -> None:
 		"""Announce the current volume level.
@@ -192,7 +213,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				except IndexError:
 					self._process = UNDEFINED_APP
 			self._previous = self._process
-			source = VAAudioSession(self._process)
+			# Switching between audio sources always takes a fresh session
+			source = self._session = VAAudioSession(self._process)
 			title = source.title
 		ui.message(title)
 		if config.conf[addonName]["status"]:
@@ -209,7 +231,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			source: Union[VAAudioDevice, VAAudioSession] = devices[self._index]
 			self._previous = UNDEFINED_APP
 		else:
-			source = VAAudioSession(self._process)
+			source = self.getSession(self._process)
 			if source.name != self._previous:
 				ui.message(source.title)
 				self._previous = source.name
