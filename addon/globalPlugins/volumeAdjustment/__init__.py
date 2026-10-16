@@ -95,7 +95,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				log.exception("Unable to unmute audio sources on exit")
 		try:
 			settingsDialogs.NVDASettingsDialog.categoryClasses.remove(VASettingsPanel)
-		except IndexError:
+		except ValueError:
 			log.warning("Can't remove %s Settings panel from NVDA settings dialogs", addonSummary)
 		super(GlobalPlugin, self).terminate(*args, **kwargs)
 
