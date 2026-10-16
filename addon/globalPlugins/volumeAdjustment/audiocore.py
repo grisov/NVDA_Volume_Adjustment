@@ -13,8 +13,10 @@ from os import path
 from threading import Thread
 from typing import Dict, Iterator, List, Optional, Union
 import config
-from comtypes import CLSCTX_ALL, CLSCTX_INPROC_SERVER, CoCreateInstance, pointer
+from comtypes import CLSCTX_ALL, CLSCTX_INPROC_SERVER, COMError, CoCreateInstance, pointer
 from globalVars import appArgs
+from logHandler import log
+from pycaw.api.audiopolicy import IAudioSessionControl2, IAudioSessionManager2
 from pycaw.utils import (
 	AudioDevice,
 	AudioSession,
@@ -161,6 +163,35 @@ class Configuration(object):
 
 # Global Configuration instance
 cfg = Configuration()
+
+
+def getDefaultOutputSessions() -> List[AudioSession]:
+	"""Get all audio sessions of the default output device.
+	Unlike AudioUtilities.GetAllSessions() from pycaw 20251023+, this does not wrap the device
+	with AudioUtilities.CreateDevice(), which reads the whole property store of the device
+	and makes every call several times slower.
+	@return: audio sessions of the default output device, empty if there is no such device
+	@rtype: List[pycaw.AudioSession]
+	"""
+	try:
+		device = AudioUtilities.GetDeviceEnumerator().GetDefaultAudioEndpoint(
+			EDataFlow.eRender.value,
+			ERole.eMultimedia.value,
+		)
+		manager = device.Activate(IAudioSessionManager2._iid_, CLSCTX_ALL, None).QueryInterface(
+			IAudioSessionManager2,
+		)
+		sessionEnumerator = manager.GetSessionEnumerator()
+	except COMError:
+		log.debugWarning("Unable to get audio sessions of the default output device", exc_info=True)
+		return []
+	sessions: List[AudioSession] = []
+	for i in range(sessionEnumerator.GetCount()):
+		control = sessionEnumerator.GetSession(i)
+		if control is None:
+			continue
+		sessions.append(AudioSession(control.QueryInterface(IAudioSessionControl2)))
+	return sessions
 
 
 class ExtendedAudioUtilities(AudioUtilities):
@@ -676,9 +707,7 @@ class VAAudioSession(AudioSource):
 		@type name: str
 		"""
 		self._sessions: List[AudioSession] = [
-			session
-			for session in AudioUtilities.GetAllSessions()
-			if session.Process and session.Process.name()
+			session for session in getDefaultOutputSessions() if session.Process and session.Process.name()
 		]
 		self._current: AudioSession = self.selectAudioSession(name)
 		super(VAAudioSession, self).__init__(id=name, name="", volume=None)
