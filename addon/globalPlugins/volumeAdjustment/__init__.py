@@ -112,11 +112,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def selectProcessInFocus(self) -> bool:
 		"""Select the name of the process that is in system focus.
-		The audio session found after the last focus change is reused by subsequent keypresses.
+		The audio session found after the last focus change is reused by subsequent keypresses
+		until it expires.
 		@return: whether the current process is in the list of audio sessions
 		@rtype: bool
 		"""
-		if self._session is None:
+		if self._session is None or self._session.isExpired:
 			obj = getFocusObject()
 			try:
 				appName = obj.appModule.appName
@@ -136,12 +137,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""Get the audio session of the specified process.
 		The previously created session is reused while the same process stays selected,
 		so repeated keypresses do not enumerate all audio sessions again.
+		An expired session (e.g. the process was restarted) is replaced with a fresh one.
 		@param name: the name of the running process
 		@type name: str
 		@return: audio session of the specified process
 		@rtype: VAAudioSession
 		"""
-		if self._session is None or self._session.name != name:
+		if self._session is None or self._session.name != name or self._session.isExpired:
 			self._session = VAAudioSession(name)
 		return self._session
 
