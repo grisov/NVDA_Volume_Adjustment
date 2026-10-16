@@ -140,8 +140,8 @@ class Configuration(object):
 		@rtype: Configuration
 		"""
 		if name and name not in self.muted:
-			self.muted.append(name)
-			self._data["muted"] = self.muted
+			# The list must be stored first: without the "muted" key the property returns a new empty list
+			self._data.setdefault("muted", []).append(name)
 		return self
 
 	def delMuted(self, name: str) -> Configuration:
@@ -341,7 +341,11 @@ class AudioSource(metaclass=ABCMeta):
 		@return: current volume level
 		@rtype: float
 		"""
-		self.isMuted and self.unmute()
+		if self.isMuted:
+			if self.volumeLevel <= 0.0:
+				# Already silent: unmuting just to mute again would only rewrite the configuration file
+				return 0.0
+			self.unmute()
 		# Ignore MyPy type hint because setter volumeLevel is not read-only
 		level = self.volumeLevel = max(  # type: ignore
 			0.0,
@@ -394,7 +398,9 @@ class AudioSource(metaclass=ABCMeta):
 		except AttributeError:
 			return False
 		else:
-			cfg.addMuted(self.id).save()
+			# The file is written only when the list of muted audio sources changes
+			if self.id not in cfg.muted:
+				cfg.addMuted(self.id).save()
 			return True
 
 	def unmute(self) -> bool:
@@ -414,7 +420,9 @@ class AudioSource(metaclass=ABCMeta):
 		except AttributeError:
 			return False
 		else:
-			cfg.delMuted(self.id).save()
+			# The file is written only when the list of muted audio sources changes
+			if self.id in cfg.muted:
+				cfg.delMuted(self.id).save()
 			return True
 
 	@property
