@@ -8,7 +8,6 @@
 from __future__ import annotations
 import json
 from abc import ABCMeta, abstractmethod
-from ctypes import POINTER, cast
 from os import path
 from typing import Dict, Iterator, List, Optional, Union
 import config
@@ -662,12 +661,14 @@ class VAAudioDevices(object):
 		@rtype: VAAudioDevice
 		"""
 		id: str = immDevice.GetId() or "default"
+		# QueryInterface() adds a COM reference for the new pointer object. ctypes.cast() must not be used here:
+		# it creates a second pointer object without a reference, so the interface was released twice
+		# when the device objects were discarded, which crashed NVDA after the devices were rescanned.
 		return VAAudioDevice(
 			id=id,
 			name=getDeviceName(immDevice) or id,
-			volume=cast(
-				immDevice.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None),
-				POINTER(IAudioEndpointVolume),
+			volume=immDevice.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None).QueryInterface(
+				IAudioEndpointVolume,
 			),
 		)
 
