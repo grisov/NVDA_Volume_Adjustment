@@ -11,6 +11,7 @@
 ### Fixed
 
 - NVDA could crash after the list of audio devices was rescanned, e.g. after toggling "Control all available audio devices", pressing "Update" or saving hidden devices in the add-on settings.
+- When the application in focus or selected in the list did not play any sound, the add-on silently adjusted the volume of NVDA or of another program. Now it announces that the application is not playing any sound.
 - Noticeable delays when adjusting the volume of applications and switching between audio sources in NVDA 2026. Previously each keypress took about 70 ms on average and up to 300 ms; now the volume changes almost instantly.
 - Volume control stopped working after an application was restarted, because the add-on kept adjusting the closed session of the previous instance.
 - The first audio source muted after installing the add-on was not remembered and therefore was not unmuted when NVDA exited.
