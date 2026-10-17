@@ -129,8 +129,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			# The session of the focused process itself is preferred, then the one found by the app name
 			session = VAAudioSession(appName, getattr(obj, "processID", 0))
 			if not session.name:
-				# Translators: The current application does not pay audio
-				ui.message(_("{app} is not playing any sound.").format(app=appName))
+				self.announceNotPlaying(appName)
 				return False
 			self._session = session
 		self._process = self._session.name
@@ -171,6 +170,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Translators: Message about the number of the selected audio channel
 		ui.message(_("Channel %d") % number)
 
+	def announceNotPlaying(self, app: str) -> None:
+		"""Announce that the application does not play any sound, so its volume cannot be adjusted.
+		@param app: the name of the application
+		@type app: str
+		"""
+		# Translators: The message when the selected application does not play any sound
+		ui.message(_("{app} is not playing any sound.").format(app=app))
+
 	def announceNotSupported(self) -> None:
 		"""Announce that the feature currently is not supported."""
 		# Translators: The message when feature currently is not supported
@@ -195,7 +202,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			device.isMuted and device.unmute()
 		for sessionName in self.getAllSessions():
 			session = VAAudioSession(sessionName)
-			session.isMuted and session.unmute()
+			if session.name and session.isMuted:
+				session.unmute()
 
 	def selectAudioSource(self, sessions: List[str]) -> None:
 		"""Select audio source to adjust its volume level.
@@ -220,27 +228,43 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self._previous = self._process
 			# Switching between audio sources always takes a fresh session
 			source = self._session = VAAudioSession(self._process)
+			if not source.name:
+				self.announceNotPlaying(self._process.replace(".exe", ""))
+				return
 			title = source.title
 		ui.message(title)
 		if config.conf[addonName]["status"]:
 			self.announceMuted() if source.isMuted else self.announceVolumeLevel(source.volumeLevel)
 
-	def getAudioSource(self) -> Union[VAAudioDevice, VAAudioSession]:
+	def getAudioSource(self) -> Optional[Union[VAAudioDevice, VAAudioSession]]:
 		"""Get the object of selected audio source (device or process),
 		this can be instance inherited from the audiocore.AudioSource class.
 		Also announces the name of the audio session at the first treatment.
-		@return: instance of selected audio source
-		@rtype: Union[VAAudioDevice, VAAudioSession]
+		@return: instance of selected audio source, None if the selected application does not play any sound
+		@rtype: Optional[Union[VAAudioDevice, VAAudioSession]]
 		"""
 		if 0 <= self._index < len(devices):
 			source: Union[VAAudioDevice, VAAudioSession] = devices[self._index]
 			self._previous = UNDEFINED_APP
 		else:
 			source = self.getSession(self._process)
+			if not source.name:
+				self.announceNotPlaying(self._process.replace(".exe", ""))
+				return None
 			if source.name != self._previous:
 				ui.message(source.title)
 				self._previous = source.name
 		return source
+
+	def getSelectedAudioSource(self) -> Optional[Union[VAAudioDevice, VAAudioSession]]:
+		"""Get the audio source to adjust: the application in focus or the source selected in the list.
+		Announces if the selected application does not play any sound.
+		@return: the selected audio source, None if there is nothing to adjust
+		@rtype: Optional[Union[VAAudioDevice, VAAudioSession]]
+		"""
+		if self._index < 0 and not self.selectProcessInFocus():
+			return None
+		return self.getAudioSource()
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Increase the volume"))
@@ -249,9 +273,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		if self._index < 0 and not self.selectProcessInFocus():
+		source = self.getSelectedAudioSource()
+		if source is None:
 			return
-		self.announceVolumeLevel(self.getAudioSource().volumeUp())
+		self.announceVolumeLevel(source.volumeUp())
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Decrease the volume"))
@@ -260,9 +285,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		if self._index < 0 and not self.selectProcessInFocus():
+		source = self.getSelectedAudioSource()
+		if source is None:
 			return
-		source = self.getAudioSource()
 		volumeLevel = source.volumeDown()
 		if volumeLevel > 0.0:
 			self.announceVolumeLevel(volumeLevel)
@@ -277,9 +302,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		if self._index < 0 and not self.selectProcessInFocus():
+		source = self.getSelectedAudioSource()
+		if source is None:
 			return
-		self.announceVolumeLevel(self.getAudioSource().volumeMax())
+		self.announceVolumeLevel(source.volumeMax())
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Set the minimum volume level"))
@@ -288,9 +314,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		if self._index < 0 and not self.selectProcessInFocus():
+		source = self.getSelectedAudioSource()
+		if source is None:
 			return
-		self.announceVolumeLevel(self.getAudioSource().volumeMin())
+		self.announceVolumeLevel(source.volumeMin())
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Mute selected audio source"))
@@ -299,9 +326,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: gesture assigned to this method
 		@type gesture: InputGesture
 		"""
-		if self._index < 0 and not self.selectProcessInFocus():
+		source = self.getSelectedAudioSource()
+		if source is None:
 			return
-		source = self.getAudioSource()
 		if source.isMuted:
 			source.unmute()
 			self.announceVolumeLevel(source.volumeLevel)
@@ -449,9 +476,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		if self._index < 0 and not self.selectProcessInFocus():
+		source = self.getSelectedAudioSource()
+		if source is None:
 			return
-		source: Union[VAAudioDevice, VAAudioSession] = self.getAudioSource()
 		if source.channelCount <= 0:
 			self.announceNotSupported()
 			return
@@ -469,9 +496,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		if self._index < 0 and not self.selectProcessInFocus():
+		source = self.getSelectedAudioSource()
+		if source is None:
 			return
-		source: Union[VAAudioDevice, VAAudioSession] = self.getAudioSource()
 		if source.channelCount <= 0:
 			self.announceNotSupported()
 			return
@@ -489,9 +516,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		if self._index < 0 and not self.selectProcessInFocus():
+		source = self.getSelectedAudioSource()
+		if source is None:
 			return
-		level: float = self.getAudioSource().channelVolumeUp()
+		level: float = source.channelVolumeUp()
 		if level < 0:
 			self.announceNotSupported()
 			return
@@ -504,9 +532,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		if self._index < 0 and not self.selectProcessInFocus():
+		source = self.getSelectedAudioSource()
+		if source is None:
 			return
-		level: float = self.getAudioSource().channelVolumeDown()
+		level: float = source.channelVolumeDown()
 		if level < 0:
 			self.announceNotSupported()
 			return
@@ -519,9 +548,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		if self._index < 0 and not self.selectProcessInFocus():
+		source = self.getSelectedAudioSource()
+		if source is None:
 			return
-		level: float = self.getAudioSource().channelVolumeMax()
+		level: float = source.channelVolumeMax()
 		if level < 0:
 			self.announceNotSupported()
 			return
@@ -534,9 +564,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		if self._index < 0 and not self.selectProcessInFocus():
+		source = self.getSelectedAudioSource()
+		if source is None:
 			return
-		level: float = self.getAudioSource().channelVolumeMin()
+		level: float = source.channelVolumeMin()
 		if level < 0:
 			self.announceNotSupported()
 			return
@@ -549,9 +580,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		if self._index < 0 and not self.selectProcessInFocus():
+		source = self.getSelectedAudioSource()
+		if source is None:
 			return
-		level: float = self.getAudioSource().channelVolumeAverage()
+		level: float = source.channelVolumeAverage()
 		if level < 0:
 			self.announceNotSupported()
 			return

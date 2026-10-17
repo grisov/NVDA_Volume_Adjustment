@@ -718,34 +718,30 @@ class VAAudioSession(AudioSource):
 		self._sessions: List[AudioSession] = [
 			session for session in getDefaultOutputSessions() if session.Process and session.Process.name()
 		]
-		self._current: AudioSession = self.selectAudioSession(name, pid)
+		self._current: Optional[AudioSession] = self.selectAudioSession(name, pid)
 		super(VAAudioSession, self).__init__(id=name, name="", volume=None)
 		# Muted audio sources are stored by ID, so it is the full name of the selected process,
 		# e.g. "firefox.exe" when the session was looked up by the application name "firefox"
 		self._id = self.name or name
 
-	def selectAudioSession(self, name: str = "nvda.exe", pid: int = 0) -> AudioSession:
+	def selectAudioSession(self, name: str = "nvda.exe", pid: int = 0) -> Optional[AudioSession]:
 		"""Find and return an audio session by its process ID or specified name.
 		The process ID is not enough on its own: e.g. in web browsers the sound is usually played
 		by a child process, not by the process of the focused window.
+		There is no fallback to another session: adjusting the volume of NVDA or of an unrelated program
+		instead of the requested one would be confusing.
 		@param name: full name or part of the process name
 		@type name: str
 		@param pid: ID of the process whose audio session is preferred, 0 to search by name only
 		@type pid: int
-		@return: an audio session related to a given process
-		@rtype: pycaw.AudioSession
+		@return: an audio session related to a given process, None if the process does not play any sound
+		@rtype: Optional[pycaw.AudioSession]
 		"""
 		if pid:
 			session = next((s for s in self._sessions if s.ProcessId == pid), None)
 			if session is not None:
 				return session
-		return next(
-			filter(lambda s: name.lower() in s.Process.name().lower(), self._sessions),  # noqa ET113
-			next(
-				filter(lambda s: "nvda.exe" in s.Process.name().lower(), self._sessions),  # noqa E128
-				self._sessions[0],
-			),
-		)  # noqa E128
+		return next((s for s in self._sessions if name.lower() in s.Process.name().lower()), None)
 
 	@property
 	def name(self) -> str:
@@ -794,7 +790,8 @@ class VAAudioSession(AudioSource):
 		@return: pointer to control the volume of the selected running process
 		@rtype: Union[pycaw.ISimpleAudioVolume, pycaw.IAudioEndpointVolume, None]
 		"""
-		if not self._volume:
+		# There is no volume interface if the process does not play any sound
+		if not self._volume and self._current is not None:
 			self._volume = self._current.SimpleAudioVolume
 		return self._volume
 
