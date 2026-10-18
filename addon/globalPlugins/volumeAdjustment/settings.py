@@ -8,6 +8,7 @@
 from typing import Callable, List
 import addonHandler
 import config
+import ui
 import wx
 from globalPluginHandler import reloadGlobalPlugins
 from gui import guiHelper, nvdaControls
@@ -17,13 +18,71 @@ from logHandler import log
 from queueHandler import eventQueue, queueFunction
 from . import addonName, addonSummary
 from .audiocore import cfg
-from .sources import registry
+from .sources import SourceKind, registry
 
 try:
 	addonHandler.initTranslation()
 except addonHandler.AddonError:
 	log.warning("Unable to init translations. This may be because the addon is running from NVDA scratchpad.")
 _: Callable[[str], str]
+
+
+def getCategoryName(kind: SourceKind) -> str:
+	"""Get the name of the category of audio sources to announce.
+	@param kind: the category of audio sources
+	@type kind: SourceKind
+	@return: the translated name of the category
+	@rtype: str
+	"""
+	if kind == SourceKind.OUTPUT_DEVICE:
+		# Translators: The name of the category of audio sources announced while switching between them
+		return _("Output devices")
+	if kind == SourceKind.INPUT_DEVICE:
+		# Translators: The name of the category of audio sources announced while switching between them
+		return _("Input devices")
+	if kind == SourceKind.PLAYBACK_APP:
+		# Translators: The name of the category of audio sources announced while switching between them
+		return _("Playback apps")
+	# Translators: The name of the category of audio sources announced while switching between them
+	return _("Recording apps")
+
+
+def getOnlyVisibleCategoryMessage(category: str, hiding: bool = False) -> str:
+	"""Get the message that the category is already the only visible one,
+	when it is shown as the only category or the user tries to hide it.
+	@param category: the name of the category
+	@type category: str
+	@param hiding: whether the user tries to hide the category
+	@type hiding: bool
+	@return: the message to announce
+	@rtype: str
+	"""
+	# Translators: The message when the category of audio sources is already the only visible one,
+	# e.g. when the user tries to hide it, {category} is its name, e.g. "Recording apps"
+	message = _("{category} is already the only visible category").format(category=category)
+	if not hiding:
+		return message
+	# Translators: The message when the user tries to hide the only visible category of audio sources,
+	# followed by the message that it is already the only visible category
+	prefix = _("Category cannot be hidden.")
+	return f"{prefix} {message}"
+
+
+def getVisibleCategories() -> List[SourceKind]:
+	"""Categories of audio sources available for switching, in their order.
+	@return: the visible categories, all of them if the saved value contains none
+	@rtype: List[SourceKind]
+	"""
+	visible: str = config.conf[addonName]["categories"]
+	return [kind for kind in SourceKind if kind.value in visible] or list(SourceKind)
+
+
+def setVisibleCategories(categories: List[SourceKind]) -> None:
+	"""Save the visible categories of audio sources, always in the order of the categories.
+	@param categories: the categories to show
+	@type categories: List[SourceKind]
+	"""
+	config.conf[addonName]["categories"] = "".join(kind.value for kind in SourceKind if kind in categories)
 
 
 def getProcessNames() -> List[str]:
@@ -155,6 +214,17 @@ class VASettingsPanel(SettingsPanel):
 			wx.CheckBox(self, label=_("Announce &category names while switching")),
 		)
 		self.announceCategoriesChk.SetValue(config.conf[addonName]["announceCategories"])
+		self.visibleCategories = addonHelper.addLabeledControl(
+			# Translators: The label of the Checkable list in the settings panel
+			_("&Visible categories of audio sources:"),
+			nvdaControls.CustomCheckListBox,
+			choices=[getCategoryName(kind) for kind in SourceKind],
+		)
+		# Shown as changed with the gestures, which save the categories immediately
+		visible = getVisibleCategories()
+		self.visibleCategories.SetCheckedItems([i for i, kind in enumerate(SourceKind) if kind in visible])
+		self.visibleCategories.SetSelection(0)
+		self.visibleCategories.Bind(wx.EVT_CHECKLISTBOX, self.onVisibleCategoriesCheck)
 		self.volumeStep = addonHelper.addLabeledControl(
 			# Translators: The label of the component in the settings panel
 			_("Volume level change &step:"),
@@ -356,6 +426,17 @@ class VASettingsPanel(SettingsPanel):
 			self.hideProcesses.SetSelection(0)
 		self.hideProcesses.SetFocus()
 
+	def onVisibleCategoriesCheck(self, event: wx.CommandEvent) -> None:
+		"""Keep at least one category of audio sources visible.
+		@param event: event that occurs when an item of the checkable list is checked or unchecked
+		@type event: wx.CommandEvent
+		"""
+		if self.visibleCategories.GetCheckedItems():
+			return
+		index = event.GetInt()
+		self.visibleCategories.Check(index, True)
+		ui.message(getOnlyVisibleCategoryMessage(getCategoryName(list(SourceKind)[index]), hiding=True))
+
 	def postInit(self) -> None:
 		"""Set system focus to the first component in the settings panel."""
 		self.reportStatusChk.SetFocus()
@@ -364,6 +445,8 @@ class VASettingsPanel(SettingsPanel):
 		"""Update Configuration when clicking OK."""
 		config.conf[addonName]["status"] = self.reportStatusChk.GetValue()
 		config.conf[addonName]["announceCategories"] = self.announceCategoriesChk.GetValue()
+		checked = self.visibleCategories.GetCheckedItems()
+		setVisibleCategories([kind for i, kind in enumerate(SourceKind) if i in checked])
 		config.conf[addonName]["step"] = self.volumeStep.GetValue()
 		config.conf[addonName]["focus"] = self.followFocusChk.GetValue()
 		config.conf[addonName]["duplicates"] = self.hideDuplicatesChk.GetValue()
