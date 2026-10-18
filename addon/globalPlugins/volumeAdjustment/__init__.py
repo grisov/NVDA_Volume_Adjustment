@@ -157,19 +157,43 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self._session = registry.findApp(name)
 		return self._session
 
+	def formatVolumeLevel(self, volumeLevel: float) -> str:
+		"""Get the text of the volume level announcement, e.g. "Volume 29".
+		@param volumeLevel: value of volume level
+		@type volumeLevel: float, from 0.0 to 1.0
+		@return: the text to announce
+		@rtype: str
+		"""
+		# Rounded: Windows stores volume levels as 32-bit floats, 29 % is read back as 28.999999 %
+		level = round(volumeLevel * 100.0)
+		# Translators: The message is announced during volume control
+		return "%s %d" % (_("Volume"), level)
+
 	def announceVolumeLevel(self, volumeLevel: float) -> None:
 		"""Announce the current volume level.
 		@param volumeLevel: value of volume level
 		@type volumeLevel: float, from 0.0 to 1.0
 		"""
-		# Translators: The message is announced during volume control
-		# Rounded: Windows stores volume levels as 32-bit floats, 29 % is read back as 28.999999 %
-		ui.message("%s %d" % (_("Volume"), round(volumeLevel * 100.0)))
+		ui.message(self.formatVolumeLevel(volumeLevel))
 
-	def announceMuted(self) -> None:
-		"""Announce that the sound was muted."""
+	def announceMuted(self, source: AudioSource) -> None:
+		"""Announce that the sound was muted.
+		In the "Volume Down" mute mode the remaining volume level is announced as well,
+		using the already translated messages, e.g. "The sound is muted, Volume 5".
+		@param source: the muted audio source
+		@type source: AudioSource
+		"""
 		# Translators: The message is announced during volume control
-		ui.message(_("The sound is muted"))
+		message: str = _("The sound is muted")
+		volume = source.volume
+		# The level is announced only when the add-on decreased it: a source muted by Windows or another program is silent
+		if (
+			not config.conf[addonName]["muteCompletely"]
+			and source.id in cfg.muted
+			and not (volume is not None and volume.GetMute())
+		):
+			message = f"{message}, {self.formatVolumeLevel(source.volumeLevel)}"
+		ui.message(message)
 
 	def announceChannel(self, number: int) -> None:
 		"""Announce the number of the selected audio channel.
@@ -238,7 +262,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			title = app.title
 		ui.message(title)
 		if config.conf[addonName]["status"]:
-			self.announceMuted() if source.isMuted else self.announceVolumeLevel(source.volumeLevel)
+			self.announceMuted(source) if source.isMuted else self.announceVolumeLevel(source.volumeLevel)
 
 	def getAudioSource(self) -> Optional[AudioSource]:
 		"""Get the object of selected audio source (device or process),
@@ -336,7 +360,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				self.announceVolumeLevel(volumeLevel)
 				return
 			source.mute()
-			self.announceMuted()
+			self.announceMuted(source)
 
 		self.runWithNvdaWarning(source, volumeDown)
 
@@ -381,7 +405,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 		def mute() -> None:
 			source.mute()
-			self.announceMuted()
+			self.announceMuted(source)
 
 		self.runWithNvdaWarning(source, mute)
 
@@ -534,7 +558,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		source.channel += 1
 		self.announceChannel(source.channel)
 		if config.conf[addonName]["status"]:
-			self.announceMuted() if source.isMuted else self.announceVolumeLevel(
+			self.announceMuted(source) if source.isMuted else self.announceVolumeLevel(
 				source.getChannelVolumeLevel(),
 			)
 
@@ -554,7 +578,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		source.channel -= 1
 		self.announceChannel(source.channel)
 		if config.conf[addonName]["status"]:
-			self.announceMuted() if source.isMuted else self.announceVolumeLevel(
+			self.announceMuted(source) if source.isMuted else self.announceVolumeLevel(
 				source.getChannelVolumeLevel(),
 			)
 
