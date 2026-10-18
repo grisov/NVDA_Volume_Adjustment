@@ -41,7 +41,14 @@ _curAddon = addonHandler.Addon(_addonDir)
 addonName: str = _curAddon.manifest["name"]
 addonSummary: str = _curAddon.manifest["summary"]
 
-from .settings import NvdaVolumeWarningDialog, VASettingsPanel  # noqa E402
+from .settings import (  # noqa E402
+	NvdaVolumeWarningDialog,
+	VASettingsPanel,
+	getCategoryName,
+	getOnlyVisibleCategoryMessage,
+	getVisibleCategories,
+	setVisibleCategories,
+)
 
 UNDEFINED_APP: str = "UndefinedCurrentApplicationName"
 
@@ -241,7 +248,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@rtype: List[AudioSource]
 		"""
 		sources: List[AudioSource] = []
-		for kind in self.getVisibleCategories():
+		for kind in getVisibleCategories():
 			sources.extend(self.getSources(kind))
 		return sources
 
@@ -258,75 +265,39 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return [*registry.getRecordingApps(cfg.processes)]
 		return [device for device in registry.devices if device.kind == kind]
 
-	def getVisibleCategories(self) -> List[SourceKind]:
-		"""Categories of audio sources available for switching, in their order.
-		@return: the visible categories, all of them if the saved value contains none
-		@rtype: List[SourceKind]
-		"""
-		visible: str = config.conf[addonName]["categories"]
-		return [kind for kind in SourceKind if kind.value in visible] or list(SourceKind)
-
-	def setVisibleCategories(self, categories: List[SourceKind]) -> None:
-		"""Save the visible categories of audio sources.
-		A source selected in a category that became hidden is not adjusted anymore:
-		the application in focus or the first source is adjusted instead.
-		@param categories: the categories to show
-		@type categories: List[SourceKind]
-		"""
-		letters = [kind.value for kind in SourceKind if kind in categories]
-		config.conf[addonName]["categories"] = "".join(letters)
-		if self._selected is not None and self._selected[0] not in categories:
-			self._selected = self._previous = None
-			self._session = None
-
 	def toggleCategory(self, kind: SourceKind) -> None:
 		"""Show or hide the category of audio sources and announce the result.
 		The last visible category cannot be hidden.
 		@param kind: the category of audio sources
 		@type kind: SourceKind
 		"""
-		visible = self.getVisibleCategories()
-		category = self.getCategoryName(kind)
+		visible = getVisibleCategories()
+		category = getCategoryName(kind)
 		if kind not in visible:
-			self.setVisibleCategories([*visible, kind])
+			setVisibleCategories([*visible, kind])
 			count = len(self.getSources(kind))
 			# Translators: The message when a category of audio sources is shown,
 			# {category} is its name, e.g. "Recording apps", {count} is the number of its audio sources now
 			message = ngettext("{category} shown, {count} source", "{category} shown, {count} sources", count)
 			ui.message(message.format(category=category, count=count))
 		elif visible == [kind]:
-			# Translators: The message when the user tries to hide the only visible category of audio sources,
-			# followed by the message that it is already the only visible category
-			self.announceOnlyVisibleCategory(category, prefix=_("Category cannot be hidden."))
+			ui.message(getOnlyVisibleCategoryMessage(category, hiding=True))
 		else:
-			self.setVisibleCategories([visibleKind for visibleKind in visible if visibleKind != kind])
+			setVisibleCategories([visibleKind for visibleKind in visible if visibleKind != kind])
 			# Translators: The message when a category of audio sources is hidden,
 			# {category} is its name, e.g. "Recording apps"
 			ui.message(_("{category} hidden").format(category=category))
-
-	def announceOnlyVisibleCategory(self, category: str, prefix: str = "") -> None:
-		"""Announce that the category is already the only visible one,
-		when it is hidden or shown as the only category.
-		@param category: the name of the category
-		@type category: str
-		@param prefix: the message announced before, e.g. that the category cannot be hidden
-		@type prefix: str
-		"""
-		# Translators: The message when the category of audio sources is already the only visible one,
-		# e.g. when the user tries to hide it, {category} is its name, e.g. "Recording apps"
-		message = _("{category} is already the only visible category").format(category=category)
-		ui.message(f"{prefix} {message}" if prefix else message)
 
 	def showOnlyCategory(self, kind: SourceKind) -> None:
 		"""Show only the specified category of audio sources and announce the result.
 		@param kind: the category of audio sources
 		@type kind: SourceKind
 		"""
-		category = self.getCategoryName(kind)
-		if self.getVisibleCategories() == [kind]:
-			self.announceOnlyVisibleCategory(category)
+		category = getCategoryName(kind)
+		if getVisibleCategories() == [kind]:
+			ui.message(getOnlyVisibleCategoryMessage(category))
 			return
-		self.setVisibleCategories([kind])
+		setVisibleCategories([kind])
 		count = len(self.getSources(kind))
 		# Translators: The message when only one category of audio sources is shown,
 		# {category} is its name, e.g. "Recording apps", {count} is the number of its audio sources now
@@ -354,25 +325,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			# Translators: Used as the prefix to default audio device name
 			return "{default}: {title}".format(default=_("Default audio device"), title=source.name)
 		return source.name
-
-	def getCategoryName(self, kind: SourceKind) -> str:
-		"""Get the name of the category of audio sources to announce.
-		@param kind: the category of audio sources
-		@type kind: SourceKind
-		@return: the translated name of the category
-		@rtype: str
-		"""
-		if kind == SourceKind.OUTPUT_DEVICE:
-			# Translators: The name of the category of audio sources announced while switching between them
-			return _("Output devices")
-		if kind == SourceKind.INPUT_DEVICE:
-			# Translators: The name of the category of audio sources announced while switching between them
-			return _("Input devices")
-		if kind == SourceKind.PLAYBACK_APP:
-			# Translators: The name of the category of audio sources announced while switching between them
-			return _("Playback apps")
-		# Translators: The name of the category of audio sources announced while switching between them
-		return _("Recording apps")
 
 	def switchAudioSource(self, step: int) -> None:
 		"""Select the next or previous audio source in the list and announce it.
@@ -406,7 +358,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		title = self.getSourceTitle(source)
 		# The category is announced when it changes, or when the previous source is not known
 		if config.conf[addonName]["announceCategories"] and (current is None or current[0] != source.kind):
-			title = f"{self.getCategoryName(source.kind)}, {title}"
+			title = f"{getCategoryName(source.kind)}, {title}"
 		ui.message(title)
 		if config.conf[addonName]["status"]:
 			self.announceMuted(source) if source.isMuted else self.announceVolumeLevel(source.volumeLevel)
@@ -497,6 +449,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@return: the selected audio source, None if there is nothing to adjust
 		@rtype: Optional[AudioSource]
 		"""
+		if self._selected is not None and self._selected[0] not in getVisibleCategories():
+			# The category of the selected source has been hidden with a gesture or in the add-on settings:
+			# the application in focus or the first source is adjusted instead
+			self._selected = self._previous = None
+			self._session = None
 		if self._selected is None:
 			if config.conf[addonName]["focus"]:
 				if not self.selectProcessInFocus():
