@@ -11,9 +11,12 @@ import config
 import globalPluginHandler
 import tones
 import ui
+import wx
 from api import getFocusObject
 from globalVars import appArgs
+import gui
 from gui import settingsDialogs
+from gui.message import ReturnCode
 from inputCore import InputGesture
 from logHandler import log
 from NVDAObjects import NVDAObject
@@ -37,7 +40,7 @@ _curAddon = addonHandler.Addon(_addonDir)
 addonName: str = _curAddon.manifest["name"]
 addonSummary: str = _curAddon.manifest["summary"]
 
-from .settings import VASettingsPanel  # noqa E402
+from .settings import NvdaVolumeWarningDialog, VASettingsPanel  # noqa E402
 
 UNDEFINED_APP: str = "UndefinedCurrentApplicationName"
 
@@ -66,6 +69,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			"muteCompletely": "boolean(default=false)",
 			"mutePercentage": "integer(default=75,min=1,max=99)",
 			"unmuteOnExit": "boolean(default=true)",
+			"warnNvdaVolume": "boolean(default=true)",
 			"gestures": "boolean(default=true)",
 		}
 		config.conf.spec[addonName] = confspec
@@ -80,6 +84,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._process: str = ""
 		# Application of the current process, reused between keypresses
 		self._session: Optional[PlaybackAppSource] = None
+		# Whether the warning about lowering the volume of NVDA itself is currently shown
+		self._isWarningShown: bool = False
 		# Bind default gestures if necessary
 		config.conf[addonName]["gestures"] and self.bindGestures(self.__defaultGestures)
 		# Creating individual switching methods for each output audio device detected in the system
@@ -252,6 +258,44 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self._previous = app.name
 		return app
 
+	def isNvdaSession(self, source: AudioSource) -> bool:
+		"""Check whether the audio source is the audio session of NVDA itself, which plays NVDA speech.
+		@param source: audio source to check
+		@type source: AudioSource
+		@return: whether the audio source belongs to the running NVDA process
+		@rtype: bool
+		"""
+		return isinstance(source, PlaybackAppSource) and os.getpid() in source.processIds
+
+	def runWithNvdaWarning(self, source: AudioSource, action: Callable[[], None]) -> None:
+		"""Run the action that lowers or mutes the volume of the audio source.
+		For the audio session of NVDA itself, the action runs only after the user confirms the warning,
+		unless the warning has been disabled with its checkbox or in the add-on settings.
+		@param source: the audio source whose volume is changed
+		@type source: AudioSource
+		@param action: the change of the volume and its announcement
+		@type action: Callable[[], None]
+		"""
+		if not config.conf[addonName]["warnNvdaVolume"] or not self.isNvdaSession(source):
+			action()
+			return
+		if self._isWarningShown:
+			return
+
+		def showWarning() -> None:
+			self._isWarningShown = True
+			try:
+				with NvdaVolumeWarningDialog(gui.mainFrame) as dialog:
+					confirmed = dialog.ShowModal() == ReturnCode.OK
+					if confirmed and dialog.dontShowAgainChk.GetValue():
+						config.conf[addonName]["warnNvdaVolume"] = False
+			finally:
+				self._isWarningShown = False
+			if confirmed:
+				action()
+
+		wx.CallAfter(showWarning)
+
 	def getSelectedAudioSource(self) -> Optional[AudioSource]:
 		"""Get the audio source to adjust: the application in focus or the source selected in the list.
 		Announces if the selected application does not play any sound.
@@ -284,12 +328,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		source = self.getSelectedAudioSource()
 		if source is None:
 			return
-		volumeLevel = source.volumeDown()
-		if volumeLevel > 0.0:
-			self.announceVolumeLevel(volumeLevel)
-			return
-		source.mute()
-		self.announceMuted()
+
+		def volumeDown() -> None:
+			volumeLevel = source.volumeDown()
+			if volumeLevel > 0.0:
+				self.announceVolumeLevel(volumeLevel)
+				return
+			source.mute()
+			self.announceMuted()
+
+		self.runWithNvdaWarning(source, volumeDown)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Set the maximum volume level"))
@@ -313,7 +361,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		source = self.getSelectedAudioSource()
 		if source is None:
 			return
-		self.announceVolumeLevel(source.volumeMin())
+		self.runWithNvdaWarning(source, lambda: self.announceVolumeLevel(source.volumeMin()))
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Mute selected audio source"))
@@ -328,9 +376,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if source.isMuted:
 			source.unmute()
 			self.announceVolumeLevel(source.volumeLevel)
-		else:
+			return
+
+		def mute() -> None:
 			source.mute()
 			self.announceMuted()
+
+		self.runWithNvdaWarning(source, mute)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Switch to the next audio source"))
