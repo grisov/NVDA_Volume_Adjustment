@@ -12,7 +12,9 @@ from typing import Dict, Iterable, List, Optional, Type, Union
 import config
 from comtypes import CLSCTX_ALL, COMError, pointer
 from logHandler import log
+from pycaw.api.audiopolicy import IAudioSessionManager2
 from pycaw.api.mmdeviceapi import IMMDevice
+from pycaw.callbacks import AudioSessionNotification, MMNotificationClient
 from pycaw.constants import DEVICE_STATE, AudioSessionState
 from pycaw.utils import (
 	AudioSession,
@@ -514,6 +516,8 @@ class AppSource(AudioSource):
 			volume=SessionGroupVolume([session.SimpleAudioVolume for session in sessions]),
 		)
 		self._sessions = sessions
+		# Version of the registry state when the application was looked up, see AudioSourceRegistry.isOutdated()
+		self.generation: int = 0
 
 	@property
 	def processIds(self) -> List[int]:
@@ -608,6 +612,63 @@ class PlaybackAppSource(AppSource):
 	kind = SourceKind.PLAYBACK_APP
 
 
+class DeviceNotifications(MMNotificationClient):
+	"""Marks the registry outdated when audio devices are added, removed, enabled, disabled
+	or the default device is changed.
+	Windows calls these methods in its own threads, so they only set flags:
+	the lists are rebuilt in the main thread of NVDA when they are used next time.
+	"""
+
+	def __init__(self, registry: AudioSourceRegistry) -> None:
+		"""Notification handler of the specified registry.
+		@param registry: the registry to mark outdated
+		@type registry: AudioSourceRegistry
+		"""
+		super(DeviceNotifications, self).__init__()
+		self._registry = registry
+
+	def on_default_device_changed(
+		self,
+		flow: str,
+		flow_id: int,
+		role: str,
+		role_id: int,
+		default_device_id: str,
+	) -> None:
+		"""The default device for a role has changed."""
+		self._registry.markDevicesChanged(defaultChanged=True)
+
+	def on_device_added(self, added_device_id: str) -> None:
+		"""A new audio device has been added."""
+		self._registry.markDevicesChanged()
+
+	def on_device_removed(self, removed_device_id: str) -> None:
+		"""An audio device has been removed."""
+		self._registry.markDevicesChanged()
+
+	def on_device_state_changed(self, device_id: str, new_state: str, new_state_id: int) -> None:
+		"""An audio device has been enabled, disabled, plugged in or unplugged."""
+		self._registry.markDevicesChanged()
+
+
+class SessionNotifications(AudioSessionNotification):
+	"""Marks the applications outdated when a new audio session is created on the default output device.
+	Windows calls this method in its own thread, so it only sets a flag.
+	"""
+
+	def __init__(self, registry: AudioSourceRegistry) -> None:
+		"""Notification handler of the specified registry.
+		@param registry: the registry to mark outdated
+		@type registry: AudioSourceRegistry
+		"""
+		super(SessionNotifications, self).__init__()
+		self._registry = registry
+
+	def on_session_created(self, new_session: AudioSession) -> None:
+		"""A new audio session has been created, it may belong to an already found application."""
+		self._registry.markAppsChanged()
+
+
 class AudioSourceRegistry(object):
 	"""All audio sources whose volume can be adjusted.
 	The list of audio devices is kept until it is rescanned, while applications are looked up on demand:
@@ -615,15 +676,126 @@ class AudioSourceRegistry(object):
 	"""
 
 	def __init__(self) -> None:
-		"""Initially no audio devices are known, they are detected by scanDevices()."""
+		"""Initially no audio devices are known, they are detected by start() or scanDevices()."""
 		self._devices: List[DeviceSource] = []
+		# Devices hidden in the add-on settings, used when the devices are rescanned after a notification
+		self._hide: List[str] = []
+		# Flags set by the notification handlers in Windows threads and applied in the main thread
+		self._devicesChanged: bool = False
+		self._defaultChanged: bool = False
+		# Incremented whenever the found applications may be outdated
+		self._generation: int = 0
+		self._enumerator = None
+		self._deviceNotifications: Optional[DeviceNotifications] = None
+		self._sessionManager = None
+		self._sessionNotifications: Optional[SessionNotifications] = None
+
+	def start(self, hide: Iterable[str] = ()) -> None:
+		"""Detect the audio devices and subscribe to the notifications about audio devices and sessions.
+		Must be called in the main thread, stop() must be called when the registry is no longer used.
+		@param hide: IDs of the audio devices hidden in the add-on settings
+		@type hide: Iterable[str]
+		"""
+		self.scanDevices(hide)
+		try:
+			self._enumerator = AudioUtilities.GetDeviceEnumerator()
+			self._deviceNotifications = DeviceNotifications(self)
+			self._enumerator.RegisterEndpointNotificationCallback(self._deviceNotifications)
+		except COMError:
+			log.debugWarning("Unable to subscribe to the notifications about audio devices", exc_info=True)
+			self._enumerator = self._deviceNotifications = None
+		self._subscribeSessions()
+
+	def stop(self) -> None:
+		"""Unsubscribe from all notifications. The registry can be started again."""
+		self._unsubscribeSessions()
+		if self._enumerator is not None and self._deviceNotifications is not None:
+			try:
+				self._enumerator.UnregisterEndpointNotificationCallback(self._deviceNotifications)
+			except COMError:
+				log.debugWarning(
+					"Unable to unsubscribe from the notifications about audio devices",
+					exc_info=True,
+				)
+		self._enumerator = self._deviceNotifications = None
+
+	def _subscribeSessions(self) -> None:
+		"""Subscribe to the creation of audio sessions on the current default output device."""
+		try:
+			device = AudioUtilities.GetDeviceEnumerator().GetDefaultAudioEndpoint(
+				EDataFlow.eRender.value,
+				ERole.eMultimedia.value,
+			)
+			manager = device.Activate(IAudioSessionManager2._iid_, CLSCTX_ALL, None).QueryInterface(
+				IAudioSessionManager2,
+			)
+			notifications = SessionNotifications(self)
+			manager.RegisterSessionNotification(notifications)
+			# Windows sends the notifications only after the session enumerator has been requested
+			manager.GetSessionEnumerator()
+		except COMError:
+			log.debugWarning("Unable to subscribe to the notifications about audio sessions", exc_info=True)
+			return
+		self._sessionManager, self._sessionNotifications = manager, notifications
+
+	def _unsubscribeSessions(self) -> None:
+		"""Unsubscribe from the creation of audio sessions."""
+		if self._sessionManager is not None and self._sessionNotifications is not None:
+			try:
+				self._sessionManager.UnregisterSessionNotification(self._sessionNotifications)
+			except COMError:
+				log.debugWarning(
+					"Unable to unsubscribe from the notifications about audio sessions",
+					exc_info=True,
+				)
+		self._sessionManager = self._sessionNotifications = None
+
+	def markDevicesChanged(self, defaultChanged: bool = False) -> None:
+		"""Mark the audio devices outdated. Called by the notification handlers in Windows threads.
+		@param defaultChanged: whether the default device has changed
+		@type defaultChanged: bool
+		"""
+		if defaultChanged:
+			self._defaultChanged = True
+		self._devicesChanged = True
+		self._generation += 1
+
+	def markAppsChanged(self) -> None:
+		"""Mark the found applications outdated. Called by the notification handler in a Windows thread."""
+		self._generation += 1
+
+	def _update(self) -> None:
+		"""Apply the changes notified by Windows. Called in the main thread before the lists are used.
+		The flags are cleared before rebuilding, so a notification received meanwhile is applied next time.
+		"""
+		if self._defaultChanged:
+			self._defaultChanged = False
+			# The applications of the new default output device must be followed
+			self._unsubscribeSessions()
+			self._subscribeSessions()
+		if self._devicesChanged:
+			self._devicesChanged = False
+			self._devices = self.getAllDevices(self._hide)
+
+	def isOutdated(self, app: AppSource) -> bool:
+		"""Check whether the previously found application must be looked up again:
+		its audio session has expired, a new audio session has been created
+		or the audio devices have changed since it was found.
+		@param app: previously found application
+		@type app: AppSource
+		@return: whether the application must be looked up again
+		@rtype: bool
+		"""
+		return app.generation != self._generation or app.isExpired
 
 	@property
 	def devices(self) -> List[DeviceSource]:
 		"""Audio devices found by the last scan, the default output device is the first one.
+		The list is rescanned if Windows has notified about changes of the audio devices.
 		@return: audio devices whose volume can be adjusted
 		@rtype: List[DeviceSource]
 		"""
+		self._update()
 		return self._devices
 
 	def scanDevices(self, hide: Iterable[str] = ()) -> None:
@@ -632,7 +804,9 @@ class AudioSourceRegistry(object):
 		@param hide: IDs of the audio devices hidden in the add-on settings
 		@type hide: Iterable[str]
 		"""
-		self._devices = self.getAllDevices(hide)
+		self._hide = list(hide)
+		self._devicesChanged = False
+		self._devices = self.getAllDevices(self._hide)
 
 	def getAllDevices(self, hide: Iterable[str] = ()) -> List[DeviceSource]:
 		"""Detect the active audio devices without changing the list of devices kept by the registry.
@@ -685,13 +859,19 @@ class AudioSourceRegistry(object):
 		@return: applications playing sound
 		@rtype: List[PlaybackAppSource]
 		"""
+		self._update()
+		# Read before the sessions are listed: a notification received meanwhile makes the result outdated
+		generation = self._generation
 		hidden = set(hide)
 		groups: Dict[str, List[AudioSession]] = {}
 		for session in getDefaultOutputSessions():
 			name = session.Process.name() if session.Process else ""
 			if name and name not in hidden:
 				groups.setdefault(name, []).append(session)
-		return [PlaybackAppSource(name, sessions) for name, sessions in groups.items()]
+		apps = [PlaybackAppSource(name, sessions) for name, sessions in groups.items()]
+		for app in apps:
+			app.generation = generation
+		return apps
 
 	def findApp(self, name: str, pid: int = 0) -> Optional[PlaybackAppSource]:
 		"""Find the application playing sound by its process ID or name.
