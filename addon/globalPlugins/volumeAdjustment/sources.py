@@ -6,6 +6,7 @@
 # Copyright (C) 2020-2026 Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>
 
 from __future__ import annotations
+import math
 from abc import ABCMeta, abstractmethod
 from enum import Enum, IntEnum
 from typing import Dict, Iterable, List, Optional, Type, Union
@@ -35,6 +36,28 @@ from .audiocore import (
 	getDefaultOutputSessions,
 	getDeviceProperties,
 )
+
+
+# Windows stores volume levels as 32-bit floats: 29 % is read back as 28.999999 %.
+# A level closer than this to a whole percent (in percent) is treated as that whole percent.
+LEVEL_TOLERANCE = 0.01
+
+
+def stepLevel(level: float, step: int) -> float:
+	"""Change the volume level by the step in percent, stopping at whole percents.
+	A level at a whole percent changes exactly by the step. A level set by another program between
+	whole percents first moves to the next whole percent in the direction of the step,
+	so every keypress changes the announced level by the step.
+	@param level: current volume level
+	@type level: float [0.0..1.0]
+	@param step: change in percent, negative to decrease the level
+	@type step: int
+	@return: new volume level
+	@rtype: float [0.0..1.0]
+	"""
+	target = level * 100.0 + step
+	percent = math.floor(target + LEVEL_TOLERANCE) if step > 0 else math.ceil(target - LEVEL_TOLERANCE)
+	return min(100, max(0, percent)) / 100.0
 
 
 class SourceKind(Enum):
@@ -248,10 +271,7 @@ class AudioSource(metaclass=ABCMeta):
 		"""
 		self.isMuted and self.unmute()
 		# Ignore MyPy type hint because setter volumeLevel is not read-only
-		level = self.volumeLevel = min(  # type: ignore
-			1.0,
-			float(round(self.volumeLevel * 100.0) + config.conf[addonName]["step"]) / 100.0,
-		)
+		level = self.volumeLevel = stepLevel(self.volumeLevel, config.conf[addonName]["step"])  # type: ignore
 		return level
 
 	def volumeDown(self) -> float:
@@ -265,10 +285,7 @@ class AudioSource(metaclass=ABCMeta):
 				return 0.0
 			self.unmute()
 		# Ignore MyPy type hint because setter volumeLevel is not read-only
-		level = self.volumeLevel = max(  # type: ignore
-			0.0,
-			float(round(self.volumeLevel * 100.0) - config.conf[addonName]["step"]) / 100.0,
-		)
+		level = self.volumeLevel = stepLevel(self.volumeLevel, -config.conf[addonName]["step"])  # type: ignore
 		return level
 
 	def volumeMax(self) -> float:
@@ -307,18 +324,21 @@ class AudioSource(metaclass=ABCMeta):
 		@return: a state of the audio source (muted or no)
 		@rtype: bool
 		"""
+		# Exact volume level before muting, restored when the audio source is unmuted
+		level: Optional[float] = None
 		try:
 			if config.conf[addonName]["muteCompletely"]:
 				self.volume.SetMute(True, None)  # type: ignore
 			elif not self.isMuted:
+				level = self.volumeLevel
 				# Incorrect handling of AttributeError by MyPy 0.812: https://github.com/python/mypy/issues/8056
-				self.volumeLevel *= (100 - config.conf[addonName]["mutePercentage"]) / 100.0  # type: ignore
+				self.volumeLevel = level * (100 - config.conf[addonName]["mutePercentage"]) / 100.0  # type: ignore
 		except AttributeError:
 			return False
 		else:
 			# The file is written only when the list of muted audio sources changes
 			if self.id not in cfg.muted:
-				cfg.addMuted(self.id).save()
+				cfg.addMuted(self.id, level).save()
 			return True
 
 	def unmute(self) -> bool:
@@ -330,11 +350,13 @@ class AudioSource(metaclass=ABCMeta):
 			# The getattr() function is used for correct processing by the MyPy analyzer
 			getattr(self.volume, "SetMute")(False, None)
 			if self.isMuted:
+				level = cfg.getMutedLevel(self.id)
+				if level is None:
+					# Muted by a previous version of the add-on, which did not save the exact level
+					percentage = config.conf[addonName]["mutePercentage"]
+					level = min(1.0, self.volumeLevel * 100.0 / (100.0 - percentage))
 				# Setter volumeLevel is not read-only, MyPy issue
-				self.volumeLevel = min(  # type: ignore
-					1.0,
-					round(self.volumeLevel * 100.0) / (100.0 - config.conf[addonName]["mutePercentage"]),
-				)
+				self.volumeLevel = level  # type: ignore
 		except AttributeError:
 			return False
 		else:
@@ -388,7 +410,7 @@ class AudioSource(metaclass=ABCMeta):
 		level: float = self.getChannelVolumeLevel(channel)
 		if level < 0:
 			return level
-		level = min(1.0, float(round(level * 100.0) + config.conf[addonName]["step"]) / 100.0)
+		level = stepLevel(level, config.conf[addonName]["step"])
 		self.setChannelVolumeLevel(level, channel)
 		return level
 
@@ -405,7 +427,7 @@ class AudioSource(metaclass=ABCMeta):
 		level: float = self.getChannelVolumeLevel(channel)
 		if level < 0:
 			return level
-		level = max(0.0, float(round(level * 100.0) - config.conf[addonName]["step"]) / 100.0)
+		level = stepLevel(level, -config.conf[addonName]["step"])
 		self.setChannelVolumeLevel(level, channel)
 		return level
 

@@ -21,6 +21,7 @@
 - Muted processes that were later hidden in the settings were not unmuted when NVDA exited.
 - The "Update" button in the list of audio devices added hidden devices to the list of audio sources until the settings were saved.
 - After the default audio output device was changed in Windows, the volume of the selected application could still be adjusted on the previous device.
+- Volume levels were announced inaccurately: some levels were announced twice and others skipped while stepping. Unmuting in the "Volume Down" mute mode did not restore the exact previous level (e.g. 50 % became 48 %).
 - Lowering the volume of a muted audio source rewrote the add-on configuration file on every keypress.
 - Unmuting audio sources when NVDA exits ran in a background thread, which could fail.
 - An error on NVDA exit when the add-on settings panel had already been removed.

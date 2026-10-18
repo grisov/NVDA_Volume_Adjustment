@@ -163,7 +163,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@type volumeLevel: float, from 0.0 to 1.0
 		"""
 		# Translators: The message is announced during volume control
-		ui.message("%s %d" % (_("Volume"), int(volumeLevel * 100.0)))
+		# Rounded: Windows stores volume levels as 32-bit floats, 29 % is read back as 28.999999 %
+		ui.message("%s %d" % (_("Volume"), round(volumeLevel * 100.0)))
 
 	def announceMuted(self) -> None:
 		"""Announce that the sound was muted."""
