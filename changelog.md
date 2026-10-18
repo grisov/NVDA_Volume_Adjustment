@@ -11,6 +11,7 @@
 - Applications recording sound can now be selected and adjusted as well; the audio sources are switched in the order: output devices, input devices, applications playing sound, applications recording sound.
 - Before lowering, minimizing or muting the volume of NVDA itself, a warning is shown: it can silence NVDA speech, and Windows keeps this volume after NVDA restarts. The warning can be turned off in the dialog or in the add-on settings.
 - In the "Volume Down" mute mode, the remaining volume level is announced after muting, e.g. "The sound is muted, volume 5%".
+- When switching to an audio source of another category, the category name is announced before the source name; this can be turned off in the add-on settings.
 - The add-on uses the pycaw module bundled with NVDA and no longer calls its helpers that read the whole property store of audio devices (GetAllSessions, GetSpeakers, GetAllDevices, CreateDevice) on frequent code paths.
 - Updated the add-on build tooling to the latest NV Access addonTemplate.
 

@@ -150,6 +150,11 @@ class VASettingsPanel(SettingsPanel):
 			wx.CheckBox(self, label=_("&Report the status of the sound source while switching")),
 		)
 		self.reportStatusChk.SetValue(config.conf[addonName]["status"])
+		self.announceCategoriesChk = addonHelper.addItem(
+			# Translators: This is the label for a checkbox in the settings panel.
+			wx.CheckBox(self, label=_("Announce &category names while switching")),
+		)
+		self.announceCategoriesChk.SetValue(config.conf[addonName]["announceCategories"])
 		self.volumeStep = addonHelper.addLabeledControl(
 			# Translators: The label of the component in the settings panel
 			_("Volume level change &step:"),
@@ -358,6 +363,7 @@ class VASettingsPanel(SettingsPanel):
 	def onSave(self) -> None:
 		"""Update Configuration when clicking OK."""
 		config.conf[addonName]["status"] = self.reportStatusChk.GetValue()
+		config.conf[addonName]["announceCategories"] = self.announceCategoriesChk.GetValue()
 		config.conf[addonName]["step"] = self.volumeStep.GetValue()
 		config.conf[addonName]["focus"] = self.followFocusChk.GetValue()
 		config.conf[addonName]["duplicates"] = self.hideDuplicatesChk.GetValue()
