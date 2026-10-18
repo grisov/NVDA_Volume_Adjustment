@@ -11,6 +11,7 @@ import config
 import wx
 from globalPluginHandler import reloadGlobalPlugins
 from gui import guiHelper, nvdaControls
+from gui.message import DefaultButtonSet, DialogType, MessageDialog
 from gui.settingsDialogs import SettingsPanel
 from logHandler import log
 from queueHandler import eventQueue, queueFunction
@@ -81,6 +82,39 @@ class AddonsReloadDialog(wx.Dialog):
 		self.EndModal(1)
 		self.Destroy()
 		queueFunction(eventQueue, reloadGlobalPlugins)
+
+
+class NvdaVolumeWarningDialog(MessageDialog):
+	"""Warning shown before the volume of the audio session of NVDA itself is lowered or muted."""
+
+	def __init__(self, parent: wx.Window) -> None:
+		"""Create the warning dialog.
+		@param parent: parent top level window
+		@type parent: wx.Window
+		"""
+		super(NvdaVolumeWarningDialog, self).__init__(
+			parent,
+			# Translators: The warning shown before the volume of NVDA itself is lowered or muted
+			_(
+				"This is the audio session of NVDA itself. "
+				"Lowering or muting its volume also lowers or silences NVDA speech, "
+				"and Windows keeps this volume even after NVDA is restarted. "
+				"Do you want to continue?",
+			),
+			addonSummary,
+			DialogType.WARNING,
+			buttons=DefaultButtonSet.OK_CANCEL,
+		)
+
+	def _addContents(self, contentsSizer: guiHelper.BoxSizerHelper) -> None:
+		"""Add the checkbox that disables the warning.
+		@param contentsSizer: the sizer of the dialog contents
+		@type contentsSizer: guiHelper.BoxSizerHelper
+		"""
+		self.dontShowAgainChk = contentsSizer.addItem(
+			# Translators: The label of a checkbox in the warning about lowering the volume of NVDA itself
+			wx.CheckBox(self, label=_("&Do not show this warning again")),
+		)
 
 
 class VASettingsPanel(SettingsPanel):
@@ -201,6 +235,11 @@ class VASettingsPanel(SettingsPanel):
 			wx.CheckBox(self, label=_("&Unmute all muted audio resources at NVDA shutdown")),
 		)
 		self.unmuteOnExitChk.SetValue(config.conf[addonName]["unmuteOnExit"])
+		self.warnNvdaVolumeChk = addonHelper.addItem(
+			# Translators: This is the label for a checkbox in the settings panel.
+			wx.CheckBox(self, label=_("&Warn before lowering or muting the volume of NVDA itself")),
+		)
+		self.warnNvdaVolumeChk.SetValue(config.conf[addonName]["warnNvdaVolume"])
 		self.defaultGesturesChk = addonHelper.addItem(
 			# Translators: This is the label for a checkbox in the settings panel.
 			wx.CheckBox(self, label=_("Use default &keyboard shortcuts")),
@@ -318,6 +357,7 @@ class VASettingsPanel(SettingsPanel):
 		)
 		config.conf[addonName]["mutePercentage"] = self.mutePercentageSlider.GetValue()
 		config.conf[addonName]["unmuteOnExit"] = self.unmuteOnExitChk.GetValue()
+		config.conf[addonName]["warnNvdaVolume"] = self.warnNvdaVolumeChk.GetValue()
 		devs = {}
 		for checked in self.hideDevices.GetCheckedItems():
 			id = self.hideDevices.GetClientData(checked)
