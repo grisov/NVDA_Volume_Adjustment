@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 from abc import ABCMeta, abstractmethod
-from enum import Enum
+from enum import Enum, IntEnum
 from typing import Dict, Iterable, List, Optional, Type, Union
 import config
 from comtypes import CLSCTX_ALL, COMError, pointer
@@ -24,7 +24,17 @@ from pycaw.utils import (
 	IAudioEndpointVolume,
 	ISimpleAudioVolume,
 )
-from .audiocore import addonName, cfg, getDefaultOutputSessions, getDeviceName
+from .audiocore import (
+	PKEY_AudioEndpoint_FormFactor,
+	PKEY_Device_DeviceDesc,
+	PKEY_Device_EnumeratorName,
+	PKEY_Device_FriendlyName,
+	PKEY_DeviceInterface_FriendlyName,
+	addonName,
+	cfg,
+	getDefaultOutputSessions,
+	getDeviceProperties,
+)
 
 
 class SourceKind(Enum):
@@ -34,6 +44,55 @@ class SourceKind(Enum):
 	INPUT_DEVICE = "I"
 	PLAYBACK_APP = "P"
 	RECORDING_APP = "R"
+
+
+class FormFactor(IntEnum):
+	"""Physical type of an audio device (EndpointFormFactor in Windows)."""
+
+	REMOTE_NETWORK_DEVICE = 0
+	SPEAKERS = 1
+	LINE_LEVEL = 2
+	HEADPHONES = 3
+	MICROPHONE = 4
+	HEADSET = 5
+	HANDSET = 6
+	UNKNOWN_DIGITAL_PASSTHROUGH = 7
+	SPDIF = 8
+	DIGITAL_AUDIO_DISPLAY_DEVICE = 9
+	"""HDMI or DisplayPort, e.g. the speakers of a monitor or TV"""
+	UNKNOWN = 10
+
+
+class Connection(Enum):
+	"""How an audio device is connected, guessed from the name of its device enumerator."""
+
+	INTERNAL = "internal"
+	"""Sound card of the computer or HDMI/DisplayPort of the graphics card (HDAUDIO, INTELAUDIO)"""
+	USB = "usb"
+	BLUETOOTH = "bluetooth"
+	"""Including the hands-free profile, which Windows shows as a separate device (BTHENUM, BTHHFENUM)"""
+	VIRTUAL = "virtual"
+	"""Software device, e.g. a virtual audio cable (ROOT, SWD); a heuristic, not an official attribute"""
+	OTHER = "other"
+
+	@classmethod
+	def fromEnumeratorName(cls, name: Optional[str]) -> Connection:
+		"""Guess the connection from the name of the device enumerator.
+		@param name: value of the PKEY_Device_EnumeratorName property
+		@type name: Optional[str]
+		@return: the connection of the device
+		@rtype: Connection
+		"""
+		name = (name or "").upper()
+		if name in ("HDAUDIO", "INTELAUDIO"):
+			return cls.INTERNAL
+		if name == "USB":
+			return cls.USB
+		if name.startswith("BTH"):
+			return cls.BLUETOOTH
+		if name in ("ROOT", "SWD"):
+			return cls.VIRTUAL
+		return cls.OTHER
 
 
 class SessionGroupVolume(object):
@@ -396,6 +455,15 @@ class DeviceSource(AudioSource):
 	"""Presentation of one audio device."""
 
 	kind: SourceKind
+	# Attributes read when the device is detected, see createDevice()
+	formFactor: FormFactor = FormFactor.UNKNOWN
+	connection: Connection = Connection.OTHER
+	adapterName: str = ""
+	"""Name of the sound card, useful when several devices have the same name such as Speakers"""
+	isDefaultDevice: bool = False
+	"""The default device of its data flow (output or input) for multimedia"""
+	isDefaultCommunicationDevice: bool = False
+	"""The default device of its data flow for communications"""
 
 	@property
 	def volumeLevel(self) -> float:
@@ -476,26 +544,55 @@ class InputDeviceSource(DeviceSource):
 	kind = SourceKind.INPUT_DEVICE
 
 
-def createDevice(immDevice: IMMDevice, deviceClass: Type[DeviceSource]) -> DeviceSource:
-	"""Create the presentation of the specified audio device.
+def createDevice(
+	immDevice: IMMDevice,
+	deviceClass: Type[DeviceSource],
+	defaultIds: Iterable[str] = (),
+	communicationIds: Iterable[str] = (),
+) -> DeviceSource:
+	"""Create the presentation of the specified audio device with its attributes.
 	@param immDevice: audio device
 	@type immDevice: pycaw.IMMDevice
 	@param deviceClass: class of the audio source according to the data flow of the device
 	@type deviceClass: Type[DeviceSource]
+	@param defaultIds: IDs of the default devices for multimedia
+	@type defaultIds: Iterable[str]
+	@param communicationIds: IDs of the default devices for communications
+	@type communicationIds: Iterable[str]
 	@return: audio device with the interface to adjust its volume
 	@rtype: DeviceSource
 	"""
 	id: str = immDevice.GetId() or "default"
+	friendlyName, description, enumeratorName, formFactor, adapterName = getDeviceProperties(
+		immDevice,
+		(
+			PKEY_Device_FriendlyName,
+			PKEY_Device_DeviceDesc,
+			PKEY_Device_EnumeratorName,
+			PKEY_AudioEndpoint_FormFactor,
+			PKEY_DeviceInterface_FriendlyName,
+		),
+	)
+	name = next((value for value in (friendlyName, description) if isinstance(value, str) and value), id)
 	# QueryInterface() adds a COM reference for the new pointer object. ctypes.cast() must not be used here:
 	# it creates a second pointer object without a reference, so the interface was released twice
 	# when the device objects were discarded, which crashed NVDA after the devices were rescanned.
-	return deviceClass(
+	device = deviceClass(
 		id=id,
-		name=getDeviceName(immDevice) or id,
+		name=name,
 		volume=immDevice.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None).QueryInterface(
 			IAudioEndpointVolume,
 		),
 	)
+	try:
+		device.formFactor = FormFactor(formFactor)
+	except ValueError:
+		device.formFactor = FormFactor.UNKNOWN
+	device.connection = Connection.fromEnumeratorName(enumeratorName)
+	device.adapterName = adapterName if isinstance(adapterName, str) else ""
+	device.isDefaultDevice = id in defaultIds
+	device.isDefaultCommunicationDevice = id in communicationIds
+	return device
 
 
 class AppSource(AudioSource):
@@ -824,7 +921,9 @@ class AudioSourceRegistry(object):
 				EDataFlow.eRender.value,
 				ERole.eMultimedia.value,
 			)
-			default = createDevice(defaultDevice, OutputDeviceSource)
+			defaultIds = self.getDefaultDeviceIds(enumerator, ERole.eMultimedia)
+			communicationIds = self.getDefaultDeviceIds(enumerator, ERole.eCommunications)
+			default = createDevice(defaultDevice, OutputDeviceSource, defaultIds, communicationIds)
 		except COMError:
 			log.debugWarning("Unable to get the default output audio device", exc_info=True)
 			return []
@@ -843,12 +942,30 @@ class AudioSourceRegistry(object):
 				try:
 					if immDevice.GetId() in skip:
 						continue
-					device = createDevice(immDevice, deviceClass)
+					device = createDevice(immDevice, deviceClass, defaultIds, communicationIds)
 				except COMError:
 					continue
 				if device.name:
 					devices.append(device)
 		return devices
+
+	@staticmethod
+	def getDefaultDeviceIds(enumerator: object, role: ERole) -> List[str]:
+		"""Get the IDs of the default output and input devices for the specified role.
+		@param enumerator: the device enumerator
+		@type enumerator: pycaw.IMMDeviceEnumerator
+		@param role: the role of the default devices, e.g. multimedia or communications
+		@type role: ERole
+		@return: IDs of the default devices, without the data flows that have no default device
+		@rtype: List[str]
+		"""
+		ids: List[str] = []
+		for flow in (EDataFlow.eRender, EDataFlow.eCapture):
+			try:
+				ids.append(enumerator.GetDefaultAudioEndpoint(flow.value, role.value).GetId())
+			except COMError:
+				continue
+		return ids
 
 	def getApps(self, hide: Iterable[str] = ()) -> List[PlaybackAppSource]:
 		"""Get the applications playing sound on the default output device.

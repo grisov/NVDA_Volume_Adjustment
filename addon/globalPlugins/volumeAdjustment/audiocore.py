@@ -8,7 +8,7 @@
 from __future__ import annotations
 import json
 from os import path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 from comtypes import CLSCTX_ALL, GUID, COMError
 from globalVars import appArgs
 from logHandler import log
@@ -190,30 +190,42 @@ def getDefaultOutputSessions() -> List[AudioSession]:
 
 # Format ID of the device property keys PKEY_Device_FriendlyName (14) and PKEY_Device_DeviceDesc (2)
 DEVICE_PROPERTIES_FMTID = GUID("{a45c254e-df1c-4efd-8020-67d146a850e0}")
+# Property keys of audio devices: (format ID, property ID)
+PropertyKey = Tuple[GUID, int]
+PKEY_Device_FriendlyName: PropertyKey = (DEVICE_PROPERTIES_FMTID, 14)
+PKEY_Device_DeviceDesc: PropertyKey = (DEVICE_PROPERTIES_FMTID, 2)
+PKEY_Device_EnumeratorName: PropertyKey = (DEVICE_PROPERTIES_FMTID, 24)
+PKEY_AudioEndpoint_FormFactor: PropertyKey = (GUID("{1da5d803-d492-4edd-8c23-e0c0ffee7f0e}"), 0)
+PKEY_DeviceInterface_FriendlyName: PropertyKey = (GUID("{026e516e-b814-414b-83cd-856d6fef4822}"), 2)
+# Type of an empty PROPVARIANT: the property is not set
+VT_EMPTY = 0
 
 
-def getDeviceName(immDevice: IMMDevice) -> str:
-	"""Get the human friendly name of the audio device.
-	Only the name is read, unlike AudioUtilities.CreateDevice() which reads the whole property store.
+def getDeviceProperties(immDevice: IMMDevice, keys: Sequence[PropertyKey]) -> List[Any]:
+	"""Read the specified properties of the audio device.
+	Only these properties are read, unlike AudioUtilities.CreateDevice() which reads the whole property store.
 	@param immDevice: audio device
 	@type immDevice: pycaw.IMMDevice
-	@return: friendly name of the device, its description if there is no friendly name, or empty string
-	@rtype: str
+	@param keys: property keys to read
+	@type keys: Sequence[PropertyKey]
+	@return: values in the order of the keys, None for a property that is not set or cannot be read
+	@rtype: List[Any]
 	"""
 	try:
 		store = immDevice.OpenPropertyStore(STGM.STGM_READ.value)
 	except COMError:
-		return ""
-	for pid in (14, 2):
+		return [None] * len(keys)
+	values: List[Any] = []
+	for fmtid, pid in keys:
 		key = PROPERTYKEY()
-		key.fmtid = DEVICE_PROPERTIES_FMTID
+		key.fmtid = fmtid
 		key.pid = pid
 		try:
 			value = store.GetValue(key)
 		except COMError:
+			values.append(None)
 			continue
-		name = value.GetValue()
+		# pycaw returns the text "0:?" for a property that is not set
+		values.append(None if value.vt == VT_EMPTY else value.GetValue())
 		value.clear()
-		if isinstance(name, str) and name:
-			return name
-	return ""
+	return values
