@@ -326,6 +326,39 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return "{default}: {title}".format(default=_("Default audio device"), title=source.name)
 		return source.name
 
+	def getCurrentSourceKey(self, sources: List[AudioSource]) -> Optional[SourceKey]:
+		"""Get the key of the audio source that switching starts from.
+		@param sources: the audio sources available for switching, not empty
+		@type sources: List[AudioSource]
+		@return: the selected source, the application in focus or the first source,
+			None if the application in focus does not play any sound
+		@rtype: Optional[SourceKey]
+		"""
+		if self._selected is not None:
+			return self._selected
+		if config.conf[addonName]["focus"]:
+			focused = registry.findApp(*self.getFocusedProcess())
+			return getSourceKey(focused) if focused is not None else None
+		# Without focus tracking the first source is adjusted until another one is selected
+		return getSourceKey(sources[0])
+
+	def selectSource(self, source: AudioSource, announceCategory: bool) -> None:
+		"""Select the audio source for the volume commands and announce it.
+		@param source: the audio source to select
+		@type source: AudioSource
+		@param announceCategory: whether the name of its category is announced before its name
+		@type announceCategory: bool
+		"""
+		self._selected = self._previous = getSourceKey(source)
+		if isinstance(source, AppSource):
+			self._session = source
+		title = self.getSourceTitle(source)
+		if announceCategory:
+			title = f"{getCategoryName(source.kind)}, {title}"
+		ui.message(title)
+		if config.conf[addonName]["status"]:
+			self.announceMuted(source) if source.isMuted else self.announceVolumeLevel(source.volumeLevel)
+
 	def switchAudioSource(self, step: int) -> None:
 		"""Select the next or previous audio source in the list and announce it.
 		Starting from the application in focus, the neighbouring source is selected.
@@ -336,14 +369,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not sources:
 			return
 		keys = [getSourceKey(source) for source in sources]
-		if self._selected is None and config.conf[addonName]["focus"]:
-			focused = registry.findApp(*self.getFocusedProcess())
-			current = getSourceKey(focused) if focused is not None else None
-		elif self._selected is None:
-			# Without focus tracking the first source is adjusted until another one is selected
-			current = keys[0]
-		else:
-			current = self._selected
+		current = self.getCurrentSourceKey(sources)
 		if current in keys:
 			position = keys.index(current)
 		elif step > 0:
@@ -352,16 +378,34 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		else:
 			position = 0
 		source = sources[(position + step) % len(sources)]
-		self._selected = self._previous = getSourceKey(source)
-		if isinstance(source, AppSource):
-			self._session = source
-		title = self.getSourceTitle(source)
 		# The category is announced when it changes, or when the previous source is not known
-		if config.conf[addonName]["announceCategories"] and (current is None or current[0] != source.kind):
-			title = f"{getCategoryName(source.kind)}, {title}"
-		ui.message(title)
-		if config.conf[addonName]["status"]:
-			self.announceMuted(source) if source.isMuted else self.announceVolumeLevel(source.volumeLevel)
+		self.selectSource(
+			source,
+			announceCategory=config.conf[addonName]["announceCategories"]
+			and (current is None or current[0] != source.kind),
+		)
+
+	def switchCategory(self, step: int) -> None:
+		"""Select the first audio source of the next or previous visible category and announce it
+		with the name of the category. Categories without audio sources are skipped.
+		With only one such category, its first source is selected.
+		@param step: direction in the list of categories
+		@type step: int (1 or -1)
+		"""
+		sources = self.getAllSources()
+		if not sources:
+			return
+		current = self.getCurrentSourceKey(sources)
+		order = list(SourceKind)
+		# The position of the current category, or just before the first/after the last one if it is unknown
+		position = order.index(current[0]) if current is not None else (-1 if step > 0 else len(order))
+		for offset in range(1, len(order) + 1):
+			kind = order[(position + step * offset) % len(order)]
+			source = next((source for source in sources if source.kind == kind), None)
+			if source is not None:
+				# The name of the category is always announced: it is the purpose of the command
+				self.selectSource(source, announceCategory=True)
+				return
 
 	def announceTitleOnce(self, source: AudioSource) -> AudioSource:
 		"""Announce the name of the application when a volume command uses it for the first time.
@@ -562,6 +606,24 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@type gesture: InputGesture
 		"""
 		self.switchAudioSource(step=-1)
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Switch to the first audio source of the next category"))
+	def script_nextCategory(self, gesture: InputGesture) -> None:
+		"""Switch to the first audio source of the next visible category.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		self.switchCategory(step=1)
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Switch to the first audio source of the previous category"))
+	def script_prevCategory(self, gesture: InputGesture) -> None:
+		"""Switch to the first audio source of the previous visible category.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		self.switchCategory(step=-1)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Show or hide output devices"))
@@ -861,6 +923,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"kb:NVDA+windows+escape": "mute",
 		"kb:NVDA+windows+rightArrow": "next",
 		"kb:NVDA+windows+leftArrow": "prev",
+		"kb:NVDA+control+windows+rightArrow": "nextCategory",
+		"kb:NVDA+control+windows+leftArrow": "prevCategory",
 		# Categories of audio sources
 		"kb:NVDA+windows+o": "toggleOutputDevices",
 		"kb:NVDA+windows+i": "toggleInputDevices",
