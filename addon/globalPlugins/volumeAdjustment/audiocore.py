@@ -16,12 +16,7 @@ from pycaw.api.audiopolicy import IAudioSessionControl2, IAudioSessionManager2
 from pycaw.api.mmdeviceapi import IMMDevice
 from pycaw.api.mmdeviceapi.depend.structures import PROPERTYKEY
 from pycaw.constants import STGM
-from pycaw.utils import (
-	AudioSession,
-	AudioUtilities,
-	EDataFlow,
-	ERole,
-)
+from pycaw.utils import AudioSession
 
 addonName = path.basename(path.dirname(__file__))
 
@@ -173,25 +168,33 @@ class Configuration(object):
 cfg = Configuration()
 
 
-def getDefaultOutputSessions() -> List[AudioSession]:
-	"""Get all audio sessions of the default output device.
+def getSessionManager(immDevice: IMMDevice) -> IAudioSessionManager2:
+	"""Get the manager of the audio sessions of the audio device.
+	@param immDevice: audio device
+	@type immDevice: pycaw.IMMDevice
+	@return: the session manager of the device
+	@rtype: pycaw.IAudioSessionManager2
+	@raise COMError: the device is not available anymore
+	"""
+	return immDevice.Activate(IAudioSessionManager2._iid_, CLSCTX_ALL, None).QueryInterface(
+		IAudioSessionManager2,
+	)
+
+
+def listSessions(manager: IAudioSessionManager2) -> List[AudioSession]:
+	"""Get all audio sessions of the session manager of an audio device.
 	Unlike AudioUtilities.GetAllSessions() from pycaw 20251023+, this does not wrap the device
 	with AudioUtilities.CreateDevice(), which reads the whole property store of the device
 	and makes every call several times slower.
-	@return: audio sessions of the default output device, empty if there is no such device
+	@param manager: the session manager of the audio device
+	@type manager: pycaw.IAudioSessionManager2
+	@return: audio sessions of the device, empty if the device is not available anymore
 	@rtype: List[pycaw.AudioSession]
 	"""
 	try:
-		device = AudioUtilities.GetDeviceEnumerator().GetDefaultAudioEndpoint(
-			EDataFlow.eRender.value,
-			ERole.eMultimedia.value,
-		)
-		manager = device.Activate(IAudioSessionManager2._iid_, CLSCTX_ALL, None).QueryInterface(
-			IAudioSessionManager2,
-		)
 		sessionEnumerator = manager.GetSessionEnumerator()
 	except COMError:
-		log.debugWarning("Unable to get audio sessions of the default output device", exc_info=True)
+		log.debugWarning("Unable to get audio sessions of the audio device", exc_info=True)
 		return []
 	sessions: List[AudioSession] = []
 	for i in range(sessionEnumerator.GetCount()):
