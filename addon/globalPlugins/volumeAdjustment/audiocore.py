@@ -127,17 +127,30 @@ class Configuration(object):
 		"""
 		return self._data.get("muted", [])
 
-	def addMuted(self, name: Optional[str]) -> Configuration:
+	def addMuted(self, name: Optional[str], level: Optional[float] = None) -> Configuration:
 		"""Add name of the audio source to the collection of muted.
 		@param name: name of the audio session or ID of the audio device
 		@type name: Optional[str]
+		@param level: exact volume level before muting, restored when the audio source is unmuted
+		@type level: Optional[float]
 		@return: the current object instance for further reference to its attributes
 		@rtype: Configuration
 		"""
 		if name and name not in self.muted:
 			# The list must be stored first: without the "muted" key the property returns a new empty list
 			self._data.setdefault("muted", []).append(name)
+			if level is not None:
+				self._data.setdefault("mutedLevels", {})[name] = level
 		return self
+
+	def getMutedLevel(self, name: str) -> Optional[float]:
+		"""Get the exact volume level of the audio source before it was muted.
+		@param name: name of the audio session or ID of the audio device
+		@type name: str
+		@return: the volume level, None if it is unknown (e.g. muted by a previous version of the add-on)
+		@rtype: Optional[float]
+		"""
+		return self._data.get("mutedLevels", {}).get(name)
 
 	def delMuted(self, name: str) -> Configuration:
 		"""Remove name of the audio source from the list of muted.
@@ -152,6 +165,7 @@ class Configuration(object):
 			pass
 		else:
 			self._data["muted"] = self.muted
+		self._data.get("mutedLevels", {}).pop(name, None)
 		return self
 
 
