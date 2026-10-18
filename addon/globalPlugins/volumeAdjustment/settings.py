@@ -26,6 +26,15 @@ except addonHandler.AddonError:
 _: Callable[[str], str]
 
 
+def getProcessNames() -> List[str]:
+	"""Names of the processes playing or recording sound, each listed once.
+	@return: names of the processes with audio sessions, the playing ones first
+	@rtype: List[str]
+	"""
+	names = [app.name for app in [*registry.getApps(), *registry.getRecordingApps()]]
+	return list(dict.fromkeys(names))
+
+
 class AddonsReloadDialog(wx.Dialog):
 	"""Global plugins reload request dialog."""
 
@@ -160,7 +169,7 @@ class VASettingsPanel(SettingsPanel):
 		)
 		self.hideDuplicatesChk.SetValue(config.conf[addonName]["duplicates"])
 
-		procs: List[str] = [app.name for app in registry.getApps()]
+		procs: List[str] = getProcessNames()
 		self.procs = procs + [proc for proc in cfg.processes if proc not in procs]
 		self.hideProcesses = addonHelper.addLabeledControl(
 			# Translators: The label of the Checkable list in the settings panel
@@ -321,7 +330,7 @@ class VASettingsPanel(SettingsPanel):
 		@param event: event that occurs when a wx.Button is pressed
 		@type event: wx.PyEvent
 		"""
-		procs = [app.name for app in registry.getApps()]
+		procs = getProcessNames()
 		self.procs = procs + [proc for proc in cfg.processes if proc not in procs]
 		self.hideProcesses.Clear()
 		self.hideProcesses.SetItems(self.procs)
@@ -335,7 +344,7 @@ class VASettingsPanel(SettingsPanel):
 		@param event: event that occurs when a wx.Button is pressed
 		@type event: wx.PyEvent
 		"""
-		self.procs = [app.name for app in registry.getApps()]
+		self.procs = getProcessNames()
 		self.hideProcesses.Clear()
 		self.hideProcesses.SetItems(self.procs)
 		if len(self.procs) > 0:

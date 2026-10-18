@@ -9,7 +9,7 @@ from __future__ import annotations
 import math
 from abc import ABCMeta, abstractmethod
 from enum import Enum, IntEnum
-from typing import Dict, Iterable, List, NamedTuple, Optional, Type, TypeVar, Union
+from typing import Dict, Iterable, List, NamedTuple, Optional, Tuple, Type, TypeVar, Union
 import config
 from comtypes import CLSCTX_ALL, COMError, pointer
 from logHandler import log
@@ -68,6 +68,11 @@ class SourceKind(Enum):
 	INPUT_DEVICE = "I"
 	PLAYBACK_APP = "P"
 	RECORDING_APP = "R"
+
+
+# Identifies an audio source between keypresses: its category and ID (device ID or process name).
+# The same process can be both a playback and a recording application.
+SourceKey = Tuple[SourceKind, str]
 
 
 class FormFactor(IntEnum):
@@ -169,6 +174,8 @@ class SessionGroupVolume(object):
 class AudioSource(metaclass=ABCMeta):
 	"""Represents the basic properties of audio source."""
 
+	kind: SourceKind
+
 	def __init__(
 		self,
 		id: str,
@@ -196,6 +203,14 @@ class AudioSource(metaclass=ABCMeta):
 		@rtype: str
 		"""
 		return self._id
+
+	@property
+	def mutedKey(self) -> str:
+		"""Key of the audio source in the list of muted audio sources saved in the add-on configuration.
+		@return: device ID or audio session name
+		@rtype: str
+		"""
+		return self.id
 
 	@property
 	def name(self) -> str:
@@ -317,7 +332,7 @@ class AudioSource(metaclass=ABCMeta):
 		"""
 		state = False if self.volume is None else self.volume.GetMute()
 		if not config.conf[addonName]["muteCompletely"]:
-			return (self.id in cfg.muted) or state
+			return (self.mutedKey in cfg.muted) or state
 		return state
 
 	def mute(self) -> bool:
@@ -338,8 +353,8 @@ class AudioSource(metaclass=ABCMeta):
 			return False
 		else:
 			# The file is written only when the list of muted audio sources changes
-			if self.id not in cfg.muted:
-				cfg.addMuted(self.id, level).save()
+			if self.mutedKey not in cfg.muted:
+				cfg.addMuted(self.mutedKey, level).save()
 			return True
 
 	def unmute(self) -> bool:
@@ -351,7 +366,7 @@ class AudioSource(metaclass=ABCMeta):
 			# The getattr() function is used for correct processing by the MyPy analyzer
 			getattr(self.volume, "SetMute")(False, None)
 			if self.isMuted:
-				level = cfg.getMutedLevel(self.id)
+				level = cfg.getMutedLevel(self.mutedKey)
 				if level is None:
 					# Muted by a previous version of the add-on, which did not save the exact level
 					percentage = config.conf[addonName]["mutePercentage"]
@@ -362,8 +377,8 @@ class AudioSource(metaclass=ABCMeta):
 			return False
 		else:
 			# The file is written only when the list of muted audio sources changes
-			if self.id in cfg.muted:
-				cfg.delMuted(self.id).save()
+			if self.mutedKey in cfg.muted:
+				cfg.delMuted(self.mutedKey).save()
 			return True
 
 	@property
@@ -737,8 +752,27 @@ class RecordingAppSource(AppSource):
 
 	kind = SourceKind.RECORDING_APP
 
+	@property
+	def mutedKey(self) -> str:
+		"""Key of the application in the list of muted audio sources, distinct from the same playback application.
+		A colon cannot be a part of a file name, so it cannot clash with a process name.
+		@return: the process name with a prefix
+		@rtype: str
+		"""
+		return f"recording:{self.name}"
+
 
 AppT = TypeVar("AppT", bound=AppSource)
+
+
+def getSourceKey(source: AudioSource) -> SourceKey:
+	"""Get the key that identifies the audio source between keypresses.
+	@param source: the audio source
+	@type source: AudioSource
+	@return: the category and the ID of the audio source
+	@rtype: SourceKey
+	"""
+	return source.kind, source.id
 
 
 class DeviceNotifications(MMNotificationClient):
@@ -1084,25 +1118,39 @@ class AudioSourceRegistry(object):
 		"""
 		return self._getApps(EDataFlow.eCapture, RecordingAppSource, hide)
 
-	def findApp(self, name: str, pid: int = 0) -> Optional[PlaybackAppSource]:
-		"""Find the application playing sound by its process ID or name.
+	def findApp(
+		self,
+		name: str,
+		pid: int = 0,
+		kind: SourceKind = SourceKind.PLAYBACK_APP,
+	) -> Optional[AppSource]:
+		"""Find the application playing or recording sound by its process ID or name.
 		The process ID is not enough on its own: e.g. in web browsers the sound is usually played
 		by a child process, not by the process of the focused window.
+		The exact process name is preferred to a partial match (e.g. "code.exe" is not "vscode.exe").
 		There is no fallback to another application: adjusting the volume of NVDA or of an unrelated program
 		instead of the requested one would be confusing.
 		@param name: full name or part of the process name
 		@type name: str
 		@param pid: ID of the process whose application is preferred, 0 to search by name only
 		@type pid: int
-		@return: the application, None if it does not play any sound
-		@rtype: Optional[PlaybackAppSource]
+		@param kind: playback or recording applications
+		@type kind: SourceKind
+		@return: the application, None if it has no audio session in the category
+		@rtype: Optional[AppSource]
 		"""
-		apps = self.getApps()
+		apps: List[AppSource] = [
+			*(self.getRecordingApps() if kind == SourceKind.RECORDING_APP else self.getApps()),
+		]
 		if pid:
 			app = next((app for app in apps if pid in app.processIds), None)
 			if app is not None:
 				return app
-		return next((app for app in apps if name.lower() in app.name.lower()), None)
+		name = name.lower()
+		return next((app for app in apps if app.name.lower() == name), None) or next(
+			(app for app in apps if name in app.name.lower()),
+			None,
+		)
 
 
 # Global instance shared by the global plugin and the settings panel
