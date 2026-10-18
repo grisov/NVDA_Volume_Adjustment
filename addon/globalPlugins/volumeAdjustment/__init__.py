@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 import os.path
-from typing import Callable, List, Optional, TypeVar, Union
+from typing import Callable, List, Optional, TypeVar
 import addonHandler
 import config
 import globalPluginHandler
@@ -20,7 +20,8 @@ from NVDAObjects import NVDAObject
 from scriptHandler import script
 from synthDriverHandler import getSynth, setSynth
 from utils.mmdevice import AudioOutputDevice, getOutputDevices
-from .audiocore import VAAudioDevice, VAAudioSession, cfg, devices, getDefaultOutputSessions
+from .audiocore import cfg
+from .sources import AudioSource, PlaybackAppSource, registry
 
 try:
 	addonHandler.initTranslation()
@@ -77,13 +78,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._previous: str = ""
 		# Name of the current process
 		self._process: str = ""
-		# Audio session of the current process, reused between keypresses
-		self._session: Optional[VAAudioSession] = None
+		# Application of the current process, reused between keypresses
+		self._session: Optional[PlaybackAppSource] = None
 		# Bind default gestures if necessary
 		config.conf[addonName]["gestures"] and self.bindGestures(self.__defaultGestures)
 		# Creating individual switching methods for each output audio device detected in the system
 		self.bindSwitchingMethods()
-		devices.scan(cfg.devices)
+		registry.scanDevices(cfg.devices)
 
 	def terminate(self, *args, **kwargs) -> None:
 		"""This will be called when NVDA is finished with this global plugin."""
@@ -127,26 +128,26 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			except AttributeError:
 				appName = UNDEFINED_APP
 			# The session of the focused process itself is preferred, then the one found by the app name
-			session = VAAudioSession(appName, getattr(obj, "processID", 0))
-			if not session.name:
+			session = registry.findApp(appName, getattr(obj, "processID", 0))
+			if session is None:
 				self.announceNotPlaying(appName)
 				return False
 			self._session = session
 		self._process = self._session.name
 		return True
 
-	def getSession(self, name: str) -> VAAudioSession:
-		"""Get the audio session of the specified process.
-		The previously created session is reused while the same process stays selected,
+	def getSession(self, name: str) -> Optional[PlaybackAppSource]:
+		"""Get the application of the specified process.
+		The previously found application is reused while the same process stays selected,
 		so repeated keypresses do not enumerate all audio sessions again.
-		An expired session (e.g. the process was restarted) is replaced with a fresh one.
+		An expired application (e.g. the process was restarted) is looked up again.
 		@param name: the name of the running process
 		@type name: str
-		@return: audio session of the specified process
-		@rtype: VAAudioSession
+		@return: the application of the specified process, None if it does not play any sound
+		@rtype: Optional[PlaybackAppSource]
 		"""
 		if self._session is None or self._session.name != name or self._session.isExpired:
-			self._session = VAAudioSession(name)
+			self._session = registry.findApp(name)
 		return self._session
 
 	def announceVolumeLevel(self, volumeLevel: float) -> None:
@@ -184,26 +185,20 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		ui.message(_("Not supported"))
 
 	def getAllSessions(self) -> List[str]:
-		"""List of all running processes that available in the list of audio sessions
-		excluding hidden sessions and duplicate items if the corresponding option is enabled.
+		"""List of all running processes that play sound, excluding the hidden processes.
+		Each process name is listed once: all audio sessions of the process are adjusted together.
 		@return: list of currently running processes
 		@rtype: List[str]
 		"""
-		procs = [
-			s.Process.name()
-			for s in getDefaultOutputSessions()
-			if s.Process and s.Process.name() and s.Process.name() not in cfg.processes  # noqa E502
-		]
-		return list(set(procs)) if config.conf[addonName]["duplicates"] else procs
+		return [app.name for app in registry.getApps(cfg.processes)]
 
 	def unmuteAllAudioSources(self) -> None:
 		"""Unmute all muted audio devices and audio sessions."""
-		for device in devices:
+		for device in registry.devices:
 			device.isMuted and device.unmute()
-		for sessionName in self.getAllSessions():
-			session = VAAudioSession(sessionName)
-			if session.name and session.isMuted:
-				session.unmute()
+		# Hidden processes are unmuted too: they may have been muted before they were hidden
+		for app in registry.getApps():
+			app.isMuted and app.unmute()
 
 	def selectAudioSource(self, sessions: List[str]) -> None:
 		"""Select audio source to adjust its volume level.
@@ -211,15 +206,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param sessions: filtered list of all running processes, changes dynamically
 		@type sessions: List[str]
 		"""
-		if 0 <= self._index < len(devices):
-			source: Union[VAAudioDevice, VAAudioSession] = devices[self._index]
+		if 0 <= self._index < len(registry.devices):
+			source: AudioSource = registry.devices[self._index]
 			title: str = source.name
 			if source.default:
 				# Translators: Used as the prefix to default audio device name
 				title = "{default}: {title}".format(default=_("Default audio device"), title=source.name)
 		else:
 			try:
-				self._process = sessions[self._index - len(devices)]
+				self._process = sessions[self._index - len(registry.devices)]
 			except IndexError:
 				try:
 					self._process = sessions[-1]
@@ -227,40 +222,40 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 					self._process = UNDEFINED_APP
 			self._previous = self._process
 			# Switching between audio sources always takes a fresh session
-			source = self._session = VAAudioSession(self._process)
-			if not source.name:
+			app = self._session = registry.findApp(self._process)
+			if app is None:
 				self.announceNotPlaying(self._process.replace(".exe", ""))
 				return
-			title = source.title
+			source = app
+			title = app.title
 		ui.message(title)
 		if config.conf[addonName]["status"]:
 			self.announceMuted() if source.isMuted else self.announceVolumeLevel(source.volumeLevel)
 
-	def getAudioSource(self) -> Optional[Union[VAAudioDevice, VAAudioSession]]:
+	def getAudioSource(self) -> Optional[AudioSource]:
 		"""Get the object of selected audio source (device or process),
-		this can be instance inherited from the audiocore.AudioSource class.
-		Also announces the name of the audio session at the first treatment.
+		this can be instance inherited from the sources.AudioSource class.
+		Also announces the name of the application at the first treatment.
 		@return: instance of selected audio source, None if the selected application does not play any sound
-		@rtype: Optional[Union[VAAudioDevice, VAAudioSession]]
+		@rtype: Optional[AudioSource]
 		"""
-		if 0 <= self._index < len(devices):
-			source: Union[VAAudioDevice, VAAudioSession] = devices[self._index]
+		if 0 <= self._index < len(registry.devices):
 			self._previous = UNDEFINED_APP
-		else:
-			source = self.getSession(self._process)
-			if not source.name:
-				self.announceNotPlaying(self._process.replace(".exe", ""))
-				return None
-			if source.name != self._previous:
-				ui.message(source.title)
-				self._previous = source.name
-		return source
+			return registry.devices[self._index]
+		app = self.getSession(self._process)
+		if app is None:
+			self.announceNotPlaying(self._process.replace(".exe", ""))
+			return None
+		if app.name != self._previous:
+			ui.message(app.title)
+			self._previous = app.name
+		return app
 
-	def getSelectedAudioSource(self) -> Optional[Union[VAAudioDevice, VAAudioSession]]:
+	def getSelectedAudioSource(self) -> Optional[AudioSource]:
 		"""Get the audio source to adjust: the application in focus or the source selected in the list.
 		Announces if the selected application does not play any sound.
 		@return: the selected audio source, None if there is nothing to adjust
-		@rtype: Optional[Union[VAAudioDevice, VAAudioSession]]
+		@rtype: Optional[AudioSource]
 		"""
 		if self._index < 0 and not self.selectProcessInFocus():
 			return None
@@ -346,12 +341,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		sessions: List[str] = self.getAllSessions()
 		if self._index < 0:
 			try:
-				self._index = len(devices) + sessions.index(
+				self._index = len(registry.devices) + sessions.index(
 					next(filter(lambda s: self._process in s, sessions), ""),
 				)
 			except (ValueError, TypeError):
-				self._index = len(devices) - 1
-		self._index = self._index + 1 if self._index < (len(devices) + len(sessions) - 1) else 0
+				self._index = len(registry.devices) - 1
+		self._index = self._index + 1 if self._index < (len(registry.devices) + len(sessions) - 1) else 0
 		self.selectAudioSource(sessions)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
@@ -364,12 +359,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		sessions: List[str] = self.getAllSessions()
 		if self._index < 0:
 			try:
-				self._index = len(devices) + sessions.index(
+				self._index = len(registry.devices) + sessions.index(
 					next(filter(lambda s: self._process in s, sessions), ""),
 				)
 			except (ValueError, TypeError):
 				pass
-		self._index = self._index - 1 if self._index > 0 else len(devices) + len(sessions) - 1
+		self._index = self._index - 1 if self._index > 0 else len(registry.devices) + len(sessions) - 1
 		self.selectAudioSource(sessions)
 
 	def setOutputDevice(self, device: AudioOutputDevice) -> None:

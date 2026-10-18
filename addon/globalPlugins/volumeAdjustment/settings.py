@@ -15,7 +15,8 @@ from gui.settingsDialogs import SettingsPanel
 from logHandler import log
 from queueHandler import eventQueue, queueFunction
 from . import addonName, addonSummary
-from .audiocore import cfg, devices, getDefaultOutputSessions
+from .audiocore import cfg
+from .sources import registry
 
 try:
 	addonHandler.initTranslation()
@@ -125,11 +126,8 @@ class VASettingsPanel(SettingsPanel):
 		)
 		self.hideDuplicatesChk.SetValue(config.conf[addonName]["duplicates"])
 
-		procs: List[str] = [
-			s.Process.name() for s in getDefaultOutputSessions() if s.Process and s.Process.name()
-		]
-		self.procs = list(set(procs)) if config.conf[addonName]["duplicates"] else procs
-		self.procs.extend([proc for proc in cfg.processes if proc not in procs])
+		procs: List[str] = [app.name for app in registry.getApps()]
+		self.procs = procs + [proc for proc in cfg.processes if proc not in procs]
 		self.hideProcesses = addonHelper.addLabeledControl(
 			# Translators: The label of the Checkable list in the settings panel
 			_("Hide &processes:"),
@@ -160,7 +158,7 @@ class VASettingsPanel(SettingsPanel):
 			choices=[],
 		)
 		self.devs = dict(cfg.devices)
-		self.devs.update({devices[i].id: devices[i].name for i in range(len(devices))})
+		self.devs.update({device.id: device.name for device in registry.getAllDevices()})
 		for id, name in self.devs.items():
 			self.hideDevices.Append(name, id)
 		if len(self.devs) > 0:
@@ -217,10 +215,10 @@ class VASettingsPanel(SettingsPanel):
 		@type event: wx.PyEvent
 		"""
 		config.conf[addonName]["advanced"] = event.IsChecked()
-		devices.initialize(cfg.devices)
+		registry.scanDevices(cfg.devices)
 		self.hideDevices.Clear()
 		self.devs = dict(cfg.devices)
-		self.devs.update({devices[i].id: devices[i].name for i in range(len(devices))})
+		self.devs.update({device.id: device.name for device in registry.getAllDevices()})
 		for id, name in self.devs.items():
 			self.hideDevices.Append(name, id)
 		if event.IsChecked() and len(self.devs) > 0:
@@ -256,10 +254,9 @@ class VASettingsPanel(SettingsPanel):
 		@param event: event that occurs when a wx.Button is pressed
 		@type event: wx.PyEvent
 		"""
-		devices.initialize()
 		self.hideDevices.Clear()
 		self.devs = dict(cfg.devices)
-		self.devs.update({devices[i].id: devices[i].name for i in range(len(devices))})
+		self.devs.update({device.id: device.name for device in registry.getAllDevices()})
 		for id, name in self.devs.items():
 			self.hideDevices.Append(name, id)
 		if len(self.devs) > 0:
@@ -273,9 +270,10 @@ class VASettingsPanel(SettingsPanel):
 		@type event: wx.PyEvent
 		"""
 		self.hideDevices.Clear()
-		for dev in devices:
+		allDevices = registry.getAllDevices()
+		for dev in allDevices:
 			self.hideDevices.Append(dev.name, dev.id)
-		if len(devices) > 0:
+		if len(allDevices) > 0:
 			self.hideDevices.SetSelection(0)
 		self.hideDevices.SetFocus()
 
@@ -284,9 +282,8 @@ class VASettingsPanel(SettingsPanel):
 		@param event: event that occurs when a wx.Button is pressed
 		@type event: wx.PyEvent
 		"""
-		procs = [s.Process.name() for s in getDefaultOutputSessions() if s.Process and s.Process.name()]
-		self.procs = list(set(procs)) if config.conf[addonName]["duplicates"] else procs
-		self.procs.extend([proc for proc in cfg.processes if proc not in procs])
+		procs = [app.name for app in registry.getApps()]
+		self.procs = procs + [proc for proc in cfg.processes if proc not in procs]
 		self.hideProcesses.Clear()
 		self.hideProcesses.SetItems(self.procs)
 		if len(self.procs) > 0:
@@ -299,7 +296,7 @@ class VASettingsPanel(SettingsPanel):
 		@param event: event that occurs when a wx.Button is pressed
 		@type event: wx.PyEvent
 		"""
-		self.procs = [s.Process.name() for s in getDefaultOutputSessions() if s.Process and s.Process.name()]
+		self.procs = [app.name for app in registry.getApps()]
 		self.hideProcesses.Clear()
 		self.hideProcesses.SetItems(self.procs)
 		if len(self.procs) > 0:
@@ -333,4 +330,4 @@ class VASettingsPanel(SettingsPanel):
 			cfg.save()
 			if isChangedDevices:
 				# Re-initialize the list of devices for the new settings to take effect
-				devices.scan(cfg.devices)
+				registry.scanDevices(cfg.devices)
