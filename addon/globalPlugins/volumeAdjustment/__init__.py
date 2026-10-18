@@ -68,6 +68,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			"advanced": "boolean(default=false)",
 			# Letters of the visible categories of audio sources, see sources.SourceKind
 			"categories": 'string(default="OIPR")',
+			"announceCategories": "boolean(default=true)",
 			"muteCompletely": "boolean(default=false)",
 			"mutePercentage": "integer(default=75,min=1,max=99)",
 			"unmuteOnExit": "boolean(default=true)",
@@ -273,6 +274,25 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return "{default}: {title}".format(default=_("Default audio device"), title=source.name)
 		return source.name
 
+	def getCategoryName(self, kind: SourceKind) -> str:
+		"""Get the name of the category of audio sources to announce.
+		@param kind: the category of audio sources
+		@type kind: SourceKind
+		@return: the translated name of the category
+		@rtype: str
+		"""
+		if kind == SourceKind.OUTPUT_DEVICE:
+			# Translators: The name of the category of audio sources announced while switching between them
+			return _("Output devices")
+		if kind == SourceKind.INPUT_DEVICE:
+			# Translators: The name of the category of audio sources announced while switching between them
+			return _("Input devices")
+		if kind == SourceKind.PLAYBACK_APP:
+			# Translators: The name of the category of audio sources announced while switching between them
+			return _("Playback apps")
+		# Translators: The name of the category of audio sources announced while switching between them
+		return _("Recording apps")
+
 	def switchAudioSource(self, step: int) -> None:
 		"""Select the next or previous audio source in the list and announce it.
 		Starting from the application in focus, the neighbouring source is selected.
@@ -302,7 +322,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._selected = self._previous = getSourceKey(source)
 		if isinstance(source, AppSource):
 			self._session = source
-		ui.message(self.getSourceTitle(source))
+		title = self.getSourceTitle(source)
+		# The category is announced when it changes, or when the previous source is not known
+		if config.conf[addonName]["announceCategories"] and (current is None or current[0] != source.kind):
+			title = f"{self.getCategoryName(source.kind)}, {title}"
+		ui.message(title)
 		if config.conf[addonName]["status"]:
 			self.announceMuted(source) if source.isMuted else self.announceVolumeLevel(source.volumeLevel)
 
