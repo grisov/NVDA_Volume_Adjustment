@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 import os.path
-from typing import Callable, List, Optional, TypeVar
+from typing import Callable, List, Optional, Tuple, TypeVar
 import addonHandler
 import config
 import globalPluginHandler
@@ -24,7 +24,7 @@ from scriptHandler import script
 from synthDriverHandler import getSynth, setSynth
 from utils.mmdevice import AudioOutputDevice, getOutputDevices
 from .audiocore import cfg
-from .sources import AudioSource, PlaybackAppSource, registry
+from .sources import AppSource, AudioSource, PlaybackAppSource, SourceKey, SourceKind, getSourceKey, registry
 
 try:
 	addonHandler.initTranslation()
@@ -66,6 +66,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			"focus": "boolean(default=true)",
 			"duplicates": "boolean(default=true)",
 			"advanced": "boolean(default=false)",
+			# Letters of the visible categories of audio sources, see sources.SourceKind
+			"categories": 'string(default="OIPR")',
 			"muteCompletely": "boolean(default=false)",
 			"mutePercentage": "integer(default=75,min=1,max=99)",
 			"unmuteOnExit": "boolean(default=true)",
@@ -76,14 +78,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		settingsDialogs.NVDASettingsDialog.categoryClasses.append(VASettingsPanel)
 		# Remember the default output audio device
 		self._defaultOutputDevice: str = config.conf["audio"]["outputDevice"]
-		# Switching between processes
-		self._index: int = 0  # index of current audio source
-		# Remember the name of the audio session of the previous process
-		self._previous: str = ""
-		# Name of the current process
-		self._process: str = ""
-		# Application of the current process, reused between keypresses
-		self._session: Optional[PlaybackAppSource] = None
+		# Audio source selected with arrows: its category and ID, None to adjust the application in focus
+		self._selected: Optional[SourceKey] = None
+		# The audio source whose name was announced last, so it is not repeated on every keypress
+		self._previous: Optional[SourceKey] = None
+		# Application of the selected or focused process, reused between keypresses
+		self._session: Optional[AppSource] = None
 		# Whether the warning about lowering the volume of NVDA itself is currently shown
 		self._isWarningShown: bool = False
 		# Bind default gestures if necessary
@@ -115,46 +115,60 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@type nextHandler: Callable
 		"""
 		if config.conf[addonName]["focus"]:
-			self._index = -1
-			self._previous = UNDEFINED_APP
+			self._selected = None
+			# The name of the application in focus is announced on the next keypress
+			self._previous = None
 			# The application in focus may have changed, so its audio session is looked up again
 			self._session = None
 		NextHandler()
 
+	def getFocusedProcess(self) -> Tuple[str, int]:
+		"""Get the application name and the process ID of the object in system focus.
+		@return: the application name and the process ID, 0 if it is unknown
+		@rtype: Tuple[str, int]
+		"""
+		obj = getFocusObject()
+		try:
+			appName = obj.appModule.appName
+		except AttributeError:
+			appName = UNDEFINED_APP
+		return appName, getattr(obj, "processID", 0)
+
 	def selectProcessInFocus(self) -> bool:
-		"""Select the name of the process that is in system focus.
+		"""Select the application that is in system focus.
 		The application found after the last focus change is reused by subsequent keypresses
 		until it becomes outdated (see AudioSourceRegistry.isOutdated()).
-		@return: whether the current process is in the list of audio sessions
+		@return: whether the application in focus plays any sound
 		@rtype: bool
 		"""
 		if self._session is None or registry.isOutdated(self._session):
-			obj = getFocusObject()
-			try:
-				appName = obj.appModule.appName
-			except AttributeError:
-				appName = UNDEFINED_APP
+			appName, processId = self.getFocusedProcess()
 			# The session of the focused process itself is preferred, then the one found by the app name
-			session = registry.findApp(appName, getattr(obj, "processID", 0))
+			session = registry.findApp(appName, processId)
 			if session is None:
 				self.announceNotPlaying(appName)
 				return False
 			self._session = session
-		self._process = self._session.name
 		return True
 
-	def getSession(self, name: str) -> Optional[PlaybackAppSource]:
-		"""Get the application of the specified process.
+	def getSession(self, kind: SourceKind, name: str) -> Optional[AppSource]:
+		"""Get the application of the specified process in the specified category.
 		The previously found application is reused while the same process stays selected,
 		so repeated keypresses do not enumerate all audio sessions again.
-		An outdated application (e.g. the process was restarted or the default device changed) is looked up again.
+		An outdated application (e.g. the process was restarted or the devices changed) is looked up again.
+		@param kind: playback or recording applications
+		@type kind: SourceKind
 		@param name: the name of the running process
 		@type name: str
-		@return: the application of the specified process, None if it does not play any sound
-		@rtype: Optional[PlaybackAppSource]
+		@return: the application of the specified process, None if it has no audio session
+		@rtype: Optional[AppSource]
 		"""
-		if self._session is None or self._session.name != name or registry.isOutdated(self._session):
-			self._session = registry.findApp(name)
+		if (
+			self._session is None
+			or getSourceKey(self._session) != (kind, name)
+			or registry.isOutdated(self._session)
+		):
+			self._session = registry.findApp(name, kind=kind)
 		return self._session
 
 	def formatVolumeLevel(self, volumeLevel: float) -> str:
@@ -189,7 +203,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# The level is announced only when the add-on decreased it: a source muted by Windows or another program is silent
 		if (
 			not config.conf[addonName]["muteCompletely"]
-			and source.id in cfg.muted
+			and source.mutedKey in cfg.muted
 			and not (volume is not None and volume.GetMute())
 		):
 			message = f"{message}, {self.formatVolumeLevel(source.volumeLevel)}"
@@ -216,72 +230,123 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Translators: The message when feature currently is not supported
 		ui.message(_("Not supported"))
 
-	def getAllSessions(self) -> List[str]:
-		"""List of all running processes that play sound, excluding the hidden processes.
-		Each process name is listed once: all audio sessions of the process are adjusted together.
-		@return: list of currently running processes
-		@rtype: List[str]
+	def getAllSources(self) -> List[AudioSource]:
+		"""List of all audio sources available for switching, in the order of the categories:
+		output devices, input devices, playback applications, recording applications.
+		Hidden categories, devices and processes are skipped.
+		Each process name is listed once per category: all its audio sessions are adjusted together.
+		@return: the audio sources, the list changes dynamically
+		@rtype: List[AudioSource]
 		"""
-		return [app.name for app in registry.getApps(cfg.processes)]
+		visible: str = config.conf[addonName]["categories"]
+		sources: List[AudioSource] = []
+		for kind in SourceKind:
+			if kind.value not in visible:
+				continue
+			if kind == SourceKind.PLAYBACK_APP:
+				sources.extend(registry.getApps(cfg.processes))
+			elif kind == SourceKind.RECORDING_APP:
+				sources.extend(registry.getRecordingApps(cfg.processes))
+			else:
+				sources.extend(device for device in registry.devices if device.kind == kind)
+		return sources
 
 	def unmuteAllAudioSources(self) -> None:
 		"""Unmute all muted audio devices and audio sessions."""
 		for device in registry.devices:
 			device.isMuted and device.unmute()
 		# Hidden processes are unmuted too: they may have been muted before they were hidden
-		for app in registry.getApps():
+		for app in [*registry.getApps(), *registry.getRecordingApps()]:
 			app.isMuted and app.unmute()
 
-	def selectAudioSource(self, sessions: List[str]) -> None:
-		"""Select audio source to adjust its volume level.
-		This can be a physical audio device or a running process.
-		@param sessions: filtered list of all running processes, changes dynamically
-		@type sessions: List[str]
+	def getSourceTitle(self, source: AudioSource) -> str:
+		"""Get the name of the audio source to announce.
+		@param source: the audio source
+		@type source: AudioSource
+		@return: human friendly name of the audio source
+		@rtype: str
 		"""
-		if 0 <= self._index < len(registry.devices):
-			source: AudioSource = registry.devices[self._index]
-			title: str = source.name
-			if source.default:
-				# Translators: Used as the prefix to default audio device name
-				title = "{default}: {title}".format(default=_("Default audio device"), title=source.name)
+		if isinstance(source, AppSource):
+			return source.title
+		if source.default:
+			# Translators: Used as the prefix to default audio device name
+			return "{default}: {title}".format(default=_("Default audio device"), title=source.name)
+		return source.name
+
+	def switchAudioSource(self, step: int) -> None:
+		"""Select the next or previous audio source in the list and announce it.
+		Starting from the application in focus, the neighbouring source is selected.
+		@param step: offset in the list of audio sources
+		@type step: int (usually 1 or -1)
+		"""
+		sources = self.getAllSources()
+		if not sources:
+			return
+		keys = [getSourceKey(source) for source in sources]
+		if self._selected is None and config.conf[addonName]["focus"]:
+			focused = registry.findApp(*self.getFocusedProcess())
+			current = getSourceKey(focused) if focused is not None else None
+		elif self._selected is None:
+			# Without focus tracking the first source is adjusted until another one is selected
+			current = keys[0]
 		else:
-			try:
-				self._process = sessions[self._index - len(registry.devices)]
-			except IndexError:
-				try:
-					self._process = sessions[-1]
-				except IndexError:
-					self._process = UNDEFINED_APP
-			self._previous = self._process
-			# Switching between audio sources always takes a fresh session
-			app = self._session = registry.findApp(self._process)
-			if app is None:
-				self.announceNotPlaying(self._process.replace(".exe", ""))
-				return
-			source = app
-			title = app.title
-		ui.message(title)
+			current = self._selected
+		if current in keys:
+			position = keys.index(current)
+		elif step > 0:
+			# Unknown position: the next source is the first application, the previous one is the last source
+			position = len([source for source in sources if not isinstance(source, AppSource)]) - 1
+		else:
+			position = 0
+		source = sources[(position + step) % len(sources)]
+		self._selected = self._previous = getSourceKey(source)
+		if isinstance(source, AppSource):
+			self._session = source
+		ui.message(self.getSourceTitle(source))
 		if config.conf[addonName]["status"]:
 			self.announceMuted(source) if source.isMuted else self.announceVolumeLevel(source.volumeLevel)
 
+	def announceTitleOnce(self, source: AudioSource) -> AudioSource:
+		"""Announce the name of the application when a volume command uses it for the first time.
+		@param source: the audio source to adjust
+		@type source: AudioSource
+		@return: the same audio source
+		@rtype: AudioSource
+		"""
+		key = getSourceKey(source)
+		if key != self._previous:
+			ui.message(self.getSourceTitle(source))
+			self._previous = key
+		return source
+
 	def getAudioSource(self) -> Optional[AudioSource]:
-		"""Get the object of selected audio source (device or process),
+		"""Get the object of the audio source selected with arrows (device or application),
 		this can be instance inherited from the sources.AudioSource class.
 		Also announces the name of the application at the first treatment.
-		@return: instance of selected audio source, None if the selected application does not play any sound
+		@return: instance of selected audio source, None if the selected application has no audio session
 		@rtype: Optional[AudioSource]
 		"""
-		if 0 <= self._index < len(registry.devices):
-			self._previous = UNDEFINED_APP
-			return registry.devices[self._index]
-		app = self.getSession(self._process)
-		if app is None:
-			self.announceNotPlaying(self._process.replace(".exe", ""))
+		if self._selected is None:
 			return None
-		if app.name != self._previous:
-			ui.message(app.title)
-			self._previous = app.name
-		return app
+		kind, id = self._selected
+		if kind in (SourceKind.OUTPUT_DEVICE, SourceKind.INPUT_DEVICE):
+			devices = registry.devices
+			device = next((device for device in devices if device.id == id), None)
+			if device is None:
+				# The selected device has been removed or hidden: the default output device is adjusted instead
+				if not devices:
+					return None
+				device = devices[0]
+				self._selected = getSourceKey(device)
+				ui.message(self.getSourceTitle(device))
+			# The name of the application is announced again when it is selected after a device
+			self._previous = self._selected
+			return device
+		app = self.getSession(kind, id)
+		if app is None:
+			self.announceNotPlaying(id.replace(".exe", ""))
+			return None
+		return self.announceTitleOnce(app)
 
 	def isNvdaSession(self, source: AudioSource) -> bool:
 		"""Check whether the audio source is the audio session of NVDA itself, which plays NVDA speech.
@@ -327,8 +392,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@return: the selected audio source, None if there is nothing to adjust
 		@rtype: Optional[AudioSource]
 		"""
-		if self._index < 0 and not self.selectProcessInFocus():
-			return None
+		if self._selected is None:
+			if config.conf[addonName]["focus"]:
+				if not self.selectProcessInFocus():
+					return None
+				# Incorrect narrowing of the attribute by MyPy
+				return self.announceTitleOnce(self._session)  # type: ignore
+			# Without focus tracking the first source in the list is adjusted until another one is selected
+			sources = self.getAllSources()
+			if not sources:
+				return None
+			self._selected = getSourceKey(sources[0])
 		return self.getAudioSource()
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
@@ -416,16 +490,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		sessions: List[str] = self.getAllSessions()
-		if self._index < 0:
-			try:
-				self._index = len(registry.devices) + sessions.index(
-					next(filter(lambda s: self._process in s, sessions), ""),
-				)
-			except (ValueError, TypeError):
-				self._index = len(registry.devices) - 1
-		self._index = self._index + 1 if self._index < (len(registry.devices) + len(sessions) - 1) else 0
-		self.selectAudioSource(sessions)
+		self.switchAudioSource(step=1)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Switch to the previous audio source"))
@@ -434,16 +499,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		sessions: List[str] = self.getAllSessions()
-		if self._index < 0:
-			try:
-				self._index = len(registry.devices) + sessions.index(
-					next(filter(lambda s: self._process in s, sessions), ""),
-				)
-			except (ValueError, TypeError):
-				pass
-		self._index = self._index - 1 if self._index > 0 else len(registry.devices) + len(sessions) - 1
-		self.selectAudioSource(sessions)
+		self.switchAudioSource(step=-1)
 
 	def setOutputDevice(self, device: AudioOutputDevice) -> None:
 		"""Switche the NVDA output to the specified audio device.
