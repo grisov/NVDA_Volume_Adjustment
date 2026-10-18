@@ -1,7 +1,7 @@
 # NVDA Volume Adjustment
 
 * Author: Oleksandr Gryshchenko
-* Version: 1.6
+* Version: 2.0
 * NVDA compatibility: 2026.1 and beyond
 * Installation: through the NVDA Add-on Store ([stable version][1])
 
