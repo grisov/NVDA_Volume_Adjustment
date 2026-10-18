@@ -31,6 +31,7 @@ try:
 except addonHandler.AddonError:
 	log.warning("Unable to init translations. This may be because the addon is running from NVDA scratchpad.")
 _: Callable[[str], str]
+ngettext: Callable[[str, str, int], str]
 GlobalPluginType = TypeVar("GlobalPluginType", bound=globalPluginHandler.GlobalPlugin)
 
 _addonDir = os.path.join(os.path.dirname(__file__), "..", "..")
@@ -239,18 +240,98 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@return: the audio sources, the list changes dynamically
 		@rtype: List[AudioSource]
 		"""
-		visible: str = config.conf[addonName]["categories"]
 		sources: List[AudioSource] = []
-		for kind in SourceKind:
-			if kind.value not in visible:
-				continue
-			if kind == SourceKind.PLAYBACK_APP:
-				sources.extend(registry.getApps(cfg.processes))
-			elif kind == SourceKind.RECORDING_APP:
-				sources.extend(registry.getRecordingApps(cfg.processes))
-			else:
-				sources.extend(device for device in registry.devices if device.kind == kind)
+		for kind in self.getVisibleCategories():
+			sources.extend(self.getSources(kind))
 		return sources
+
+	def getSources(self, kind: SourceKind) -> List[AudioSource]:
+		"""List of the audio sources of one category, hidden devices and processes are skipped.
+		@param kind: the category of audio sources
+		@type kind: SourceKind
+		@return: the audio sources of the category
+		@rtype: List[AudioSource]
+		"""
+		if kind == SourceKind.PLAYBACK_APP:
+			return [*registry.getApps(cfg.processes)]
+		if kind == SourceKind.RECORDING_APP:
+			return [*registry.getRecordingApps(cfg.processes)]
+		return [device for device in registry.devices if device.kind == kind]
+
+	def getVisibleCategories(self) -> List[SourceKind]:
+		"""Categories of audio sources available for switching, in their order.
+		@return: the visible categories, all of them if the saved value contains none
+		@rtype: List[SourceKind]
+		"""
+		visible: str = config.conf[addonName]["categories"]
+		return [kind for kind in SourceKind if kind.value in visible] or list(SourceKind)
+
+	def setVisibleCategories(self, categories: List[SourceKind]) -> None:
+		"""Save the visible categories of audio sources.
+		A source selected in a category that became hidden is not adjusted anymore:
+		the application in focus or the first source is adjusted instead.
+		@param categories: the categories to show
+		@type categories: List[SourceKind]
+		"""
+		letters = [kind.value for kind in SourceKind if kind in categories]
+		config.conf[addonName]["categories"] = "".join(letters)
+		if self._selected is not None and self._selected[0] not in categories:
+			self._selected = self._previous = None
+			self._session = None
+
+	def toggleCategory(self, kind: SourceKind) -> None:
+		"""Show or hide the category of audio sources and announce the result.
+		The last visible category cannot be hidden.
+		@param kind: the category of audio sources
+		@type kind: SourceKind
+		"""
+		visible = self.getVisibleCategories()
+		category = self.getCategoryName(kind)
+		if kind not in visible:
+			self.setVisibleCategories([*visible, kind])
+			count = len(self.getSources(kind))
+			# Translators: The message when a category of audio sources is shown,
+			# {category} is its name, e.g. "Recording apps", {count} is the number of its audio sources now
+			message = ngettext("{category} shown, {count} source", "{category} shown, {count} sources", count)
+			ui.message(message.format(category=category, count=count))
+		elif visible == [kind]:
+			# Translators: The message when the user tries to hide the only visible category of audio sources,
+			# followed by the message that it is already the only visible category
+			self.announceOnlyVisibleCategory(category, prefix=_("Category cannot be hidden."))
+		else:
+			self.setVisibleCategories([visibleKind for visibleKind in visible if visibleKind != kind])
+			# Translators: The message when a category of audio sources is hidden,
+			# {category} is its name, e.g. "Recording apps"
+			ui.message(_("{category} hidden").format(category=category))
+
+	def announceOnlyVisibleCategory(self, category: str, prefix: str = "") -> None:
+		"""Announce that the category is already the only visible one,
+		when it is hidden or shown as the only category.
+		@param category: the name of the category
+		@type category: str
+		@param prefix: the message announced before, e.g. that the category cannot be hidden
+		@type prefix: str
+		"""
+		# Translators: The message when the category of audio sources is already the only visible one,
+		# e.g. when the user tries to hide it, {category} is its name, e.g. "Recording apps"
+		message = _("{category} is already the only visible category").format(category=category)
+		ui.message(f"{prefix} {message}" if prefix else message)
+
+	def showOnlyCategory(self, kind: SourceKind) -> None:
+		"""Show only the specified category of audio sources and announce the result.
+		@param kind: the category of audio sources
+		@type kind: SourceKind
+		"""
+		category = self.getCategoryName(kind)
+		if self.getVisibleCategories() == [kind]:
+			self.announceOnlyVisibleCategory(category)
+			return
+		self.setVisibleCategories([kind])
+		count = len(self.getSources(kind))
+		# Translators: The message when only one category of audio sources is shown,
+		# {category} is its name, e.g. "Recording apps", {count} is the number of its audio sources now
+		message = ngettext("{category} only, {count} source", "{category} only, {count} sources", count)
+		ui.message(message.format(category=category, count=count))
 
 	def unmuteAllAudioSources(self) -> None:
 		"""Unmute all muted audio devices and audio sessions."""
@@ -525,6 +606,78 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		self.switchAudioSource(step=-1)
 
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Show or hide output devices"))
+	def script_toggleOutputDevices(self, gesture: InputGesture) -> None:
+		"""Show or hide the output devices in the list of audio sources.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		self.toggleCategory(SourceKind.OUTPUT_DEVICE)
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Show or hide input devices"))
+	def script_toggleInputDevices(self, gesture: InputGesture) -> None:
+		"""Show or hide the input devices in the list of audio sources.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		self.toggleCategory(SourceKind.INPUT_DEVICE)
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Show or hide applications playing sound"))
+	def script_togglePlaybackApps(self, gesture: InputGesture) -> None:
+		"""Show or hide the applications playing sound in the list of audio sources.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		self.toggleCategory(SourceKind.PLAYBACK_APP)
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Show or hide applications recording sound"))
+	def script_toggleRecordingApps(self, gesture: InputGesture) -> None:
+		"""Show or hide the applications recording sound in the list of audio sources.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		self.toggleCategory(SourceKind.RECORDING_APP)
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Show only output devices"))
+	def script_showOnlyOutputDevices(self, gesture: InputGesture) -> None:
+		"""Show only the output devices in the list of audio sources.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		self.showOnlyCategory(SourceKind.OUTPUT_DEVICE)
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Show only input devices"))
+	def script_showOnlyInputDevices(self, gesture: InputGesture) -> None:
+		"""Show only the input devices in the list of audio sources.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		self.showOnlyCategory(SourceKind.INPUT_DEVICE)
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Show only applications playing sound"))
+	def script_showOnlyPlaybackApps(self, gesture: InputGesture) -> None:
+		"""Show only the applications playing sound in the list of audio sources.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		self.showOnlyCategory(SourceKind.PLAYBACK_APP)
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Show only applications recording sound"))
+	def script_showOnlyRecordingApps(self, gesture: InputGesture) -> None:
+		"""Show only the applications recording sound in the list of audio sources.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		self.showOnlyCategory(SourceKind.RECORDING_APP)
+
 	def setOutputDevice(self, device: AudioOutputDevice) -> None:
 		"""Switche the NVDA output to the specified audio device.
 		@param device: audio output device
@@ -751,6 +904,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"kb:NVDA+windows+escape": "mute",
 		"kb:NVDA+windows+rightArrow": "next",
 		"kb:NVDA+windows+leftArrow": "prev",
+		# Categories of audio sources
+		"kb:NVDA+windows+o": "toggleOutputDevices",
+		"kb:NVDA+windows+i": "toggleInputDevices",
+		"kb:NVDA+windows+p": "togglePlaybackApps",
+		"kb:NVDA+windows+r": "toggleRecordingApps",
+		"kb:NVDA+shift+windows+o": "showOnlyOutputDevices",
+		"kb:NVDA+shift+windows+i": "showOnlyInputDevices",
+		"kb:NVDA+shift+windows+p": "showOnlyPlaybackApps",
+		"kb:NVDA+shift+windows+r": "showOnlyRecordingApps",
 		# Output audio devices
 		"kb:NVDA+windows+pageUp": "nextOutputDevice",
 		"kb:NVDA+windows+pageDown": "prevOutputDevice",

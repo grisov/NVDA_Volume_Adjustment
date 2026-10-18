@@ -9,6 +9,7 @@
 - All audio sessions of an application are adjusted and muted together; previously only the first session of the application was changed.
 - Applications are now found on all active output devices, not only on the default one, and an application playing on several devices is adjusted on all of them at once.
 - Applications recording sound can now be selected and adjusted as well; the audio sources are switched in the order: output devices, input devices, applications playing sound, applications recording sound.
+- Categories of audio sources can be shown or hidden with NVDA+Windows+O, I, P and R, and NVDA+Shift+Windows with the same letters shows only that category.
 - Before lowering, minimizing or muting the volume of NVDA itself, a warning is shown: it can silence NVDA speech, and Windows keeps this volume after NVDA restarts. The warning can be turned off in the dialog or in the add-on settings.
 - In the "Volume Down" mute mode, the remaining volume level is announced after muting, e.g. "The sound is muted, volume 5%".
 - When switching to an audio source of another category, the category name is announced before the source name; this can be turned off in the add-on settings.
