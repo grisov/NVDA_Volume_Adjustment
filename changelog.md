@@ -4,6 +4,7 @@
 
 - The list of audio devices (when "Control all available audio devices" is enabled) now contains only active devices. Disabled, unplugged and disconnected devices are no longer shown.
 - Detecting audio devices is now much faster, so the add-on settings panel no longer freezes for up to several seconds when it is opened or the list of devices is refreshed.
+- The list of audio devices is updated automatically when devices are connected, disconnected, enabled or disabled, without opening the add-on settings.
 - When following the focus, the audio session of the focused process itself is now preferred over other processes with the same name.
 - All audio sessions of an application are adjusted and muted together; previously only the first session of the application was changed.
 - For developers: the add-on uses the pycaw module bundled with NVDA and no longer calls its helpers that read the whole property store of audio devices (GetAllSessions, GetSpeakers, GetAllDevices, CreateDevice) on frequent code paths.
@@ -18,6 +19,7 @@
 - The first audio source muted after installing the add-on was not remembered and therefore was not unmuted when NVDA exited.
 - Muted processes that were later hidden in the settings were not unmuted when NVDA exited.
 - The "Update" button in the list of audio devices added hidden devices to the list of audio sources until the settings were saved.
+- After the default audio output device was changed in Windows, the volume of the selected application could still be adjusted on the previous device.
 - Lowering the volume of a muted audio source rewrote the add-on configuration file on every keypress.
 - Unmuting audio sources when NVDA exits ran in a background thread, which could fail.
 - An error on NVDA exit when the add-on settings panel had already been removed.

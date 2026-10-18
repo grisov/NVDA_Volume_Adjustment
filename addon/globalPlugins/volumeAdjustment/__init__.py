@@ -84,7 +84,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		config.conf[addonName]["gestures"] and self.bindGestures(self.__defaultGestures)
 		# Creating individual switching methods for each output audio device detected in the system
 		self.bindSwitchingMethods()
-		registry.scanDevices(cfg.devices)
+		registry.start(cfg.devices)
 
 	def terminate(self, *args, **kwargs) -> None:
 		"""This will be called when NVDA is finished with this global plugin."""
@@ -94,6 +94,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				self.unmuteAllAudioSources()
 			except Exception:
 				log.exception("Unable to unmute audio sources on exit")
+		registry.stop()
 		try:
 			settingsDialogs.NVDASettingsDialog.categoryClasses.remove(VASettingsPanel)
 		except ValueError:
@@ -116,12 +117,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def selectProcessInFocus(self) -> bool:
 		"""Select the name of the process that is in system focus.
-		The audio session found after the last focus change is reused by subsequent keypresses
-		until it expires.
+		The application found after the last focus change is reused by subsequent keypresses
+		until it becomes outdated (see AudioSourceRegistry.isOutdated()).
 		@return: whether the current process is in the list of audio sessions
 		@rtype: bool
 		"""
-		if self._session is None or self._session.isExpired:
+		if self._session is None or registry.isOutdated(self._session):
 			obj = getFocusObject()
 			try:
 				appName = obj.appModule.appName
@@ -140,13 +141,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""Get the application of the specified process.
 		The previously found application is reused while the same process stays selected,
 		so repeated keypresses do not enumerate all audio sessions again.
-		An expired application (e.g. the process was restarted) is looked up again.
+		An outdated application (e.g. the process was restarted or the default device changed) is looked up again.
 		@param name: the name of the running process
 		@type name: str
 		@return: the application of the specified process, None if it does not play any sound
 		@rtype: Optional[PlaybackAppSource]
 		"""
-		if self._session is None or self._session.name != name or self._session.isExpired:
+		if self._session is None or self._session.name != name or registry.isOutdated(self._session):
 			self._session = registry.findApp(name)
 		return self._session
 
