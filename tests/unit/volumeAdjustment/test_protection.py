@@ -7,7 +7,7 @@
 
 import os
 
-from volumeAdjustmentSupport import audio, dialog, options
+from volumeAdjustmentSupport import audio, brailled, dialog, options
 from volumeAdjustmentSupport.case import AddonTestCase
 from volumeAdjustmentSupport.fakes import FakeSession, makeDevice
 
@@ -97,7 +97,8 @@ class TestChannels(AddonTestCase):
 		self.press("volumeUp")
 
 	def test_channels_of_an_application(self):
-		self.assertEqual(self.press("nextChannel"), ["Channel 2", "Volume 100%"])
+		self.assertEqual(self.press("nextChannel"), ["Channel 2, Volume 100%"])
+		self.assertEqual(brailled[-1], "Channel 2: 100%")
 		self.assertEqual(self.press("channelVolumeDown"), ["Volume 99%"])
 		self.assertAlmostEqual(self.player.channels.levels[1], 0.99)
 		self.assertEqual(self.player.channels.levels[0], 1.0)

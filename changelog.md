@@ -37,6 +37,7 @@
 
 ### Fixed
 
+- A braille display showed only the volume level when switching between audio sources or channels. Now the name of the source or channel and its volume level are announced in one message, and a braille display shows them in a short form, e.g. "USB headphones: 30%"; the word "Volume" is also left out on a braille display when the volume is adjusted. (#15)
 - Noticeable delays when adjusting the volume of applications and switching between audio sources in NVDA 2026. Previously each keypress took about 70 ms on average and up to 300 ms; now the volume changes almost instantly.
 - NVDA could crash after the list of audio devices was rescanned, e.g. after pressing "Refresh" or saving hidden devices in the add-on settings.
 - When the application in focus or selected in the list did not play any sound, the add-on silently adjusted the volume of NVDA or of another program. Now it announces that the application is not playing or not recording any sound.

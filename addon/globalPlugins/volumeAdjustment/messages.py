@@ -109,14 +109,41 @@ def getOnlyVisibleCategoryMessage(category: str, hiding: bool = False) -> str:
 	return f"{prefix} {message}"
 
 
+def formatLevel(
+	volumeLevel: float,
+	source: AudioSource | None = None,
+	channel: int | None = None,
+) -> str:
+	"""Get the volume level with its unit, e.g. "29%", "29" or "-12.5 dB".
+	Decibels are given if they are selected in the add-on settings and the source provides them,
+	otherwise percents. The volume is always adjusted in percents, like the volume slider of Windows.
+
+	:param volumeLevel: value of volume level (from 0.0 to 1.0)
+	:param source: the audio source of the level, None to give percents
+	:param channel: the number of the channel of the level, None for the master volume level
+	:return: the level, also shown alone on a braille display
+	"""
+	if source is not None and getAddonConfig()["units"] == "decibels":
+		decibels = source.getVolumeDecibels(channel)
+		if decibels is not None:
+			# Translators: The unit of the volume level in decibels, announced after the number, e.g. "Volume -12.5 dB"
+			unit = _("dB")
+			# Adding 0.0 turns -0.0 (e.g. rounded -0.04 dB) into 0.0, so no minus sign is announced
+			return f"{round(decibels, 1) + 0.0:.1f} {unit}"
+	# Rounded: Windows stores volume levels as 32-bit floats, 29 % is read back as 28.999999 %
+	level = round(volumeLevel * 100.0)
+	if getAddonConfig()["units"] == "number":
+		# The short form of the earlier versions, e.g. "Volume 29"
+		return str(level)
+	return f"{level}%"
+
+
 def formatVolumeLevel(
 	volumeLevel: float,
 	source: AudioSource | None = None,
 	channel: int | None = None,
 ) -> str:
 	"""Get the text of the volume level announcement, e.g. "Volume 29%", "Volume 29" or "Volume -12.5 dB".
-	Decibels are announced if they are selected in the add-on settings and the source provides them,
-	otherwise percents. The volume is always adjusted in percents, like the volume slider of Windows.
 
 	:param volumeLevel: value of volume level (from 0.0 to 1.0)
 	:param source: the audio source of the level, None to announce percents
@@ -125,19 +152,7 @@ def formatVolumeLevel(
 	"""
 	# Translators: The message is announced during volume control
 	volume = _("Volume")
-	if source is not None and getAddonConfig()["units"] == "decibels":
-		decibels = source.getVolumeDecibels(channel)
-		if decibels is not None:
-			# Translators: The unit of the volume level in decibels, announced after the number, e.g. "Volume -12.5 dB"
-			unit = _("dB")
-			# Adding 0.0 turns -0.0 (e.g. rounded -0.04 dB) into 0.0, so no minus sign is announced
-			return f"{volume} {round(decibels, 1) + 0.0:.1f} {unit}"
-	# Rounded: Windows stores volume levels as 32-bit floats, 29 % is read back as 28.999999 %
-	level = round(volumeLevel * 100.0)
-	if getAddonConfig()["units"] == "number":
-		# The short form of the earlier versions, e.g. "Volume 29"
-		return f"{volume} {level}"
-	return f"{volume} {level}%"
+	return f"{volume} {formatLevel(volumeLevel, source, channel)}"
 
 
 def announceVolumeLevel(
@@ -145,25 +160,29 @@ def announceVolumeLevel(
 	source: AudioSource | None = None,
 	channel: int | None = None,
 ) -> None:
-	"""Announce the current volume level.
+	"""Announce the current volume level, a braille display shows only the level, e.g. "29%".
 
 	:param volumeLevel: value of volume level (from 0.0 to 1.0)
 	:param source: the audio source of the level, for the announcement in decibels
 	:param channel: the number of the channel of the level, None for the master volume level
 	"""
-	ui.message(formatVolumeLevel(volumeLevel, source, channel))
+	message = formatVolumeLevel(volumeLevel, source, channel)
+	ui.message(message, brailleText=formatLevel(volumeLevel, source, channel))
 
 
-def formatMuted(source: AudioSource) -> str:
-	"""Get the text of the announcement that the sound is muted.
-	In the "Volume Down" mute mode the remaining volume level is announced as well,
-	using the already translated messages, e.g. "The sound is muted, Volume 5%".
+def formatMuted(source: AudioSource) -> tuple[str, str]:
+	"""Get the text of the announcement that the sound is muted and its short form for a braille display.
+	In the "Volume Down" mute mode the remaining volume level is given as well,
+	e.g. "The sound is muted, Volume 5%" and "muted 5%".
 
 	:param source: the muted audio source
-	:return: the text to announce
+	:return: the text to announce and the text to show on a braille display
 	"""
 	# Translators: The message is announced during volume control
 	message: str = _("The sound is muted")
+	# Translators: The short message shown on a braille display when the sound is muted,
+	# it may be followed by the remaining volume level, e.g. "muted 5%"
+	brailleText: str = _("muted")
 	volume = source.volume
 	# The level is announced only when the add-on decreased it: a source muted by Windows or another program is silent
 	if (
@@ -172,7 +191,8 @@ def formatMuted(source: AudioSource) -> str:
 		and not (volume is not None and volume.GetMute())
 	):
 		message = f"{message}, {formatVolumeLevel(source.volumeLevel, source)}"
-	return message
+		brailleText = f"{brailleText} {formatLevel(source.volumeLevel, source)}"
+	return message, brailleText
 
 
 def announceMuted(source: AudioSource) -> None:
@@ -180,7 +200,41 @@ def announceMuted(source: AudioSource) -> None:
 
 	:param source: the muted audio source
 	"""
-	ui.message(formatMuted(source))
+	message, brailleText = formatMuted(source)
+	ui.message(message, brailleText=brailleText)
+
+
+def announceSelection(
+	source: AudioSource,
+	title: str,
+	brailleTitle: str,
+	channel: int | None = None,
+	details: list[str] | None = None,
+) -> None:
+	"""Announce the selected audio source or channel with its volume level in one message,
+	so a braille display shows them together. The level follows if it is enabled in the add-on settings.
+	A braille display usually has few cells, so it shows only the name and the level, e.g.
+	"Output devices, USB headphones, Volume 30%, USB" is spoken and "USB headphones: 30%" is shown.
+
+	:param source: the selected audio source
+	:param title: the spoken name of the source or the channel
+	:param brailleTitle: the short name for a braille display
+	:param channel: the number of the selected channel, None for the master volume level
+	:param details: the spoken attributes of an audio device, they follow its volume level
+	"""
+	message, brailleText = title, brailleTitle
+	if getAddonConfig()["status"]:
+		if source.isMuted:
+			status, brailleStatus = formatMuted(source)
+		else:
+			level = source.volumeLevel if channel is None else source.getChannelVolumeLevel(channel)
+			status, brailleStatus = (
+				formatVolumeLevel(level, source, channel),
+				formatLevel(level, source, channel),
+			)
+		message = f"{message}, {status}"
+		brailleText = f"{brailleText}: {brailleStatus}"
+	ui.message(", ".join([message, *(details or [])]), brailleText=brailleText)
 
 
 def announceChannelVolumeLevel(source: AudioSource, level: float) -> None:
@@ -195,13 +249,14 @@ def announceChannelVolumeLevel(source: AudioSource, level: float) -> None:
 	announceVolumeLevel(level, source, source.channel)
 
 
-def announceChannel(number: int) -> None:
-	"""Announce the number of the selected audio channel, counted from 1 for the user.
+def announceChannel(source: AudioSource) -> None:
+	"""Announce the number of the selected audio channel, counted from 1 for the user, with its volume level.
 
-	:param number: the number of audio channel, from 0
+	:param source: the audio source of the selected channel
 	"""
 	# Translators: Message about the number of the selected audio channel
-	ui.message(_("Channel %d") % (number + 1))
+	title = _("Channel %d") % (source.channel + 1)
+	announceSelection(source, title, title, source.channel)
 
 
 def announceNotPlaying(app: str, kind: SourceKind = SourceKind.PLAYBACK_APP) -> None:
@@ -230,12 +285,19 @@ def getSourceTitle(source: AudioSource) -> str:
 	:param source: the audio source
 	:return: human friendly name of the audio source
 	"""
-	if isinstance(source, AppSource):
-		return source.title
-	if source.default:
+	if not isinstance(source, AppSource) and source.default:
 		# Translators: Used as the prefix to default audio device name
 		return "{default}: {title}".format(default=_("Default audio device"), title=source.name)
-	return source.name
+	return getSourceName(source)
+
+
+def getSourceName(source: AudioSource) -> str:
+	"""Get the short name of the audio source, without the prefix of the default device, for a braille display.
+
+	:param source: the audio source
+	:return: human friendly name of the audio source
+	"""
+	return source.title if isinstance(source, AppSource) else source.name
 
 
 def getAnnouncedDeviceDetails(source: AudioSource | None) -> list[str]:

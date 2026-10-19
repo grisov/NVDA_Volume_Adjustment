@@ -16,11 +16,11 @@ from .messages import (
 	announceNotPlaying,
 	announceNotSupported,
 	announceOnlyCategory,
-	formatMuted,
-	formatVolumeLevel,
+	announceSelection,
 	getAnnouncedDeviceDetails,
 	getCategoryName,
 	getOnlyVisibleCategoryMessage,
+	getSourceName,
 	getSourceTitle,
 )
 from .registry import registry
@@ -213,14 +213,7 @@ class SourceNavigator:
 		title = getSourceTitle(source)
 		if announceCategory:
 			title = f"{getCategoryName(source.kind)}, {title}"
-		details = getAnnouncedDeviceDetails(source)
-		if not getAddonConfig()["status"]:
-			ui.message(", ".join([title, *details]))
-			return
-		ui.message(title)
-		# The details of an audio device follow its volume level
-		status = formatMuted(source) if source.isMuted else formatVolumeLevel(source.volumeLevel, source)
-		ui.message(", ".join([status, *details]))
+		announceSelection(source, title, getSourceName(source), details=getAnnouncedDeviceDetails(source))
 
 	def switchAudioSource(self, step: int) -> None:
 		"""Select the next or previous audio source in the list and announce it.
