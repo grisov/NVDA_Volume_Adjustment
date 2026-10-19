@@ -299,6 +299,8 @@ PKEY_Device_DeviceDesc: PropertyKey = (DEVICE_PROPERTIES_FMTID, 2)
 PKEY_Device_EnumeratorName: PropertyKey = (DEVICE_PROPERTIES_FMTID, 24)
 PKEY_AudioEndpoint_FormFactor: PropertyKey = (GUID("{1da5d803-d492-4edd-8c23-e0c0ffee7f0e}"), 0)
 PKEY_DeviceInterface_FriendlyName: PropertyKey = (GUID("{026e516e-b814-414b-83cd-856d6fef4822}"), 2)
+# Device interface path of the audio adapter of the endpoint, e.g. \\?\usb#vid_35d8&pid_011d...
+PKEY_Endpoint_AdapterInterfacePath: PropertyKey = (GUID("{233164c8-1b2c-4c7d-bc68-b671687a2567}"), 1)
 # Type of an empty PROPVARIANT: the property is not set
 VT_EMPTY = 0
 

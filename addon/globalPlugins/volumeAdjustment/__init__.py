@@ -36,6 +36,7 @@ from .sources import (
 	LEVEL_TOLERANCE,
 	AppSource,
 	AudioSource,
+	DeviceSource,
 	InputDeviceSource,
 	PlaybackAppSource,
 	SourceKey,
@@ -55,6 +56,7 @@ from .settings import (  # noqa E402
 	NvdaVolumeWarningDialog,
 	VASettingsPanel,
 	getCategoryName,
+	getDeviceDetails,
 	getOnlyVisibleCategoryMessage,
 	getVisibleCategories,
 	setVisibleCategories,
@@ -131,6 +133,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			# Letters of the visible categories of audio sources, see sources.SourceKind
 			"categories": 'string(default="OIPR")',
 			"announceCategories": "boolean(default=true)",
+			# Announce the type, connection and default role of audio devices
+			"deviceDetails": "boolean(default=false)",
 			"muteCompletely": "boolean(default=false)",
 			"mutePercentage": "integer(default=75,min=1,max=99)",
 			"unmuteOnExit": "boolean(default=true)",
@@ -289,10 +293,19 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def announceMuted(self, source: AudioSource) -> None:
 		"""Announce that the sound was muted.
-		In the "Volume Down" mute mode the remaining volume level is announced as well,
-		using the already translated messages, e.g. "The sound is muted, Volume 5".
 		@param source: the muted audio source
 		@type source: AudioSource
+		"""
+		ui.message(self.formatMuted(source))
+
+	def formatMuted(self, source: AudioSource) -> str:
+		"""Get the text of the announcement that the sound is muted.
+		In the "Volume Down" mute mode the remaining volume level is announced as well,
+		using the already translated messages, e.g. "The sound is muted, Volume 5%".
+		@param source: the muted audio source
+		@type source: AudioSource
+		@return: the text to announce
+		@rtype: str
 		"""
 		# Translators: The message is announced during volume control
 		message: str = _("The sound is muted")
@@ -304,7 +317,18 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			and not (volume is not None and volume.GetMute())
 		):
 			message = f"{message}, {self.formatVolumeLevel(source.volumeLevel, source)}"
-		ui.message(message)
+		return message
+
+	def getDeviceDetails(self, source: AudioSource | None) -> list[str]:
+		"""Get the attributes of an audio device to announce, if this is enabled in the add-on settings.
+		@param source: the audio source, details are given only for audio devices
+		@type source: Optional[AudioSource]
+		@return: the translated attributes, empty for applications or when the option is disabled
+		@rtype: List[str]
+		"""
+		if not getAddonConfig()["deviceDetails"] or not isinstance(source, DeviceSource):
+			return []
+		return getDeviceDetails(source)
 
 	def announceChannelVolumeLevel(self, source: AudioSource, level: float) -> None:
 		"""Announce the volume level of the selected channel after it has been changed.
@@ -485,12 +509,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		title = self.getSourceTitle(source)
 		if announceCategory:
 			title = f"{getCategoryName(source.kind)}, {title}"
+		details = self.getDeviceDetails(source)
+		if not getAddonConfig()["status"]:
+			ui.message(", ".join([title, *details]))
+			return
 		ui.message(title)
-		if getAddonConfig()["status"]:
-			self.announceMuted(source) if source.isMuted else self.announceVolumeLevel(
-				source.volumeLevel,
-				source,
-			)
+		# The details of an audio device follow its volume level
+		status = (
+			self.formatMuted(source) if source.isMuted else self.formatVolumeLevel(source.volumeLevel, source)
+		)
+		ui.message(", ".join([status, *details]))
 
 	def switchAudioSource(self, step: int) -> None:
 		"""Select the next or previous audio source in the list and announce it.
@@ -871,7 +899,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				# Translators: The message when Windows does not allow to change its default audio device
 				ui.message(_("Unable to set the default device"))
 				return
-		ui.message(name)
+		# The attributes are read after switching: the default roles may have changed
+		ui.message(", ".join([name, *self.getDeviceDetails(registry.getDevice(id))]))
 
 	def selectOutputDeviceById(self, target: OutputTarget, id: str, name: str) -> None:
 		"""Switch to the output device found when NVDA was started, if it is still available.

@@ -15,6 +15,7 @@
 - A warning is shown before lowering, minimizing or muting the volume or a channel of NVDA itself: it can silence NVDA speech, and Windows keeps this volume after NVDA restarts. The warning can be turned off in the dialog or in the add-on settings.
 - The volume level can be announced in percent, in percent without the percent sign, or in decibels for audio devices (add-on settings).
 - In the "Volume Down" mute mode, the remaining volume level is announced after muting, e.g. "The sound is muted, Volume 5%".
+- The type, connection and default role of audio devices can be announced when switching between them (add-on settings).
 
 ### Changed
 

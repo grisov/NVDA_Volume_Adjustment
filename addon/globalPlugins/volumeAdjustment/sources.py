@@ -23,6 +23,7 @@ from .audiocore import (
 	PKEY_Device_EnumeratorName,
 	PKEY_Device_FriendlyName,
 	PKEY_DeviceInterface_FriendlyName,
+	PKEY_Endpoint_AdapterInterfacePath,
 	cfg,
 	getAddonConfig,
 	getDataFlow,
@@ -101,13 +102,21 @@ class Connection(Enum):
 	OTHER = "other"
 
 	@classmethod
-	def fromEnumeratorName(cls, name: str | None) -> Connection:
-		"""Guess the connection from the name of the device enumerator.
+	def fromEnumeratorName(cls, name: str | None, adapterPath: str | None = None) -> Connection:
+		"""Guess the connection from the name of the device enumerator and the interface path of the adapter.
+		USB devices connected through Intel USB Audio Offload are enumerated by the Intel audio driver (INTELAUDIO)
+		like the internal sound card: only the interface path of their adapter tells they are USB devices.
 		@param name: value of the PKEY_Device_EnumeratorName property
 		@type name: Optional[str]
+		@param adapterPath: the device interface path of the audio adapter, see PKEY_Endpoint_AdapterInterfacePath
+		@type adapterPath: Optional[str]
 		@return: the connection of the device
 		@rtype: Connection
 		"""
+		path = (adapterPath or "").lower()
+		# Link type 6 of Intel Smart Sound Technology is USB, e.g. intelaudio#ctlr_dev_51ca&linktype_06...\intcusbwave...
+		if "linktype_06" in path or "intcusbwave" in path:
+			return cls.USB
 		name = (name or "").upper()
 		if name in ("HDAUDIO", "INTELAUDIO"):
 			return cls.INTERNAL
@@ -652,7 +661,7 @@ def createDevice(
 	@rtype: DeviceSource
 	"""
 	id: str = immDevice.GetId() or "default"
-	friendlyName, description, enumeratorName, formFactor, adapterName = getDeviceProperties(
+	friendlyName, description, enumeratorName, formFactor, adapterName, adapterPath = getDeviceProperties(
 		immDevice,
 		(
 			PKEY_Device_FriendlyName,
@@ -660,6 +669,7 @@ def createDevice(
 			PKEY_Device_EnumeratorName,
 			PKEY_AudioEndpoint_FormFactor,
 			PKEY_DeviceInterface_FriendlyName,
+			PKEY_Endpoint_AdapterInterfacePath,
 		),
 	)
 	name: str = next((value for value in (friendlyName, description) if isinstance(value, str) and value), id)
@@ -668,7 +678,7 @@ def createDevice(
 		device.formFactor = FormFactor(formFactor)
 	except ValueError:
 		device.formFactor = FormFactor.UNKNOWN
-	device.connection = Connection.fromEnumeratorName(enumeratorName)
+	device.connection = Connection.fromEnumeratorName(enumeratorName, adapterPath)
 	device.adapterName = adapterName if isinstance(adapterName, str) else ""
 	device.isDefaultDevice = id in defaultIds
 	device.isDefaultCommunicationDevice = id in communicationIds
@@ -1117,6 +1127,31 @@ class AudioSourceRegistry:
 				if device.name:
 					devices.append(device)
 		return devices
+
+	@staticmethod
+	def getDevice(id: str) -> DeviceSource | None:
+		"""Get the active audio device with its current attributes, e.g. after it has become a default device.
+		@param id: the device ID
+		@type id: str
+		@return: the audio device, None if it is not available
+		@rtype: Optional[DeviceSource]
+		"""
+		try:
+			enumerator = getDeviceEnumerator()
+			immDevice = enumerator.GetDevice(id)
+			deviceClass = (
+				InputDeviceSource
+				if getDataFlow(immDevice) == EDataFlow.eCapture.value
+				else OutputDeviceSource
+			)
+			return createDevice(
+				immDevice,
+				deviceClass,
+				AudioSourceRegistry.getDefaultDeviceIds(enumerator, ERole.eMultimedia),
+				AudioSourceRegistry.getDefaultDeviceIds(enumerator, ERole.eCommunications),
+			)
+		except COMError:
+			return None
 
 	@staticmethod
 	def isInputDevice(id: str) -> bool:
