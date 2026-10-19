@@ -255,8 +255,8 @@ class AudioSource(metaclass=ABCMeta):
 
 		:return: a state of the audio source (muted or no)
 		"""
-		volume = self.volume
-		state = False if volume is None else bool(volume.GetMute())
+		# A device disconnected before the list of devices is updated counts as not muted
+		state = callVolume(self.volume, lambda volume: bool(volume.GetMute()), False)
 		if not getAddonConfig()["muteCompletely"]:
 			return (self.mutedKey in cfg.muted) or state
 		return state
@@ -269,7 +269,7 @@ class AudioSource(metaclass=ABCMeta):
 		if volume is None:
 			return
 		if getAddonConfig()["muteCompletely"]:
-			volume.SetMute(1, None)
+			callVolume(volume, lambda volume: volume.SetMute(1, None), None)
 		elif not self.isMuted:
 			level = self.volumeLevel
 			self.volumeLevel = level * (100 - getAddonConfig()["mutePercentage"]) / 100.0
@@ -282,7 +282,7 @@ class AudioSource(metaclass=ABCMeta):
 		volume = self.volume
 		if volume is None:
 			return
-		volume.SetMute(0, None)
+		callVolume(volume, lambda volume: volume.SetMute(0, None), None)
 		if self.isMuted:
 			level = cfg.getMutedLevel(self.mutedKey)
 			if level is None:
