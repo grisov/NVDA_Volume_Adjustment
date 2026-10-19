@@ -8,6 +8,7 @@
 - When following the focus, the audio session of the focused process itself is now preferred over other processes with the same name.
 - All audio sessions of an application are adjusted and muted together; previously only the first session of the application was changed.
 - Applications are now found on all active output devices, not only on the default one, and an application playing on several devices is adjusted on all of them at once.
+- The volume of the left and right channels can now be adjusted for applications too, unless NVDA sound split is enabled.
 - Applications recording sound can now be selected and adjusted as well; the audio sources are switched in the order: output devices, input devices, applications playing sound, applications recording sound.
 - When switching to an audio source of another category, the category name is announced before the source name; this can be turned off in the add-on settings.
 - Categories of audio sources can be shown or hidden with NVDA+Windows+O, I, P and R, and NVDA+Shift+Windows with the same letters shows only that category.
