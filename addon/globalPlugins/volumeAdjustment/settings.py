@@ -5,7 +5,7 @@
 # See the file COPYING for more details.
 # Copyright (C) 2020-2026 Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>
 
-from typing import Callable, List
+from typing import Callable, Dict, List
 import addonHandler
 import config
 import ui
@@ -18,7 +18,7 @@ from logHandler import log
 from queueHandler import eventQueue, queueFunction
 from . import addonName, addonSummary
 from .audiocore import cfg
-from .sources import SourceKind, registry
+from .sources import InputDeviceSource, SourceKind, registry
 
 try:
 	addonHandler.initTranslation()
@@ -263,34 +263,46 @@ class VASettingsPanel(SettingsPanel):
 		self.updateProcessesButton.Bind(wx.EVT_BUTTON, self.onUpdateProcessesButton)
 		self.clearProcessesButton.Bind(wx.EVT_BUTTON, self.onClearProcessesButton)
 
-		self.advancedChk = addonHelper.addItem(
-			# Translators: This is the label for a checkbox in the settings panel.
-			wx.CheckBox(self, label=_("C&ontrol all available audio devices (experimental)")),
-		)
-		self.advancedChk.SetValue(config.conf[addonName]["advanced"])
-		self.advancedChk.Bind(wx.EVT_CHECKBOX, self.onAdvancedCheckbox)
-		self.hideDevices = addonHelper.addLabeledControl(
+		# Names of all audio devices shown in the lists of hidden devices, by their IDs
+		self.devs: Dict[str, str] = {}
+		self.hideOutputDevices = addonHelper.addLabeledControl(
 			# Translators: The label of the Checkable list in the settings panel
-			_("Hide audio &devices:"),
+			_("Hide &output devices:"),
 			nvdaControls.CustomCheckListBox,
 			choices=[],
 		)
-		self.devs = dict(cfg.devices)
-		self.devs.update({device.id: device.name for device in registry.getAllDevices()})
-		for id, name in self.devs.items():
-			self.hideDevices.Append(name, id)
-		if len(self.devs) > 0:
-			self.hideDevices.SetCheckedStrings([self.devs[id] for id in cfg.devices])
-			self.hideDevices.SetSelection(0)
-		self.hideDevices.Show(show=self.advancedChk.GetValue())
-
-		self.devButtons = guiHelper.ButtonHelper(orientation=wx.HORIZONTAL)
-		self.updateDevicesButton = self.devButtons.addButton(self, id=wx.ID_REFRESH)
-		self.clearDevicesButton = self.devButtons.addButton(self, id=wx.ID_CLEAR)
-		addonHelper.addItem(self.devButtons)
-		self.updateDevicesButton.Bind(wx.EVT_BUTTON, self.onUpdateDevicesButton)
-		self.clearDevicesButton.Bind(wx.EVT_BUTTON, self.onClearDevicesButton)
-		sizer.Show(self.devButtons.sizer, show=self.advancedChk.GetValue())
+		self.fillDeviceList(self.hideOutputDevices, isInput=False, includeHidden=True)
+		outputButtons = guiHelper.ButtonHelper(orientation=wx.HORIZONTAL)
+		self.updateOutputDevicesButton = outputButtons.addButton(self, id=wx.ID_REFRESH)
+		self.clearOutputDevicesButton = outputButtons.addButton(self, id=wx.ID_CLEAR)
+		addonHelper.addItem(outputButtons)
+		self.updateOutputDevicesButton.Bind(
+			wx.EVT_BUTTON,
+			lambda event: self.onUpdateDevicesButton(self.hideOutputDevices, isInput=False),
+		)
+		self.clearOutputDevicesButton.Bind(
+			wx.EVT_BUTTON,
+			lambda event: self.onClearDevicesButton(self.hideOutputDevices, isInput=False),
+		)
+		self.hideInputDevices = addonHelper.addLabeledControl(
+			# Translators: The label of the Checkable list in the settings panel
+			_("Hide &input devices:"),
+			nvdaControls.CustomCheckListBox,
+			choices=[],
+		)
+		self.fillDeviceList(self.hideInputDevices, isInput=True, includeHidden=True)
+		inputButtons = guiHelper.ButtonHelper(orientation=wx.HORIZONTAL)
+		self.updateInputDevicesButton = inputButtons.addButton(self, id=wx.ID_REFRESH)
+		self.clearInputDevicesButton = inputButtons.addButton(self, id=wx.ID_CLEAR)
+		addonHelper.addItem(inputButtons)
+		self.updateInputDevicesButton.Bind(
+			wx.EVT_BUTTON,
+			lambda event: self.onUpdateDevicesButton(self.hideInputDevices, isInput=True),
+		)
+		self.clearInputDevicesButton.Bind(
+			wx.EVT_BUTTON,
+			lambda event: self.onClearDevicesButton(self.hideInputDevices, isInput=True),
+		)
 
 		self.muteMode = addonHelper.addLabeledControl(
 			# Translators: This is the label for a choice list in the settings panel.
@@ -331,27 +343,6 @@ class VASettingsPanel(SettingsPanel):
 		self.defaultGesturesChk.SetValue(config.conf[addonName]["gestures"])
 		self.defaultGesturesChk.Bind(wx.EVT_CHECKBOX, self.onGesturesCheckbox)
 
-	def onAdvancedCheckbox(self, event: wx.PyEvent) -> None:
-		"""Enabling or disabling advanced add-on features.
-		Ability to adjust volume level of all detected audio devices (experimental function).
-		@param event: event binder object which processes changing of the wx.Checkbox
-		@type event: wx.PyEvent
-		"""
-		config.conf[addonName]["advanced"] = event.IsChecked()
-		registry.scanDevices(cfg.devices)
-		self.hideDevices.Clear()
-		self.devs = dict(cfg.devices)
-		self.devs.update({device.id: device.name for device in registry.getAllDevices()})
-		for id, name in self.devs.items():
-			self.hideDevices.Append(name, id)
-		if event.IsChecked() and len(self.devs) > 0:
-			self.hideDevices.SetCheckedStrings([self.devs[id] for id in cfg.devices])
-			self.hideDevices.SetSelection(0)
-		self.hideDevices.Show(show=event.IsChecked())
-		self.sizer.Show(self.devButtons.sizer, show=event.IsChecked())
-		self.sizer.Fit(self)
-		self.hideDevices.GetParent().Layout()
-
 	def onMuteModeChoice(self, event: wx.PyEvent) -> None:
 		"""Select the mute mode - completely turn off or partial decrease of the volume level,
 		dynamically controls the showing of the volume mute slider.
@@ -372,33 +363,54 @@ class VASettingsPanel(SettingsPanel):
 			self.defaultGesturesChk.SetValue(not event.IsChecked())
 		self.defaultGesturesChk.SetFocus()
 
-	def onUpdateDevicesButton(self, event: wx.PyEvent) -> None:
-		"""Update the list of connected audio devices when the appropriate button is pressed.
-		@param event: event that occurs when a wx.Button is pressed
-		@type event: wx.PyEvent
+	def fillDeviceList(
+		self, control: nvdaControls.CustomCheckListBox, isInput: bool, includeHidden: bool
+	) -> None:
+		"""Fill the list of output or input devices that can be hidden.
+		@param control: the checkable list of output or input devices
+		@type control: nvdaControls.CustomCheckListBox
+		@param isInput: whether the list contains input devices
+		@type isInput: bool
+		@param includeHidden: whether the hidden devices are listed and checked, also those not connected now
+		@type includeHidden: bool
 		"""
-		self.hideDevices.Clear()
-		self.devs = dict(cfg.devices)
-		self.devs.update({device.id: device.name for device in registry.getAllDevices()})
-		for id, name in self.devs.items():
-			self.hideDevices.Append(name, id)
-		if len(self.devs) > 0:
-			self.hideDevices.SetCheckedStrings([self.devs[id] for id in cfg.devices])
-			self.hideDevices.SetSelection(0)
-		self.hideDevices.SetFocus()
+		items: Dict[str, str] = {}
+		if includeHidden:
+			items.update(
+				(id, name) for id, name in cfg.devices.items() if registry.isInputDevice(id) == isInput
+			)
+		for device in registry.getAllDevices():
+			if isinstance(device, InputDeviceSource) == isInput:
+				items.setdefault(device.id, device.name)
+		self.devs.update(items)
+		control.Clear()
+		for id, name in items.items():
+			control.Append(name, id)
+		if includeHidden:
+			control.SetCheckedItems([i for i, id in enumerate(items) if id in cfg.devices])
+		if items:
+			control.SetSelection(0)
 
-	def onClearDevicesButton(self, event: wx.PyEvent) -> None:
-		"""Uncheck all installed checkboxes and remove unnecessary audio devices.
-		@param event: event that occurs when a wx.Button is pressed
-		@type event: wx.PyEvent
+	def onUpdateDevicesButton(self, control: nvdaControls.CustomCheckListBox, isInput: bool) -> None:
+		"""Update the list of connected audio devices when the appropriate button is pressed,
+		the saved hidden devices are checked again.
+		@param control: the checkable list of output or input devices
+		@type control: nvdaControls.CustomCheckListBox
+		@param isInput: whether the list contains input devices
+		@type isInput: bool
 		"""
-		self.hideDevices.Clear()
-		allDevices = registry.getAllDevices()
-		for dev in allDevices:
-			self.hideDevices.Append(dev.name, dev.id)
-		if len(allDevices) > 0:
-			self.hideDevices.SetSelection(0)
-		self.hideDevices.SetFocus()
+		self.fillDeviceList(control, isInput, includeHidden=True)
+		control.SetFocus()
+
+	def onClearDevicesButton(self, control: nvdaControls.CustomCheckListBox, isInput: bool) -> None:
+		"""Uncheck all audio devices and remove those that are not connected now.
+		@param control: the checkable list of output or input devices
+		@type control: nvdaControls.CustomCheckListBox
+		@param isInput: whether the list contains input devices
+		@type isInput: bool
+		"""
+		self.fillDeviceList(control, isInput, includeHidden=False)
+		control.SetFocus()
 
 	def onUpdateProcessesButton(self, event: wx.PyEvent) -> None:
 		"""Update the list of currently running processes when the appropriate button is pressed.
@@ -457,9 +469,10 @@ class VASettingsPanel(SettingsPanel):
 		config.conf[addonName]["unmuteOnExit"] = self.unmuteOnExitChk.GetValue()
 		config.conf[addonName]["warnNvdaVolume"] = self.warnNvdaVolumeChk.GetValue()
 		devs = {}
-		for checked in self.hideDevices.GetCheckedItems():
-			id = self.hideDevices.GetClientData(checked)
-			devs[id] = self.devs[id]
+		for control in (self.hideOutputDevices, self.hideInputDevices):
+			for checked in control.GetCheckedItems():
+				id = control.GetClientData(checked)
+				devs[id] = self.devs[id]
 		procs = self.hideProcesses.GetCheckedStrings()
 		isChangedDevices = cfg.isChangedDevices(devs)
 		if cfg.isChangedProcesses(procs) or isChangedDevices:
