@@ -118,7 +118,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			"mutePercentage": "integer(default=75,min=1,max=99)",
 			"unmuteOnExit": "boolean(default=true)",
 			"warnNvdaVolume": "boolean(default=true)",
-			"gestures": "boolean(default=true)",
+			"gestures": "boolean(default=false)",
 		}
 		config.conf.spec[addonName] = confspec
 		settingsDialogs.NVDASettingsDialog.categoryClasses.append(VASettingsPanel)
@@ -466,7 +466,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		ui.message(title)
 		if config.conf[addonName]["status"]:
 			self.announceMuted(source) if source.isMuted else self.announceVolumeLevel(
-				source.volumeLevel, source
+				source.volumeLevel,
+				source,
 			)
 
 	def switchAudioSource(self, step: int) -> None:
@@ -1104,11 +1105,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 					self.__class__,
 					f"script_{scriptName}",
 					self.outputDeviceScriptFactory(
-						target, id, name, description.format(number=number, name=name)
+						target,
+						id,
+						name,
+						description.format(number=number, name=name),
 					),
 				)
 				if config.conf[addonName]["gestures"] and number <= FUNCTION_KEYS:
-					self.bindGesture(f"kb:NVDA+{modifiers}windows+f{number}", scriptName)
+					self.bindGesture(f"kb:NVDA+windows+{modifiers}f{number}", scriptName)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Select next channel"))
@@ -1176,7 +1180,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return
 		# Lowering a channel of NVDA itself may silence its speech, so the user is warned first
 		self.runWithNvdaWarning(
-			source, lambda: self.announceChannelVolumeLevel(source, source.channelVolumeDown())
+			source,
+			lambda: self.announceChannelVolumeLevel(source, source.channelVolumeDown()),
 		)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
@@ -1207,7 +1212,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return
 		# Lowering a channel of NVDA itself may silence its speech, so the user is warned first
 		self.runWithNvdaWarning(
-			source, lambda: self.announceChannelVolumeLevel(source, source.channelVolumeMin())
+			source,
+			lambda: self.announceChannelVolumeLevel(source, source.channelVolumeMin()),
 		)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
@@ -1224,7 +1230,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		levels = [source.getChannelVolumeLevel(channel) for channel in range(source.channelCount)]
 		if max(levels) - min(levels) > LEVEL_TOLERANCE / 100.0:
 			self.runWithNvdaWarning(
-				source, lambda: self.announceChannelVolumeLevel(source, source.channelVolumeAverage())
+				source,
+				lambda: self.announceChannelVolumeLevel(source, source.channelVolumeAverage()),
 			)
 		else:
 			self.announceChannelVolumeLevel(source, source.channelVolumeAverage())
@@ -1239,34 +1246,34 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Switching between audio sources
 		"kb:NVDA+windows+rightArrow": "next",
 		"kb:NVDA+windows+leftArrow": "prev",
-		"kb:NVDA+control+windows+rightArrow": "nextCategory",
-		"kb:NVDA+control+windows+leftArrow": "prevCategory",
+		"kb:NVDA+windows+control+rightArrow": "nextCategory",
+		"kb:NVDA+windows+control+leftArrow": "prevCategory",
 		# Categories of audio sources
 		"kb:NVDA+windows+o": "toggleOutputDevices",
 		"kb:NVDA+windows+i": "toggleInputDevices",
 		"kb:NVDA+windows+p": "togglePlaybackApps",
 		"kb:NVDA+windows+r": "toggleRecordingApps",
-		"kb:NVDA+shift+windows+o": "showOnlyOutputDevices",
-		"kb:NVDA+shift+windows+i": "showOnlyInputDevices",
-		"kb:NVDA+shift+windows+p": "showOnlyPlaybackApps",
-		"kb:NVDA+shift+windows+r": "showOnlyRecordingApps",
+		"kb:NVDA+windows+shift+o": "showOnlyOutputDevices",
+		"kb:NVDA+windows+shift+i": "showOnlyInputDevices",
+		"kb:NVDA+windows+shift+p": "showOnlyPlaybackApps",
+		"kb:NVDA+windows+shift+r": "showOnlyRecordingApps",
 		# Output audio devices
 		"kb:NVDA+windows+pageUp": "nextOutputDevice",
 		"kb:NVDA+windows+pageDown": "prevOutputDevice",
 		"kb:NVDA+windows+d": "switchNvdaOutputToDefault",
 		"kb:NVDA+windows+s": "openSoundDialog",
+		"kb:NVDA+windows+shift+pageUp": "nextDefaultOutputDevice",
+		"kb:NVDA+windows+shift+pageDown": "prevDefaultOutputDevice",
+		"kb:NVDA+windows+control+pageUp": "nextCommunicationDevice",
+		"kb:NVDA+windows+control+pageDown": "prevCommunicationDevice",
 		# Microphones
 		"kb:NVDA+windows+space": "toggleQuickMute",
-		"kb:NVDA+shift+windows+pageUp": "nextDefaultOutputDevice",
-		"kb:NVDA+shift+windows+pageDown": "prevDefaultOutputDevice",
-		"kb:NVDA+control+windows+pageUp": "nextCommunicationDevice",
-		"kb:NVDA+control+windows+pageDown": "prevCommunicationDevice",
 		# Customize channels volume
-		"kb:NVDA+shift+windows+rightArrow": "nextChannel",
-		"kb:NVDA+shift+windows+leftArrow": "prevChannel",
-		"kb:NVDA+shift+windows+upArrow": "channelVolumeUp",
-		"kb:NVDA+shift+windows+downArrow": "channelVolumeDown",
-		"kb:NVDA+shift+windows+home": "channelVolumeMax",
-		"kb:NVDA+shift+windows+end": "channelVolumeMin",
-		"kb:NVDA+shift+windows+escape": "channelVolumeAverage",
+		"kb:NVDA+windows+shift+rightArrow": "nextChannel",
+		"kb:NVDA+windows+shift+leftArrow": "prevChannel",
+		"kb:NVDA+windows+shift+upArrow": "channelVolumeUp",
+		"kb:NVDA+windows+shift+downArrow": "channelVolumeDown",
+		"kb:NVDA+windows+shift+home": "channelVolumeMax",
+		"kb:NVDA+windows+shift+end": "channelVolumeMin",
+		"kb:NVDA+windows+shift+escape": "channelVolumeAverage",
 	}
