@@ -14,7 +14,7 @@ import config
 from comtypes import CLSCTX_ALL, COMError, pointer
 from logHandler import log
 from pycaw.api.audiopolicy import IAudioSessionManager2
-from pycaw.api.mmdeviceapi import IMMDevice
+from pycaw.api.mmdeviceapi import IMMDevice, IMMEndpoint
 from pycaw.callbacks import AudioSessionNotification, MMNotificationClient
 from pycaw.constants import DEVICE_STATE, AudioSessionState
 from pycaw.utils import (
@@ -1018,8 +1018,8 @@ class AudioSourceRegistry(object):
 
 	def getAllDevices(self, hide: Iterable[str] = ()) -> List[DeviceSource]:
 		"""Detect the active audio devices without changing the list of devices kept by the registry.
-		The default output device is always the first one, even if it is hidden.
-		If all available audio devices are controlled, the other output devices and then the input devices follow.
+		The default output device is always the first one, even if it is hidden,
+		the other output devices and then the input devices follow.
 		Disabled, unplugged and not present devices are skipped.
 		@param hide: IDs of the audio devices to skip
 		@type hide: Iterable[str]
@@ -1040,8 +1040,6 @@ class AudioSourceRegistry(object):
 			return []
 		default._default = True
 		devices: List[DeviceSource] = [default]
-		if not config.conf[addonName]["advanced"]:
-			return devices
 		skip = {default.id, *hide}
 		for flow, deviceClass in (
 			(EDataFlow.eRender, OutputDeviceSource),
@@ -1059,6 +1057,21 @@ class AudioSourceRegistry(object):
 				if device.name:
 					devices.append(device)
 		return devices
+
+	@staticmethod
+	def isInputDevice(id: str) -> bool:
+		"""Check whether the audio device is an input device, also when it is unplugged or disabled now.
+		@param id: the device ID
+		@type id: str
+		@return: whether the device records sound
+		@rtype: bool
+		"""
+		try:
+			immDevice = AudioUtilities.GetDeviceEnumerator().GetDevice(id)
+			return immDevice.QueryInterface(IMMEndpoint).GetDataFlow() == EDataFlow.eCapture.value
+		except COMError:
+			# A device removed from Windows: the data flow is the second number of its ID, e.g. {0.0.1.00000000}.{...}
+			return id.startswith("{0.0.1.")
 
 	@staticmethod
 	def getOutputDevices() -> List[Tuple[str, str]]:

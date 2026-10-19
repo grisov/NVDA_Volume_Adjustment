@@ -91,7 +91,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			"step": "integer(default=1,min=1,max=20)",
 			"focus": "boolean(default=true)",
 			"duplicates": "boolean(default=true)",
-			"advanced": "boolean(default=false)",
 			# Letters of the visible categories of audio sources, see sources.SourceKind
 			"categories": 'string(default="OIPR")',
 			"announceCategories": "boolean(default=true)",
