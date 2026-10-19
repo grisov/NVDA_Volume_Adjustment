@@ -5,7 +5,7 @@
 # See the file COPYING for more details.
 # Copyright (C) 2020-2026 Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>
 
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Optional
 import addonHandler
 import config
 import ui
@@ -315,6 +315,28 @@ class VASettingsPanel(SettingsPanel):
 			wx.EVT_BUTTON,
 			lambda event: self.onClearDevicesButton(self.hideInputDevices, isInput=True),
 		)
+		self.quickMuteDevices = addonHelper.addLabeledControl(
+			# Translators: The label of the Checkable list in the settings panel: the input devices
+			# muted and unmuted together by one command
+			_("Microp&hones of the quick mute:"),
+			nvdaControls.CustomCheckListBox,
+			choices=[],
+		)
+		self.fillDeviceList(self.quickMuteDevices, isInput=True, includeHidden=True, saved=cfg.quickMute)
+		quickMuteButtons = guiHelper.ButtonHelper(orientation=wx.HORIZONTAL)
+		self.updateQuickMuteButton = quickMuteButtons.addButton(self, id=wx.ID_REFRESH)
+		self.clearQuickMuteButton = quickMuteButtons.addButton(self, id=wx.ID_CLEAR)
+		addonHelper.addItem(quickMuteButtons)
+		self.updateQuickMuteButton.Bind(
+			wx.EVT_BUTTON,
+			lambda event: self.onUpdateDevicesButton(
+				self.quickMuteDevices, isInput=True, saved=cfg.quickMute
+			),
+		)
+		self.clearQuickMuteButton.Bind(
+			wx.EVT_BUTTON,
+			lambda event: self.onClearDevicesButton(self.quickMuteDevices, isInput=True),
+		)
 
 		self.muteMode = addonHelper.addLabeledControl(
 			# Translators: This is the label for a choice list in the settings panel.
@@ -376,21 +398,27 @@ class VASettingsPanel(SettingsPanel):
 		self.defaultGesturesChk.SetFocus()
 
 	def fillDeviceList(
-		self, control: nvdaControls.CustomCheckListBox, isInput: bool, includeHidden: bool
+		self,
+		control: nvdaControls.CustomCheckListBox,
+		isInput: bool,
+		includeHidden: bool,
+		saved: Optional[Dict[str, str]] = None,
 	) -> None:
-		"""Fill the list of output or input devices that can be hidden.
+		"""Fill a checkable list of output or input devices: the devices to hide or the microphones of the quick mute.
 		@param control: the checkable list of output or input devices
 		@type control: nvdaControls.CustomCheckListBox
 		@param isInput: whether the list contains input devices
 		@type isInput: bool
-		@param includeHidden: whether the hidden devices are listed and checked, also those not connected now
+		@param includeHidden: whether the saved devices are listed and checked, also those not connected now
 		@type includeHidden: bool
+		@param saved: the saved devices of the list, the hidden devices by default
+		@type saved: Optional[Dict[str, str]]
 		"""
+		if saved is None:
+			saved = cfg.devices
 		items: Dict[str, str] = {}
 		if includeHidden:
-			items.update(
-				(id, name) for id, name in cfg.devices.items() if registry.isInputDevice(id) == isInput
-			)
+			items.update((id, name) for id, name in saved.items() if registry.isInputDevice(id) == isInput)
 		for device in registry.getAllDevices():
 			if isinstance(device, InputDeviceSource) == isInput:
 				items.setdefault(device.id, device.name)
@@ -399,19 +427,26 @@ class VASettingsPanel(SettingsPanel):
 		for id, name in items.items():
 			control.Append(name, id)
 		if includeHidden:
-			control.SetCheckedItems([i for i, id in enumerate(items) if id in cfg.devices])
+			control.SetCheckedItems([i for i, id in enumerate(items) if id in saved])
 		if items:
 			control.SetSelection(0)
 
-	def onUpdateDevicesButton(self, control: nvdaControls.CustomCheckListBox, isInput: bool) -> None:
+	def onUpdateDevicesButton(
+		self,
+		control: nvdaControls.CustomCheckListBox,
+		isInput: bool,
+		saved: Optional[Dict[str, str]] = None,
+	) -> None:
 		"""Update the list of connected audio devices when the appropriate button is pressed,
-		the saved hidden devices are checked again.
+		the saved devices are checked again.
 		@param control: the checkable list of output or input devices
 		@type control: nvdaControls.CustomCheckListBox
 		@param isInput: whether the list contains input devices
 		@type isInput: bool
+		@param saved: the saved devices of the list, the hidden devices by default
+		@type saved: Optional[Dict[str, str]]
 		"""
-		self.fillDeviceList(control, isInput, includeHidden=True)
+		self.fillDeviceList(control, isInput, includeHidden=True, saved=saved)
 		control.SetFocus()
 
 	def onClearDevicesButton(self, control: nvdaControls.CustomCheckListBox, isInput: bool) -> None:
@@ -486,10 +521,18 @@ class VASettingsPanel(SettingsPanel):
 				id = control.GetClientData(checked)
 				devs[id] = self.devs[id]
 		procs = self.hideProcesses.GetCheckedStrings()
+		quickMute = {
+			self.quickMuteDevices.GetClientData(checked): self.devs[
+				self.quickMuteDevices.GetClientData(checked)
+			]
+			for checked in self.quickMuteDevices.GetCheckedItems()
+		}
 		isChangedDevices = cfg.isChangedDevices(devs)
-		if cfg.isChangedProcesses(procs) or isChangedDevices:
+		isChangedQuickMute = set(quickMute) != set(cfg.quickMute)
+		if cfg.isChangedProcesses(procs) or isChangedDevices or isChangedQuickMute:
 			cfg.devices = devs
 			cfg.processes = procs
+			cfg.quickMute = quickMute
 			cfg.save()
 			if isChangedDevices:
 				# Re-initialize the list of devices for the new settings to take effect

@@ -9,11 +9,13 @@ import subprocess
 from typing import Callable, List, Optional, Tuple, TypeVar
 import addonHandler
 import config
+import core
 import globalPluginHandler
 import tones
 import ui
 import wx
 from api import getFocusObject
+from comtypes import COMError
 from globalVars import appArgs
 import gui
 from gui import settingsDialogs
@@ -31,6 +33,7 @@ from .sources import (
 	LEVEL_TOLERANCE,
 	AppSource,
 	AudioSource,
+	InputDeviceSource,
 	PlaybackAppSource,
 	SourceKey,
 	SourceKind,
@@ -63,6 +66,9 @@ from .settings import (  # noqa E402
 )
 
 UNDEFINED_APP: str = "UndefinedCurrentApplicationName"
+# Beeps of the quick mute of the microphones: frequency in Hz and duration in milliseconds
+QUICK_UNMUTE_BEEP = (880, 60)
+QUICK_MUTE_BEEP = (440, 60)
 # Number of the function keys F1..F12 bound to the output devices
 FUNCTION_KEYS = 12
 # Prefixes of the names of the scripts created for each output device, see bindSwitchingMethods()
@@ -937,6 +943,68 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		self.selectOutputDeviceByStep(OutputTarget.COMMUNICATION, step=-1)
 
+	def getQuickMuteDevices(self) -> List[InputDeviceSource]:
+		"""Get the connected input devices selected for the quick mute in the add-on settings.
+		Hidden devices and categories do not matter: the quick mute works for all selected microphones.
+		@return: the connected input devices of the quick mute
+		@rtype: List[InputDeviceSource]
+		"""
+		ids = cfg.quickMute
+		return [
+			device
+			for device in registry.getAllDevices()
+			if isinstance(device, InputDeviceSource) and device.id in ids
+		]
+
+	def setQuickMute(self, devices: List[InputDeviceSource], mute: bool) -> None:
+		"""Mute or unmute the input devices in Windows, so all programs get silence or sound from them.
+		@param devices: the input devices of the quick mute
+		@type devices: List[InputDeviceSource]
+		@param mute: whether to mute the devices
+		@type mute: bool
+		"""
+		for device in devices:
+			try:
+				# Incorrect handling of AttributeError by MyPy
+				device.volume.SetMute(int(mute), None)  # type: ignore
+			except (AttributeError, COMError):
+				log.debugWarning(f"Unable to change the mute state of {device.name}", exc_info=True)
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Mute or unmute the microphones selected for the quick mute"))
+	def script_toggleQuickMute(self, gesture: InputGesture) -> None:
+		"""Mute all microphones selected in the add-on settings if any of them is on, otherwise unmute them all.
+		The beep is played before unmuting and after muting, so the microphones do not record it.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		if not cfg.quickMute:
+			# Translators: The message when no microphones have been selected for the quick mute in the add-on settings
+			ui.message(_("No microphones are selected for the quick mute"))
+			return
+		devices = self.getQuickMuteDevices()
+		if not devices:
+			# Translators: The message when none of the microphones selected for the quick mute is connected
+			ui.message(_("The microphones selected for the quick mute are not connected"))
+			return
+		isMuted = []
+		for device in devices:
+			try:
+				# Incorrect handling of AttributeError by MyPy
+				isMuted.append(bool(device.volume.GetMute()))  # type: ignore
+			except (AttributeError, COMError):
+				isMuted.append(False)
+		if not all(isMuted):
+			# Any microphone on: all of them are muted, so the first press always gives silence
+			self.setQuickMute(devices, mute=True)
+			tones.beep(*QUICK_MUTE_BEEP)
+			# Translators: The message when the microphones selected for the quick mute have been muted
+			ui.message(_("Microphones muted"))
+			return
+		# Only the beep is played: the microphones are unmuted when it has been played, so it is not recorded
+		tones.beep(*QUICK_UNMUTE_BEEP)
+		core.callLater(QUICK_UNMUTE_BEEP[1] + 20, self.setQuickMute, devices, False)
+
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Open the Sound dialog of Windows"))
 	def script_openSoundDialog(self, gesture: InputGesture) -> None:
@@ -1170,6 +1238,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"kb:NVDA+windows+pageDown": "prevOutputDevice",
 		"kb:NVDA+windows+d": "switchNvdaOutputToDefault",
 		"kb:NVDA+windows+s": "openSoundDialog",
+		# Microphones
+		"kb:NVDA+windows+space": "toggleQuickMute",
 		"kb:NVDA+shift+windows+pageUp": "nextDefaultOutputDevice",
 		"kb:NVDA+shift+windows+pageDown": "prevDefaultOutputDevice",
 		"kb:NVDA+control+windows+pageUp": "nextCommunicationDevice",

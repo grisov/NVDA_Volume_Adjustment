@@ -78,6 +78,22 @@ class Configuration(object):
 		return self
 
 	@property
+	def quickMute(self) -> Dict[str, str]:
+		"""Input devices muted and unmuted together by one command.
+		@return: dict with devices in which the key is the ID and the value is the device name
+		@rtype: Dict[str, str]
+		"""
+		return self._data.get("quickMute", {})
+
+	@quickMute.setter
+	def quickMute(self, devices: Dict[str, str]) -> None:
+		"""Update the input devices muted and unmuted together by one command.
+		@param devices: dict with devices in which the key is the ID and the value is the device name
+		@type devices: Dict[str, str]
+		"""
+		self._data["quickMute"] = dict(devices)
+
+	@property
 	def processes(self) -> List[str]:
 		"""List of processes that need to be hidden.
 		@return: list of full names of processes
