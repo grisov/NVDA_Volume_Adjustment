@@ -24,7 +24,7 @@ from gui.settingsDialogs import SettingsPanel
 from logHandler import log
 from queueHandler import eventQueue, queueFunction
 from .audiocore import addonSummary, cfg, getAddonConfig
-from .sources import InputDeviceSource, SourceKind, registry
+from .sources import Connection, DeviceSource, FormFactor, InputDeviceSource, SourceKind, registry
 
 try:
 	addonHandler.initTranslation()
@@ -51,6 +51,56 @@ def getCategoryName(kind: SourceKind) -> str:
 		return _("Playback apps")
 	# Translators: The name of the category of audio sources announced while switching between them
 	return _("Recording apps")
+
+
+def getDeviceDetails(device: DeviceSource) -> list[str]:
+	"""Get the attributes of the audio device to announce after its name or volume level:
+	its type, how it is connected and whether it is a default device of Windows.
+	The internal connection is not announced: it would be misleading e.g. for the speakers of a monitor.
+	@param device: the audio device
+	@type device: DeviceSource
+	@return: the translated attributes, those that are not known are skipped
+	@rtype: List[str]
+	"""
+	formFactors = {
+		# Translators: The type of an audio device announced after its name
+		FormFactor.REMOTE_NETWORK_DEVICE: _("network device"),
+		# Translators: The type of an audio device announced after its name
+		FormFactor.SPEAKERS: _("speakers"),
+		# Translators: The type of an audio device announced after its name, e.g. a line input or output
+		FormFactor.LINE_LEVEL: _("line"),
+		# Translators: The type of an audio device announced after its name
+		FormFactor.HEADPHONES: _("headphones"),
+		# Translators: The type of an audio device announced after its name
+		FormFactor.MICROPHONE: _("microphone"),
+		# Translators: The type of an audio device announced after its name: headphones with a microphone
+		FormFactor.HEADSET: _("headset"),
+		# Translators: The type of an audio device announced after its name: a telephone handset
+		FormFactor.HANDSET: _("handset"),
+		# Translators: The type of an audio device announced after its name: a digital audio output
+		FormFactor.UNKNOWN_DIGITAL_PASSTHROUGH: _("digital output"),
+		# Translators: The type of an audio device announced after its name: the S/PDIF digital interface
+		FormFactor.SPDIF: _("S/PDIF"),
+		# Translators: The type of an audio device announced after its name: the speakers of a monitor or TV (HDMI)
+		FormFactor.DIGITAL_AUDIO_DISPLAY_DEVICE: _("digital display"),
+	}
+	connections = {
+		# Translators: How an audio device is connected, announced after its name
+		Connection.USB: _("USB"),
+		# Translators: How an audio device is connected, announced after its name
+		Connection.BLUETOOTH: _("Bluetooth"),
+		# Translators: How an audio device is connected, announced after its name: a software device,
+		# e.g. a virtual audio cable
+		Connection.VIRTUAL: _("virtual"),
+	}
+	details = [formFactors.get(device.formFactor, ""), connections.get(device.connection, "")]
+	if device.isDefaultDevice:
+		# Translators: Announced after the name of an audio device that is the default device of Windows
+		details.append(_("default"))
+	if device.isDefaultCommunicationDevice:
+		# Translators: Announced after the name of an audio device that is the default communication device of Windows
+		details.append(_("communication"))
+	return [detail for detail in details if detail]
 
 
 def getOnlyVisibleCategoryMessage(category: str, hiding: bool = False) -> str:
@@ -112,13 +162,9 @@ class AddonsReloadDialog(wx.Dialog):
 		super().__init__(parent, title=_("Gestures Configuration Change"))
 		mainSizer = wx.BoxSizer(wx.VERTICAL)
 		sHelper = guiHelper.BoxSizerHelper(self, orientation=wx.VERTICAL)
-		sHelper.addItem(
-			# Translators: The message displayed when addon gestures has been changed.
-			wx.StaticText(
-				self,
-				label=_("NVDA add-ons must be reloaded for the new gestures to take effect."),
-			),
-		)
+		# Translators: The message displayed when addon gestures has been changed.
+		message = _("NVDA add-ons must be reloaded for the new gestures to take effect.")
+		sHelper.addItem(wx.StaticText(self, label=message))
 		if not getAddonConfig()["gestures"]:
 			sHelper.addItem(
 				# Translators: The warning is displayed before switching on default addon gestures
@@ -224,6 +270,12 @@ class VASettingsPanel(SettingsPanel):
 			wx.CheckBox(self, label=_("Announce &category names while switching")),
 		)
 		self.announceCategoriesChk.SetValue(getAddonConfig()["announceCategories"])
+		self.deviceDetailsChk = addonHelper.addItem(
+			# Translators: This is the label for a checkbox in the settings panel: the type, connection and
+			# default role of an audio device are announced after its volume level or name
+			wx.CheckBox(self, label=_("Announce audio device &details")),
+		)
+		self.deviceDetailsChk.SetValue(getAddonConfig()["deviceDetails"])
 		self.visibleCategories = addonHelper.addLabeledControl(
 			# Translators: The label of the Checkable list in the settings panel
 			_("&Visible categories of audio sources:"),
@@ -517,6 +569,7 @@ class VASettingsPanel(SettingsPanel):
 		"""Update Configuration when clicking OK."""
 		getAddonConfig()["status"] = self.reportStatusChk.GetValue()
 		getAddonConfig()["announceCategories"] = self.announceCategoriesChk.GetValue()
+		getAddonConfig()["deviceDetails"] = self.deviceDetailsChk.GetValue()
 		checked = self.visibleCategories.GetCheckedItems()
 		setVisibleCategories([kind for i, kind in enumerate(SourceKind) if i in checked])
 		getAddonConfig()["step"] = self.volumeStep.GetValue()
