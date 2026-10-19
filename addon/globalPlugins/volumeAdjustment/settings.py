@@ -244,9 +244,12 @@ class VASettingsPanel(SettingsPanel):
 		# Translators: An item in the choice list of the units of the announced volume level
 		self.units.Append(_("Percent"), "percent")
 		# Translators: An item in the choice list of the units of the announced volume level,
+		# the level in percent is announced without the percent sign, e.g. "Volume 29"
+		self.units.Append(_("Percent, number only"), "number")
+		# Translators: An item in the choice list of the units of the announced volume level,
 		# only audio devices provide their volume levels in decibels
 		self.units.Append(_("Decibels, if the source supports it"), "decibels")
-		self.units.Select(int(config.conf[addonName]["units"] == "decibels"))
+		self.units.Select(["percent", "number", "decibels"].index(config.conf[addonName]["units"]))
 		self.followFocusChk = addonHelper.addItem(
 			# Translators: This is the label for a checkbox in the settings panel.
 			wx.CheckBox(self, label=_("Change the volume of the current &application")),

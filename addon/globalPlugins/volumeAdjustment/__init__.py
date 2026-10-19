@@ -98,8 +98,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		confspec = {
 			"status": "boolean(default=true)",
 			"step": "integer(default=1,min=1,max=20)",
-			# Units of the announced volume level: decibels only for the sources that provide them (audio devices)
-			"units": 'option("percent", "decibels", default="percent")',
+			# Units of the announced volume level: percent, percent without the sign (number),
+			# or decibels for the sources that provide them (audio devices)
+			"units": 'option("percent", "number", "decibels", default="percent")',
 			"focus": "boolean(default=true)",
 			# Letters of the visible categories of audio sources, see sources.SourceKind
 			"categories": 'string(default="OIPR")',
@@ -213,7 +214,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		source: Optional[AudioSource] = None,
 		channel: Optional[int] = None,
 	) -> str:
-		"""Get the text of the volume level announcement, e.g. "Volume 29%" or "Volume -12.5 dB".
+		"""Get the text of the volume level announcement, e.g. "Volume 29%", "Volume 29" or "Volume -12.5 dB".
 		Decibels are announced if they are selected in the add-on settings and the source provides them,
 		otherwise percents. The volume is always adjusted in percents, like the volume slider of Windows.
 		@param volumeLevel: value of volume level
@@ -236,6 +237,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				return f"{volume} {round(decibels, 1) + 0.0:.1f} {unit}"
 		# Rounded: Windows stores volume levels as 32-bit floats, 29 % is read back as 28.999999 %
 		level = round(volumeLevel * 100.0)
+		if config.conf[addonName]["units"] == "number":
+			# The short form of the earlier versions, e.g. "Volume 29"
+			return f"{volume} {level}"
 		return f"{volume} {level}%"
 
 	def announceVolumeLevel(
