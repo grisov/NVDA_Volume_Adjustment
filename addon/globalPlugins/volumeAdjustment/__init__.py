@@ -257,6 +257,28 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Translators: The message when feature currently is not supported
 		ui.message(_("Not supported"))
 
+	def getChannelSource(self) -> Optional[AudioSource]:
+		"""Get the selected audio source for a channel command.
+		The channels of applications are changed by NVDA sound split too, so they are not changed while
+		sound split is enabled: the add-on and NVDA would overwrite each other's levels.
+		Announces why the channels cannot be adjusted.
+		@return: the audio source whose channels can be adjusted, None otherwise
+		@rtype: Optional[AudioSource]
+		"""
+		source = self.getSelectedAudioSource()
+		if source is None:
+			return None
+		# Any state except "disabled" (0) applies sound split levels to all audio sessions, even "both channels"
+		if isinstance(source, AppSource) and config.conf["audio"]["soundSplitState"] != 0:
+			# Translators: The message when the channels of an application cannot be adjusted
+			# because NVDA sound split is enabled and uses them
+			ui.message(_("Channels are used by NVDA sound split"))
+			return None
+		if source.channelCount <= 0:
+			self.announceNotSupported()
+			return None
+		return source
+
 	def getAllSources(self) -> List[AudioSource]:
 		"""List of all audio sources available for switching, in the order of the categories:
 		output devices, input devices, playback applications, recording applications.
@@ -949,11 +971,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		source = self.getSelectedAudioSource()
+		source = self.getChannelSource()
 		if source is None:
-			return
-		if source.channelCount <= 0:
-			self.announceNotSupported()
 			return
 		source.channel += 1
 		self.announceChannel(source.channel)
@@ -969,11 +988,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		source = self.getSelectedAudioSource()
+		source = self.getChannelSource()
 		if source is None:
-			return
-		if source.channelCount <= 0:
-			self.announceNotSupported()
 			return
 		source.channel -= 1
 		self.announceChannel(source.channel)
@@ -989,7 +1005,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		source = self.getSelectedAudioSource()
+		source = self.getChannelSource()
 		if source is None:
 			return
 		level: float = source.channelVolumeUp()
@@ -1005,7 +1021,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		source = self.getSelectedAudioSource()
+		source = self.getChannelSource()
 		if source is None:
 			return
 		level: float = source.channelVolumeDown()
@@ -1021,7 +1037,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		source = self.getSelectedAudioSource()
+		source = self.getChannelSource()
 		if source is None:
 			return
 		level: float = source.channelVolumeMax()
@@ -1037,7 +1053,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		source = self.getSelectedAudioSource()
+		source = self.getChannelSource()
 		if source is None:
 			return
 		level: float = source.channelVolumeMin()
@@ -1053,7 +1069,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		source = self.getSelectedAudioSource()
+		source = self.getChannelSource()
 		if source is None:
 			return
 		level: float = source.channelVolumeAverage()

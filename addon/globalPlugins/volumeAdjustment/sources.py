@@ -716,29 +716,48 @@ class AppSource(AudioSource):
 
 	@property
 	def channelCount(self) -> int:
-		"""Get the number of channels available in the current audio device.
-		@return: the number of channels
+		"""Get the number of channels of the first audio session of the application (usually 2).
+		The channel levels are relative to the volume level of the session.
+		NVDA sound split changes the same channels, see GlobalPlugin.getChannelSource().
+		@return: the number of channels, 0 if they are not available
 		@rtype: int
 		"""
-		return -1
+		try:
+			return self._sessions[0].channelAudioVolume().GetChannelCount()
+		except (AttributeError, COMError):
+			return 0
 
 	def getChannelVolumeLevel(self, channel: int = -1) -> float:
-		"""Get the volume level of the specified audio source channel.
+		"""Get the volume level of the specified channel of the first audio session.
 		@param channel: the number of the specified audio channel
 		@type channel: int
-		@return: the volume level
+		@return: the volume level, -1.0 if it is not available
 		@rtype: float
 		"""
-		return -1.0
+		if channel < 0:
+			channel = self.channel
+		try:
+			return self._sessions[0].channelAudioVolume().GetChannelVolume(channel)
+		except (AttributeError, COMError):
+			return -1.0
 
 	def setChannelVolumeLevel(self, level: float, channel: int = -1) -> None:
-		"""Set the volume level of the specified audio source channel.
+		"""Set the volume level of the specified channel of all audio sessions of the application.
+		Sessions without such a channel are skipped.
 		@param channel: the number of the specified audio channel
 		@type channel: int
 		@param level: target volume level
 		@type level: float [0.0..1.0]
 		"""
-		pass
+		if channel < 0:
+			channel = self.channel
+		for session in self._sessions:
+			try:
+				channelVolume = session.channelAudioVolume()
+				if channel < channelVolume.GetChannelCount():
+					channelVolume.SetChannelVolume(channel, level, None)
+			except (AttributeError, COMError):
+				continue
 
 
 class PlaybackAppSource(AppSource):
