@@ -17,6 +17,7 @@
 - In the "Volume Down" mute mode, the remaining volume level is announced after muting, e.g. "The sound is muted, volume 5%".
 - The default output device and the default communication device of Windows can be set with NVDA+Shift+Windows and NVDA+Control+Windows with F1-F12, PageUp and PageDown.
 - NVDA+Windows+F1-F12 switch NVDA output to the output devices found when NVDA starts, and NVDA+Windows+D switches it to the default output device.
+- NVDA+Windows+S opens the classic Sound dialog of Windows, or the Sound page of the Windows Settings if the dialog is not available.
 - The add-on uses the pycaw module bundled with NVDA and no longer calls its helpers that read the whole property store of audio devices (GetAllSessions, GetSpeakers, GetAllDevices, CreateDevice) on frequent code paths.
 - Updated the add-on build tooling to the latest NV Access addonTemplate.
 
