@@ -1042,6 +1042,69 @@ class AudioSourceRegistry(object):
 		return devices
 
 	@staticmethod
+	def getOutputDevices() -> List[Tuple[str, str]]:
+		"""Get all active output devices in the order of Windows, regardless of the hidden devices and categories.
+		Only the names are read, unlike utils.mmdevice.getOutputDevices() of NVDA, which wraps every device
+		with AudioUtilities.CreateDevice() and reads its whole property store.
+		@return: IDs and names of the output devices
+		@rtype: List[Tuple[str, str]]
+		"""
+		try:
+			collection = AudioUtilities.GetDeviceEnumerator().EnumAudioEndpoints(
+				EDataFlow.eRender.value,
+				DEVICE_STATE.ACTIVE.value,
+			)
+			count = collection.GetCount()
+		except COMError:
+			log.debugWarning("Unable to list the active output devices", exc_info=True)
+			return []
+		devices: List[Tuple[str, str]] = []
+		for i in range(count):
+			try:
+				immDevice = collection.Item(i)
+				id = immDevice.GetId()
+			except COMError:
+				continue
+			(name,) = getDeviceProperties(immDevice, [PKEY_Device_FriendlyName])
+			devices.append((id, name if isinstance(name, str) and name else id))
+		return devices
+
+	@staticmethod
+	def getDefaultOutputId(role: ERole) -> str:
+		"""Get the ID of the default output device of Windows for the role.
+		@param role: multimedia or communications
+		@type role: ERole
+		@return: the device ID, empty if there is no default output device
+		@rtype: str
+		"""
+		try:
+			return (
+				AudioUtilities.GetDeviceEnumerator()
+				.GetDefaultAudioEndpoint(EDataFlow.eRender.value, role.value)
+				.GetId()
+			)
+		except COMError:
+			return ""
+
+	@staticmethod
+	def setDefaultOutput(id: str, roles: List[ERole]) -> bool:
+		"""Make the output device the default device of Windows for the roles.
+		All programs that use the default device, including NVDA with its "default" output, move to it immediately.
+		@param id: the device ID
+		@type id: str
+		@param roles: the roles, e.g. console and multimedia, or communications
+		@type roles: List[ERole]
+		@return: whether the default device has been changed
+		@rtype: bool
+		"""
+		try:
+			AudioUtilities.SetDefaultDevice(id, roles)
+		except (OSError, COMError):
+			log.error(f"Unable to set the default output device {id}", exc_info=True)
+			return False
+		return True
+
+	@staticmethod
 	def getDefaultDeviceIds(enumerator: object, role: ERole) -> List[str]:
 		"""Get the IDs of the default output and input devices for the specified role.
 		@param enumerator: the device enumerator

@@ -15,6 +15,8 @@
 - NVDA+Control+Windows+Right Arrow and Left Arrow jump to the first audio source of the next or previous category.
 - Before lowering, minimizing or muting the volume of NVDA itself, a warning is shown: it can silence NVDA speech, and Windows keeps this volume after NVDA restarts. The warning can be turned off in the dialog or in the add-on settings.
 - In the "Volume Down" mute mode, the remaining volume level is announced after muting, e.g. "The sound is muted, volume 5%".
+- The default output device and the default communication device of Windows can be set with NVDA+Shift+Windows and NVDA+Control+Windows with F1-F12, PageUp and PageDown.
+- NVDA+Windows+F1-F12 switch NVDA output to the output devices found when NVDA starts, and NVDA+Windows+D switches it to the default output device.
 - The add-on uses the pycaw module bundled with NVDA and no longer calls its helpers that read the whole property store of audio devices (GetAllSessions, GetSpeakers, GetAllDevices, CreateDevice) on frequent code paths.
 - Updated the add-on build tooling to the latest NV Access addonTemplate.
 
