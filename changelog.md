@@ -15,7 +15,7 @@
 - Categories of audio sources can be shown or hidden with NVDA+Windows+O, I, P and R, and NVDA+Shift+Windows with the same letters shows only that category.
 - The visible categories of audio sources can also be chosen in the add-on settings.
 - NVDA+Control+Windows+Right Arrow and Left Arrow jump to the first audio source of the next or previous category.
-- Before lowering, minimizing or muting the volume of NVDA itself, a warning is shown: it can silence NVDA speech, and Windows keeps this volume after NVDA restarts. The warning can be turned off in the dialog or in the add-on settings.
+- Before lowering, minimizing or muting the volume of NVDA itself, a warning is shown: it can silence NVDA speech, and Windows keeps this volume after NVDA restarts. The warning can be turned off in the dialog or in the add-on settings. The warning is also shown before lowering a channel of NVDA itself, which could silence its speech.
 - In the "Volume Down" mute mode, the remaining volume level is announced after muting, e.g. "The sound is muted, volume 5%".
 - The default output device and the default communication device of Windows can be set with NVDA+Shift+Windows and NVDA+Control+Windows with F1-F12, PageUp and PageDown.
 - NVDA+Windows+F1-F12 switch NVDA output to the output devices found when NVDA starts, and NVDA+Windows+D switches it to the default output device.

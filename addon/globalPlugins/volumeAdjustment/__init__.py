@@ -27,7 +27,16 @@ from enum import Enum
 from pycaw.utils import ERole
 from utils.mmdevice import getOutputDevices
 from .audiocore import cfg
-from .sources import AppSource, AudioSource, PlaybackAppSource, SourceKey, SourceKind, getSourceKey, registry
+from .sources import (
+	LEVEL_TOLERANCE,
+	AppSource,
+	AudioSource,
+	PlaybackAppSource,
+	SourceKey,
+	SourceKind,
+	getSourceKey,
+	registry,
+)
 
 try:
 	addonHandler.initTranslation()
@@ -263,6 +272,18 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		):
 			message = f"{message}, {self.formatVolumeLevel(source.volumeLevel, source)}"
 		ui.message(message)
+
+	def announceChannelVolumeLevel(self, source: AudioSource, level: float) -> None:
+		"""Announce the volume level of the selected channel after it has been changed.
+		@param source: the audio source of the channel
+		@type source: AudioSource
+		@param level: the new level of the channel, negative if the channels are not supported
+		@type level: float
+		"""
+		if level < 0:
+			self.announceNotSupported()
+			return
+		self.announceVolumeLevel(level, source, source.channel)
 
 	def announceChannel(self, number: int) -> None:
 		"""Announce the number of the selected audio channel, counted from 1 for the user.
@@ -1064,11 +1085,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		source = self.getChannelSource()
 		if source is None:
 			return
-		level: float = source.channelVolumeDown()
-		if level < 0:
-			self.announceNotSupported()
-			return
-		self.announceVolumeLevel(level, source, source.channel)
+		# Lowering a channel of NVDA itself may silence its speech, so the user is warned first
+		self.runWithNvdaWarning(
+			source, lambda: self.announceChannelVolumeLevel(source, source.channelVolumeDown())
+		)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Set the maximum volume level for the selected channel"))
@@ -1096,11 +1116,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		source = self.getChannelSource()
 		if source is None:
 			return
-		level: float = source.channelVolumeMin()
-		if level < 0:
-			self.announceNotSupported()
-			return
-		self.announceVolumeLevel(level, source, source.channel)
+		# Lowering a channel of NVDA itself may silence its speech, so the user is warned first
+		self.runWithNvdaWarning(
+			source, lambda: self.announceChannelVolumeLevel(source, source.channelVolumeMin())
+		)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Set the average volume level for all channels"))
@@ -1112,11 +1131,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		source = self.getChannelSource()
 		if source is None:
 			return
-		level: float = source.channelVolumeAverage()
-		if level < 0:
-			self.announceNotSupported()
-			return
-		self.announceVolumeLevel(level, source, source.channel)
+		# The average lowers the louder channels, which may silence NVDA speech on one side
+		levels = [source.getChannelVolumeLevel(channel) for channel in range(source.channelCount)]
+		if max(levels) - min(levels) > LEVEL_TOLERANCE / 100.0:
+			self.runWithNvdaWarning(
+				source, lambda: self.announceChannelVolumeLevel(source, source.channelVolumeAverage())
+			)
+		else:
+			self.announceChannelVolumeLevel(source, source.channelVolumeAverage())
 
 	__defaultGestures = {
 		# Volume level
