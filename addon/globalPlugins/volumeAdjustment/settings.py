@@ -363,7 +363,9 @@ class VASettingsPanel(SettingsPanel):
 		self.updateQuickMuteButton.Bind(
 			wx.EVT_BUTTON,
 			lambda event: self.onUpdateDevicesButton(
-				self.quickMuteDevices, isInput=True, saved=cfg.quickMute
+				self.quickMuteDevices,
+				isInput=True,
+				saved=cfg.quickMute,
 			),
 		)
 		self.clearQuickMuteButton.Bind(

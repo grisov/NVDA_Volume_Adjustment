@@ -5,106 +5,89 @@
 * NVDA compatibility: 2026.1 and beyond
 * Installation: through the NVDA Add-on Store ([stable version][1])
 
-Adjust the volume level of all audio devices installed in the system and each running program separately using simple keyboard shortcuts.
+Adjust the volume of every audio device and every running program separately, switch the output and default audio devices, and mute your microphones in all programs at once - all from the keyboard.
 
-You can always change the default keyboard shortcuts to your preferred ones through the NVDA input gestures dialog.
+## Keyboard shortcuts
+After installation, the add-on has no keyboard shortcuts. You can either:
 
-## Features
-* adjust the volume level of all audio devices in the system;
-* volume control for each running program separately;
-* the ability to adjust the volume of each channel of the selected audio device or set the average value for all channels;
-* quickly switch to the maximum or minimum volume level of any audio source or the selected channel;
-* two modes of muting the sound source - full switching off or decrease in volume in percent;
-* the ability to restore the volume level of all available muted audio sources when NVDA shuts down;
-* flexible settings for announcing the list of detected audio devices and running programs;
-* automatically switching to the program in focus;
-* the ability to set a custom volume change step;
-* quick switching the output to other available audio devices.
+* turn on the predefined shortcuts with the "Use default keyboard shortcuts" option in the add-on settings, or
+* assign your own shortcuts to any command in the NVDA "Input gestures" dialog, in the "Volume Adjustment" category.
 
-## Switch between audio sources
-To go to the previous or next audio source you can use the NVDA+Windows+ left or right arrow key combinations. The list consists of two parts - system audio devices and running audio sessions. Switching occurs cyclically, like in the NVDA synth settings ring.
+This document mentions the predefined shortcuts. All of them start with NVDA+Windows, so they are easy to remember and do not conflict with other commands.
 
-Through the add-on settings panel you can hide any items in this list.
+## Audio sources
+The add-on works with four categories of audio sources, always in this order:
 
-Switching between audio sessions can occur automatically when switching to the window of the corresponding program - this mode can be enabled in the add-on settings panel.
+1. output devices (speakers, headphones);
+2. input devices (microphones, line inputs);
+3. playback apps - programs that play sound;
+4. recording apps - programs that record sound.
 
-Note: The list of audio sessions changes dynamically and depends on the running programs.
+All audio sessions of a program are adjusted together, even if the program plays on several devices at once. A program that both plays and records, for example a video call, appears in both app categories.
 
-## Adjust the volume level
-When the sound source is selected you can change its volume level using the following commands:
+* NVDA+Windows+Right Arrow or Left Arrow - select the next or previous audio source. The list is cyclic.
+* NVDA+Windows+Control+Right Arrow or Left Arrow - jump to the first audio source of the next or previous category.
+* NVDA+Windows+O, I, P or R - show or hide output devices, input devices, playback apps or recording apps. When a category is shown, the number of its sources is announced.
+* NVDA+Windows+Shift+O, I, P or R - show only that category.
 
-* increase volume - NVDA+Windows+Arrow Up;
-* decrease volume - NVDA+Windows+Arrow Down;
-* set maximum volume level - NVDA+Windows+Home (be careful, this action can damage your hearing);
-* set minimum volume level - NVDA+Windows+End;
-* turn off audio source - NVDA+Windows+Arrow Down (when the minimum volume level is already set);
-* mute the volume or restore the volume of the previously muted audio source - NVDA+Windows+Escape, mute mode can be selected in the add-on settings panel.
+The last visible category cannot be hidden. The name of a category is announced when you move into it; this can be turned off in the add-on settings.
 
-Note: The volume changes by one percent per one keypress by default. This value can be changed in the settings panel in the range from 1 to 20.
+By default, the volume commands adjust the program in focus. When you select another source with the arrows, it stays selected until the focus moves to another window.
 
-## Adjust the volume of the selected channel
-For the selected sound source, you can also adjust the volume of its individual channels:
+## Adjust the volume
+* NVDA+Windows+Up Arrow or Down Arrow - increase or decrease the volume.
+* NVDA+Windows+Home - set the maximum volume. Be careful, a sudden loud sound can damage your hearing.
+* NVDA+Windows+End - set the minimum volume.
+* NVDA+Windows+Escape - mute the source or restore its volume.
 
-* switch between all available channels of the selected audio source - NVDA+Shift+Windows+ right or left arrows;
-* increase or decrease the volume level of the selected channel - NVDA+Shift+Windows+ up or down arrows;
-* set the maximum or minimum volume level of the selected channel - NVDA+Shift+Windows+ Home or End;
-* set the average volume level for all channels - NVDA+Shift+Windows+Escape.
+Lowering the volume to zero mutes the source. Muting can turn the sound off completely or only decrease the volume by a percentage; the mode is chosen in the add-on settings.
 
-Note: Channel volume control is currently available only for audio devices.
+## Channels
+* NVDA+Windows+Shift+Right Arrow or Left Arrow - select the next or previous channel of the selected source. Channels are numbered from 1.
+* NVDA+Windows+Shift+Up Arrow or Down Arrow - increase or decrease the volume of the selected channel.
+* NVDA+Windows+Shift+Home or End - set the maximum or minimum volume of the selected channel.
+* NVDA+Windows+Shift+Escape - set all channels to their average volume.
 
-## Quick switching between audio output devices
-To switch the output of all NVDA sounds to the next available audio device, simply press NVDA+Windows+PageUp.
+The channels of programs can be adjusted only while NVDA sound split is turned off, because sound split uses the same channels. Otherwise the add-on tells you that the channels are used by sound split.
 
-And to return to the previous audio device, use NVDA+Windows+PageDown.
+## Protecting the volume of NVDA
+NVDA itself is also a playback app. Before you lower or mute its volume or one of its channels, the add-on asks for confirmation, because NVDA could become silent and Windows remembers its volume even after NVDA restarts. The warning can be turned off in the dialog itself or in the add-on settings.
 
-In addition, to quickly switch the NVDA audio output to the selected audio device, you can use the NVDA+Windows+ function keys from F1.
+## Output devices
+Three groups of commands use the same keys, F1-F12, PageUp and PageDown:
 
-Note: The separate switching functions are created for all output audio devices detected in the system. All of these features are displayed in the "Input Gestures" dialog, where you can assign activation commands to each of the detected devices.
+* NVDA+Windows - the output device of NVDA speech and sounds;
+* NVDA+Windows+Shift - the default output device of Windows;
+* NVDA+Windows+Control - the default communication device of Windows.
 
-## Add-on settings panel
-The following options allow you to flexibly adjust the behavior of the add-on and the list of audio sources to switch between.
+With each group:
 
-### Announce the state of the sound source when switching
-If this checkbox is checked, during the switching between audio sources or between channels, their current status will be announced, namely the volume level or mute indicator.
+* F1-F12 - switch to the 1st to 12th output device. These commands are created for the output devices found when NVDA starts: a device connected later gets its own command after NVDA is restarted. A command for a device that has been disconnected announces that the device is not available.
+* PageUp or PageDown - switch to the next or previous output device. These commands always use the devices available at the moment, including the ones connected later.
 
-### Step to change the volume level
-The value by which the volume level is changed with one keypress. You can set a value from 1 to 20 points.
+The commands for every single device are listed in the NVDA "Input gestures" dialog with the device names, so you can assign other shortcuts to them.
 
-### Automatic audio session switching
-If this check box is checked, the add-on automatically switches to the audio session that corresponds to the program in focus.
+* NVDA+Windows+D - switch NVDA back to the default output device, so it follows the default device of Windows.
+* NVDA+Windows+S - open the Sound dialog of Windows.
 
-For example, if you are currently browsing a website in Firefox, the add-on will detect this and automatically switch to the Firefox audio session. And you can immediately adjust the volume level for the current process without finding it in the list.
+## Quick mute of microphones
+NVDA+Windows+Space mutes or unmutes in Windows all microphones selected in the add-on settings, so every program gets silence: video calls, messengers, recorders and others. You do not need to remember a different shortcut in each program.
 
-### Hide audio sessions with the same names
-Some programs open multiple audio sessions with the same name. This option allows you to hide such duplicate audio sessions.
+If any of the selected microphones is on, all of them are muted; otherwise all of them are unmuted. A short sound is played after muting and before unmuting, so the microphones do not record it. The microphones are never unmuted automatically when NVDA exits.
 
-### Hide processes
-In this list of check boxes you can mark the processes that you want to hide from the main list. These can be, for example, service programs.
-
-The "Update" button is used to update the list of all running processes and available audio sessions. All checked elements remain checked.
-
-"Clear" button - uncheck all checked elements and removes obsolete items.
-
-### Control all available audio devices
-Enables advanced features of the add-on, namely the ability to adjust the volume of all active audio devices detected in the system.
-
-### Hide audio devices
-If you don't use one or more audio devices and do not want them to be present when switching between audio sources, you can easily remove them from the main list by simply checking them in the settings panel.
-
-The "Update" button is used to scan all audio devices on the system and display updated information. All checked elements remain checked.
-
-"Clear" button - uncheck all checked elements and removes obsolete items.
-
-### Mute the volume
-The volume mute feature can work in two modes:
-
-1. Completely turn off the audio source. To enable this mode, you must select the appropriate option in the muting mode selection list.
-2. Decrease the volume level by the percentage value that can be adjusted with the slider in the add-on settings panel.
-
-Note: It is possible to restore the volume level for all available muted audio sources when NVDA shuts down. Because the list of audio sessions changes dynamically, the volume will only be restored for currently available programs that play audio.
-
-### Using default keyboard shortcuts
-If you don't plan to use all the features of the add-on, you can disable the default key combinations for all available functions in the settings panel. Then you can assign your own keyboard shortcuts through the standard NVDA "Input Gestures..." dialog only for those functions that interest you.
+## Add-on settings
+* Report the status of the sound source while switching - announce the volume or the muted state of a source or channel when it is selected.
+* Announce category names while switching - announce the category when you move into it with the arrows.
+* Visible categories of audio sources - the categories you switch between, the same as with NVDA+Windows+O, I, P and R.
+* Volume level change step, % - how much one keypress changes the volume, from 1 to 20 percent.
+* Announce the volume level in - percent, percent without the percent sign, or decibels for audio devices. Programs are always announced in percent. Decibel values come from the device and its driver, so they may sometimes look unusual, for example a narrow range or values far below zero.
+* Change the volume of the current application - the volume commands adjust the program in focus.
+* Hide output devices, Hide input devices, Hide processes - the items you do not want in the list of audio sources. The "Refresh" button updates the list and keeps the checked items; the "Clear" button unchecks all items and removes the ones that are no longer present.
+* Mute mode - "Complete Mute" turns the sound off; "Volume Down" decreases the volume by the percentage set with the "Decrease the volume by, %" slider.
+* Unmute all muted audio resources at NVDA shutdown - restore the volume of the sources muted by the add-on when NVDA exits. Only the programs running at that moment can be restored.
+* Warn before lowering or muting the volume of NVDA itself - see "Protecting the volume of NVDA".
+* Microphones of the quick mute - the microphones muted and unmuted with NVDA+Windows+Space.
+* Use default keyboard shortcuts - turn the predefined shortcuts on or off. NVDA asks to reload the add-ons for the change to take effect.
 
 ## Contributions
 We are very grateful to everyone who made the effort to develop, translate and maintain this add-on:

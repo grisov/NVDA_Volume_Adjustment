@@ -25,7 +25,7 @@ addon_info = AddonInfo(
 	addon_version="2.0.0",
 	# Brief changelog for this version
 	# Translators: what's new content for the add-on version to be shown in the add-on store
-	addon_changelog=_("""Fixed delays when adjusting the volume of applications in NVDA. Only active audio devices are listed now, and detecting them is much faster. The first muted audio source is now correctly unmuted when NVDA exits."""),
+	addon_changelog=_("""Four categories of audio sources including microphones and recording apps, switching of the default devices of Windows, quick mute of microphones, and no more delays."""),
 	# Author(s)
 	addon_author="Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>",
 	# URL for the add-on documentation support
