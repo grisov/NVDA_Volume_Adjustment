@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 import os.path
+import subprocess
 from typing import Callable, List, Optional, Tuple, TypeVar
 import addonHandler
 import config
@@ -853,6 +854,27 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		self.selectOutputDeviceByStep(OutputTarget.COMMUNICATION, step=-1)
 
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Open the Sound dialog of Windows"))
+	def script_openSoundDialog(self, gesture: InputGesture) -> None:
+		"""Open the classic Sound dialog of the Windows Control Panel (mmsys.cpl),
+		which lists all playback and recording devices with their properties.
+		If it is missing (e.g. removed in a future or customized Windows), the Sound page of the Windows Settings is opened.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		system32 = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32")
+		if os.path.isfile(os.path.join(system32, "mmsys.cpl")):
+			try:
+				subprocess.Popen([os.path.join(system32, "control.exe"), "mmsys.cpl"])
+				return
+			except OSError:
+				log.error("Unable to open the Sound dialog of Windows", exc_info=True)
+		try:
+			os.startfile("ms-settings:sound")
+		except OSError:
+			log.error("Unable to open the Sound settings of Windows", exc_info=True)
+
 	def outputDeviceScriptFactory(
 		self,
 		target: OutputTarget,
@@ -1064,6 +1086,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"kb:NVDA+windows+pageUp": "nextOutputDevice",
 		"kb:NVDA+windows+pageDown": "prevOutputDevice",
 		"kb:NVDA+windows+d": "switchNvdaOutputToDefault",
+		"kb:NVDA+windows+s": "openSoundDialog",
 		"kb:NVDA+shift+windows+pageUp": "nextDefaultOutputDevice",
 		"kb:NVDA+shift+windows+pageDown": "prevDefaultOutputDevice",
 		"kb:NVDA+control+windows+pageUp": "nextCommunicationDevice",
