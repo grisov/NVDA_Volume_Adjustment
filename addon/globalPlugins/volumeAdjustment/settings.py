@@ -5,9 +5,16 @@
 # See the file COPYING for more details.
 # Copyright (C) 2020-2026 Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>
 
-from typing import Callable, Dict, List, Optional
+# wxPython has incomplete type annotations and the GUI helpers of NVDA have none, so the types returned
+# by most GUI calls in this file are unknown to the type checker, and many wx methods return values
+# that are not needed here (e.g. the index of an appended item). A long translatable message is split
+# into adjacent literals, which xgettext joins. Only these rules are relaxed for this file.
+# pyright: reportUnknownMemberType=false, reportUnknownArgumentType=false, reportUnknownVariableType=false
+# pyright: reportUnknownLambdaType=false, reportUnusedCallResult=false, reportImplicitStringConcatenation=false
+
+from typing import cast, override
+from collections.abc import Callable
 import addonHandler
-import config
 import ui
 import wx
 from globalPluginHandler import reloadGlobalPlugins
@@ -16,8 +23,7 @@ from gui.message import DefaultButtonSet, DialogType, MessageDialog
 from gui.settingsDialogs import SettingsPanel
 from logHandler import log
 from queueHandler import eventQueue, queueFunction
-from . import addonName, addonSummary
-from .audiocore import cfg
+from .audiocore import addonSummary, cfg, getAddonConfig
 from .sources import InputDeviceSource, SourceKind, registry
 
 try:
@@ -68,24 +74,24 @@ def getOnlyVisibleCategoryMessage(category: str, hiding: bool = False) -> str:
 	return f"{prefix} {message}"
 
 
-def getVisibleCategories() -> List[SourceKind]:
+def getVisibleCategories() -> list[SourceKind]:
 	"""Categories of audio sources available for switching, in their order.
 	@return: the visible categories, all of them if the saved value contains none
 	@rtype: List[SourceKind]
 	"""
-	visible: str = config.conf[addonName]["categories"]
+	visible: str = getAddonConfig()["categories"]
 	return [kind for kind in SourceKind if kind.value in visible] or list(SourceKind)
 
 
-def setVisibleCategories(categories: List[SourceKind]) -> None:
+def setVisibleCategories(categories: list[SourceKind]) -> None:
 	"""Save the visible categories of audio sources, always in the order of the categories.
 	@param categories: the categories to show
 	@type categories: List[SourceKind]
 	"""
-	config.conf[addonName]["categories"] = "".join(kind.value for kind in SourceKind if kind in categories)
+	getAddonConfig()["categories"] = "".join(kind.value for kind in SourceKind if kind in categories)
 
 
-def getProcessNames() -> List[str]:
+def getProcessNames() -> list[str]:
 	"""Names of the processes playing or recording sound, each listed once.
 	@return: names of the processes with audio sessions, the playing ones first
 	@rtype: List[str]
@@ -103,7 +109,7 @@ class AddonsReloadDialog(wx.Dialog):
 		@type parent: wx.Window
 		"""
 		# Translators: The title of the dialog which appears when the user enables or disables the default gestures
-		super(AddonsReloadDialog, self).__init__(parent, title=_("Gestures Configuration Change"))
+		super().__init__(parent, title=_("Gestures Configuration Change"))
 		mainSizer = wx.BoxSizer(wx.VERTICAL)
 		sHelper = guiHelper.BoxSizerHelper(self, orientation=wx.VERTICAL)
 		sHelper.addItem(
@@ -113,7 +119,7 @@ class AddonsReloadDialog(wx.Dialog):
 				label=_("NVDA add-ons must be reloaded for the new gestures to take effect."),
 			),
 		)
-		if not config.conf[addonName]["gestures"]:
+		if not getAddonConfig()["gestures"]:
 			sHelper.addItem(
 				# Translators: The warning is displayed before switching on default addon gestures
 				wx.StaticText(
@@ -146,7 +152,8 @@ class AddonsReloadDialog(wx.Dialog):
 		@param event: event that occurs when a wx.Button is pressed
 		@type event: wx.PyEvent
 		"""
-		config.conf[addonName]["gestures"] = self.GetParent().defaultGesturesChk.GetValue()
+		panel = cast("VASettingsPanel", self.GetParent())
+		getAddonConfig()["gestures"] = panel.defaultGesturesChk.GetValue()
 		self.EndModal(1)
 		self.Destroy()
 		queueFunction(eventQueue, reloadGlobalPlugins)
@@ -160,7 +167,7 @@ class NvdaVolumeWarningDialog(MessageDialog):
 		@param parent: parent top level window
 		@type parent: wx.Window
 		"""
-		super(NvdaVolumeWarningDialog, self).__init__(
+		super().__init__(
 			parent,
 			# Translators: The warning shown before the volume of NVDA itself is lowered or muted
 			_(
@@ -174,6 +181,7 @@ class NvdaVolumeWarningDialog(MessageDialog):
 			buttons=DefaultButtonSet.OK_CANCEL,
 		)
 
+	@override
 	def _addContents(self, contentsSizer: guiHelper.BoxSizerHelper) -> None:
 		"""Add the checkbox that disables the warning.
 		@param contentsSizer: the sizer of the dialog contents
@@ -195,25 +203,27 @@ class VASettingsPanel(SettingsPanel):
 		@param parent: parent top level window
 		@type parent: wx.Window
 		"""
-		super(VASettingsPanel, self).__init__(parent)
+		super().__init__(parent)
 
-	def makeSettings(self, sizer: wx.Sizer) -> None:
+	@override
+	def makeSettings(self, sizer: wx.BoxSizer) -> None:
 		"""Populate the panel with settings controls.
 		@param sizer: The sizer to which to add the settings controls.
-		@type sizer: wx.Sizer
+		@type sizer: wx.BoxSizer
 		"""
 		self.sizer = sizer
-		addonHelper = guiHelper.BoxSizerHelper(self, sizer=sizer)
+		# BoxSizerHelper works with any window, NVDA annotates its parent as a dialog
+		addonHelper = guiHelper.BoxSizerHelper(self, sizer=sizer)  # pyright: ignore[reportArgumentType]
 		self.reportStatusChk = addonHelper.addItem(
 			# Translators: This is the label for a checkbox in the settings panel.
 			wx.CheckBox(self, label=_("&Report the status of the sound source while switching")),
 		)
-		self.reportStatusChk.SetValue(config.conf[addonName]["status"])
+		self.reportStatusChk.SetValue(getAddonConfig()["status"])
 		self.announceCategoriesChk = addonHelper.addItem(
 			# Translators: This is the label for a checkbox in the settings panel.
 			wx.CheckBox(self, label=_("Announce &category names while switching")),
 		)
-		self.announceCategoriesChk.SetValue(config.conf[addonName]["announceCategories"])
+		self.announceCategoriesChk.SetValue(getAddonConfig()["announceCategories"])
 		self.visibleCategories = addonHelper.addLabeledControl(
 			# Translators: The label of the Checkable list in the settings panel
 			_("&Visible categories of audio sources:"),
@@ -231,7 +241,7 @@ class VASettingsPanel(SettingsPanel):
 			# The step is in percents: the sign is added to the translated label, which is not changed
 			f"{stepLabel[:-1]}, %:" if stepLabel.endswith(":") else f"{stepLabel}, %",
 			nvdaControls.SelectOnFocusSpinCtrl,
-			value=str(config.conf[addonName]["step"]),
+			value=str(getAddonConfig()["step"]),
 			min=1,
 			max=20,
 		)
@@ -249,15 +259,15 @@ class VASettingsPanel(SettingsPanel):
 		# Translators: An item in the choice list of the units of the announced volume level,
 		# only audio devices provide their volume levels in decibels
 		self.units.Append(_("Decibels, if the source supports it"), "decibels")
-		self.units.Select(["percent", "number", "decibels"].index(config.conf[addonName]["units"]))
+		self.units.Select(["percent", "number", "decibels"].index(getAddonConfig()["units"]))
 		self.followFocusChk = addonHelper.addItem(
 			# Translators: This is the label for a checkbox in the settings panel.
 			wx.CheckBox(self, label=_("Change the volume of the current &application")),
 		)
-		self.followFocusChk.SetValue(config.conf[addonName]["focus"])
+		self.followFocusChk.SetValue(getAddonConfig()["focus"])
 
 		# Names of all audio devices shown in the lists of hidden devices, by their IDs
-		self.devs: Dict[str, str] = {}
+		self.devs: dict[str, str] = {}
 		self.hideOutputDevices = addonHelper.addLabeledControl(
 			# Translators: The label of the Checkable list in the settings panel
 			_("Hide &output devices:"),
@@ -297,7 +307,7 @@ class VASettingsPanel(SettingsPanel):
 			lambda event: self.onClearDevicesButton(self.hideInputDevices, isInput=True),
 		)
 
-		procs: List[str] = getProcessNames()
+		procs: list[str] = getProcessNames()
 		self.procs = procs + [proc for proc in cfg.processes if proc not in procs]
 		self.hideProcesses = addonHelper.addLabeledControl(
 			# Translators: The label of the Checkable list in the settings panel
@@ -326,28 +336,28 @@ class VASettingsPanel(SettingsPanel):
 		self.muteMode.Append(_("Complete Mute"), 0)
 		# Translators: An item in the choice list of mute modes in the settings panel
 		self.muteMode.Append(_("Volume Down"), 1)
-		self.muteMode.Select(int(not config.conf[addonName]["muteCompletely"]))
+		self.muteMode.Select(int(not getAddonConfig()["muteCompletely"]))
 		self.muteMode.Bind(wx.EVT_CHOICE, self.onMuteModeChoice)
 		self.mutePercentageSlider = addonHelper.addLabeledControl(
 			# Translators: This is the label for a slider in the settings panel.
 			labelText=_("Decrease the volume &by, %"),
 			wxCtrlClass=nvdaControls.EnhancedInputSlider,
-			value=config.conf[addonName]["mutePercentage"],
+			value=getAddonConfig()["mutePercentage"],
 			minValue=1,
 			maxValue=99,
 			size=(250, -1),
 		)
-		self.mutePercentageSlider.Show(show=not config.conf[addonName]["muteCompletely"])
+		self.mutePercentageSlider.Show(show=not getAddonConfig()["muteCompletely"])
 		self.unmuteOnExitChk = addonHelper.addItem(
 			# Translators: This is the label for a checkbox in the settings panel.
 			wx.CheckBox(self, label=_("&Unmute all muted audio resources at NVDA shutdown")),
 		)
-		self.unmuteOnExitChk.SetValue(config.conf[addonName]["unmuteOnExit"])
+		self.unmuteOnExitChk.SetValue(getAddonConfig()["unmuteOnExit"])
 		self.warnNvdaVolumeChk = addonHelper.addItem(
 			# Translators: This is the label for a checkbox in the settings panel.
 			wx.CheckBox(self, label=_("&Warn before lowering or muting the volume of NVDA itself")),
 		)
-		self.warnNvdaVolumeChk.SetValue(config.conf[addonName]["warnNvdaVolume"])
+		self.warnNvdaVolumeChk.SetValue(getAddonConfig()["warnNvdaVolume"])
 		self.quickMuteDevices = addonHelper.addLabeledControl(
 			# Translators: The label of the Checkable list in the settings panel: the input devices
 			# muted and unmuted together by one command
@@ -376,7 +386,7 @@ class VASettingsPanel(SettingsPanel):
 			# Translators: This is the label for a checkbox in the settings panel.
 			wx.CheckBox(self, label=_("Use default &keyboard shortcuts")),
 		)
-		self.defaultGesturesChk.SetValue(config.conf[addonName]["gestures"])
+		self.defaultGesturesChk.SetValue(getAddonConfig()["gestures"])
 		self.defaultGesturesChk.Bind(wx.EVT_CHECKBOX, self.onGesturesCheckbox)
 
 	def onMuteModeChoice(self, event: wx.PyEvent) -> None:
@@ -386,7 +396,7 @@ class VASettingsPanel(SettingsPanel):
 		@type event: wx.PyEvent
 		"""
 		mode: int = self.muteMode.GetClientData(self.muteMode.GetSelection())
-		self.mutePercentageSlider.Show(show=mode)
+		self.mutePercentageSlider.Show(show=bool(mode))
 		self.mutePercentageSlider.GetParent().Layout()
 		self.sizer.Fit(self)
 
@@ -404,7 +414,7 @@ class VASettingsPanel(SettingsPanel):
 		control: nvdaControls.CustomCheckListBox,
 		isInput: bool,
 		includeHidden: bool,
-		saved: Optional[Dict[str, str]] = None,
+		saved: dict[str, str] | None = None,
 	) -> None:
 		"""Fill a checkable list of output or input devices: the devices to hide or the microphones of the quick mute.
 		@param control: the checkable list of output or input devices
@@ -418,7 +428,7 @@ class VASettingsPanel(SettingsPanel):
 		"""
 		if saved is None:
 			saved = cfg.devices
-		items: Dict[str, str] = {}
+		items: dict[str, str] = {}
 		if includeHidden:
 			items.update((id, name) for id, name in saved.items() if registry.isInputDevice(id) == isInput)
 		for device in registry.getAllDevices():
@@ -437,7 +447,7 @@ class VASettingsPanel(SettingsPanel):
 		self,
 		control: nvdaControls.CustomCheckListBox,
 		isInput: bool,
-		saved: Optional[Dict[str, str]] = None,
+		saved: dict[str, str] | None = None,
 	) -> None:
 		"""Update the list of connected audio devices when the appropriate button is pressed,
 		the saved devices are checked again.
@@ -502,21 +512,22 @@ class VASettingsPanel(SettingsPanel):
 		"""Set system focus to the first component in the settings panel."""
 		self.reportStatusChk.SetFocus()
 
+	@override
 	def onSave(self) -> None:
 		"""Update Configuration when clicking OK."""
-		config.conf[addonName]["status"] = self.reportStatusChk.GetValue()
-		config.conf[addonName]["announceCategories"] = self.announceCategoriesChk.GetValue()
+		getAddonConfig()["status"] = self.reportStatusChk.GetValue()
+		getAddonConfig()["announceCategories"] = self.announceCategoriesChk.GetValue()
 		checked = self.visibleCategories.GetCheckedItems()
 		setVisibleCategories([kind for i, kind in enumerate(SourceKind) if i in checked])
-		config.conf[addonName]["step"] = self.volumeStep.GetValue()
-		config.conf[addonName]["focus"] = self.followFocusChk.GetValue()
-		config.conf[addonName]["units"] = self.units.GetClientData(self.units.GetSelection())
-		config.conf[addonName]["muteCompletely"] = not self.muteMode.GetClientData(
+		getAddonConfig()["step"] = self.volumeStep.GetValue()
+		getAddonConfig()["focus"] = self.followFocusChk.GetValue()
+		getAddonConfig()["units"] = self.units.GetClientData(self.units.GetSelection())
+		getAddonConfig()["muteCompletely"] = not self.muteMode.GetClientData(
 			self.muteMode.GetSelection(),
 		)
-		config.conf[addonName]["mutePercentage"] = self.mutePercentageSlider.GetValue()
-		config.conf[addonName]["unmuteOnExit"] = self.unmuteOnExitChk.GetValue()
-		config.conf[addonName]["warnNvdaVolume"] = self.warnNvdaVolumeChk.GetValue()
+		getAddonConfig()["mutePercentage"] = self.mutePercentageSlider.GetValue()
+		getAddonConfig()["unmuteOnExit"] = self.unmuteOnExitChk.GetValue()
+		getAddonConfig()["warnNvdaVolume"] = self.warnNvdaVolumeChk.GetValue()
 		devs = {}
 		for control in (self.hideOutputDevices, self.hideInputDevices):
 			for checked in control.GetCheckedItems():

@@ -9,33 +9,29 @@ from __future__ import annotations
 import math
 from abc import ABCMeta, abstractmethod
 from enum import Enum, IntEnum
-from typing import Dict, Iterable, List, NamedTuple, Optional, Tuple, Type, TypeVar, Union
-import config
-from comtypes import CLSCTX_ALL, COMError, pointer
+from typing import Any, NamedTuple, TypeVar, cast, override
+from collections.abc import Iterable
+from comtypes import COMError
 from logHandler import log
-from pycaw.api.audiopolicy import IAudioSessionManager2
-from pycaw.api.mmdeviceapi import IMMDevice, IMMEndpoint
 from pycaw.callbacks import AudioSessionNotification, MMNotificationClient
 from pycaw.constants import DEVICE_STATE, AudioSessionState
-from pycaw.utils import (
-	AudioSession,
-	AudioUtilities,
-	EDataFlow,
-	ERole,
-	IAudioEndpointVolume,
-	ISimpleAudioVolume,
-)
+from pycaw.utils import AudioUtilities, EDataFlow, ERole
+from .audiotypes import Device, DeviceEnumerator, EndpointVolume, Session, SessionManager, SimpleVolume
 from .audiocore import (
 	PKEY_AudioEndpoint_FormFactor,
 	PKEY_Device_DeviceDesc,
 	PKEY_Device_EnumeratorName,
 	PKEY_Device_FriendlyName,
 	PKEY_DeviceInterface_FriendlyName,
-	addonName,
 	cfg,
+	getAddonConfig,
+	getDataFlow,
+	getDeviceEnumerator,
 	getDeviceProperties,
+	getEndpointVolume,
 	getSessionManager,
 	listSessions,
+	logDebugWarning,
 )
 
 
@@ -72,7 +68,7 @@ class SourceKind(Enum):
 
 # Identifies an audio source between keypresses: its category and ID (device ID or process name).
 # The same process can be both a playback and a recording application.
-SourceKey = Tuple[SourceKind, str]
+SourceKey = tuple[SourceKind, str]
 
 
 class FormFactor(IntEnum):
@@ -105,7 +101,7 @@ class Connection(Enum):
 	OTHER = "other"
 
 	@classmethod
-	def fromEnumeratorName(cls, name: Optional[str]) -> Connection:
+	def fromEnumeratorName(cls, name: str | None) -> Connection:
 		"""Guess the connection from the name of the device enumerator.
 		@param name: value of the PKEY_Device_EnumeratorName property
 		@type name: Optional[str]
@@ -124,16 +120,17 @@ class Connection(Enum):
 		return cls.OTHER
 
 
-class SessionGroupVolume(object):
+class SessionGroupVolume:
 	"""Volume control of all audio sessions of one application, used like a single ISimpleAudioVolume:
 	the volume level and the mute state are read from the first session and set for all of them.
 	"""
 
-	def __init__(self, volumes: List[ISimpleAudioVolume]) -> None:
+	def __init__(self, volumes: list[SimpleVolume]) -> None:
 		"""Volume control of the specified audio sessions.
 		@param volumes: volume interfaces of the audio sessions, at least one
-		@type volumes: List[pycaw.ISimpleAudioVolume]
+		@type volumes: List[SimpleVolume]
 		"""
+		super().__init__()
 		self._volumes = volumes
 
 	def GetMasterVolume(self) -> float:
@@ -143,7 +140,7 @@ class SessionGroupVolume(object):
 		"""
 		return self._volumes[0].GetMasterVolume()
 
-	def SetMasterVolume(self, level: float, context: Optional[object]) -> None:
+	def SetMasterVolume(self, level: float, context: object | None) -> None:
 		"""Set the volume level of all audio sessions.
 		@param level: target volume level
 		@type level: float [0.0..1.0]
@@ -153,17 +150,17 @@ class SessionGroupVolume(object):
 		for volume in self._volumes:
 			volume.SetMasterVolume(level, context)
 
-	def GetMute(self) -> bool:
+	def GetMute(self) -> int:
 		"""Get the mute state of the first audio session.
 		@return: whether the audio session is muted
-		@rtype: bool
+		@rtype: int
 		"""
 		return self._volumes[0].GetMute()
 
-	def SetMute(self, mute: bool, context: Optional[object]) -> None:
+	def SetMute(self, mute: int, context: object | None) -> None:
 		"""Mute or unmute all audio sessions.
 		@param mute: whether to mute the audio sessions
-		@type mute: bool
+		@type mute: int
 		@param context: event context passed to the audio sessions
 		@type context: Optional[object]
 		"""
@@ -180,21 +177,23 @@ class AudioSource(metaclass=ABCMeta):
 		self,
 		id: str,
 		name: str,
-		volume: Union[ISimpleAudioVolume, SessionGroupVolume, pointer[IAudioEndpointVolume], None] = None,
+		volume: SimpleVolume | EndpointVolume | None = None,
 	) -> None:
 		"""The main properties of an audio source.
 		@param id: audio source ID (audio device ID or audio session name)
 		@type id: str
 		@param name: name of audio source
 		@type name: str
-		@param volume: pointer on the interface to adjust the volume of the audio source
-		@type volume: Union[pycaw.ISimpleAudioVolume, SessionGroupVolume, pointer[pycaw.IAudioEndpointVolume], None]
+		@param volume: the interface to adjust the volume of the audio source
+		@type volume: Union[SimpleVolume, EndpointVolume, None]
 		"""
+		super().__init__()
 		self._id = id
 		self._name = name
 		self._volume = volume
 		self._channel: int = 0
-		self._default: bool = False
+		# Whether the audio source is the default output device
+		self.default: bool = False
 
 	@property
 	def id(self) -> str:
@@ -204,7 +203,7 @@ class AudioSource(metaclass=ABCMeta):
 		"""
 		return self._id
 
-	def getVolumeDecibels(self, channel: Optional[int] = None) -> Optional[float]:
+	def getVolumeDecibels(self, channel: int | None = None) -> float | None:
 		"""Get the volume level in decibels, if the audio source provides it.
 		Only audio devices do: the applications have just the levels from 0 to 100 %.
 		@param channel: the number of the channel, None for the master volume level
@@ -231,10 +230,10 @@ class AudioSource(metaclass=ABCMeta):
 		return self._name
 
 	@property
-	def volume(self) -> Union[ISimpleAudioVolume, IAudioEndpointVolume, None]:
+	def volume(self) -> SimpleVolume | EndpointVolume | None:
 		"""An object that gives access to control the volume of the sound source.
 		@return: volume control object
-		@rtype: Union[pycaw.ISimpleAudioVolume, pycaw.IAudioEndpointVolume, None]
+		@rtype: Union[SimpleVolume, EndpointVolume, None]
 		"""
 		return self._volume
 
@@ -259,16 +258,6 @@ class AudioSource(metaclass=ABCMeta):
 		self._channel = number
 
 	@property
-	def default(self) -> bool:
-		"""Check if the current audio source is the default output device.
-		@return: default output audio device or not
-		@rtype: bool
-		"""
-		return self._default
-
-	# MyPy 0.812 is not supported type hints for abstract property getters and setters
-	# https://github.com/python/mypy/issues/4165
-	@property  # type: ignore
 	@abstractmethod
 	def volumeLevel(self) -> float:
 		"""Get the volume level of the sound source.
@@ -278,9 +267,7 @@ class AudioSource(metaclass=ABCMeta):
 		"""
 		raise NotImplementedError("This property must be overridden in the child class!")
 
-	# Decorated property is not supported by MyPy 0.812
-	# https://github.com/python/mypy/issues/1362
-	@volumeLevel.setter  # type: ignore
+	@volumeLevel.setter
 	@abstractmethod
 	def volumeLevel(self, level: float) -> None:
 		"""Set the volume level of the sound source.
@@ -295,9 +282,9 @@ class AudioSource(metaclass=ABCMeta):
 		@return: current volume level
 		@rtype: float
 		"""
-		self.isMuted and self.unmute()
-		# Ignore MyPy type hint because setter volumeLevel is not read-only
-		level = self.volumeLevel = stepLevel(self.volumeLevel, config.conf[addonName]["step"])  # type: ignore
+		if self.isMuted:
+			self.unmute()
+		level = self.volumeLevel = stepLevel(self.volumeLevel, getAddonConfig()["step"])
 		return level
 
 	def volumeDown(self) -> float:
@@ -310,8 +297,7 @@ class AudioSource(metaclass=ABCMeta):
 				# Already silent: unmuting just to mute again would only rewrite the configuration file
 				return 0.0
 			self.unmute()
-		# Ignore MyPy type hint because setter volumeLevel is not read-only
-		level = self.volumeLevel = stepLevel(self.volumeLevel, -config.conf[addonName]["step"])  # type: ignore
+		level = self.volumeLevel = stepLevel(self.volumeLevel, -getAddonConfig()["step"])
 		return level
 
 	def volumeMax(self) -> float:
@@ -319,9 +305,9 @@ class AudioSource(metaclass=ABCMeta):
 		@return: current volume level
 		@rtype: float
 		"""
-		self.isMuted and self.unmute()
-		# Ignore MyPy type hint because setter volumeLevel is not read-only
-		self.volumeLevel = 1.0  # type: ignore
+		if self.isMuted:
+			self.unmute()
+		self.volumeLevel = 1.0
 		return self.volumeLevel
 
 	def volumeMin(self) -> float:
@@ -329,9 +315,9 @@ class AudioSource(metaclass=ABCMeta):
 		@return: current volume level
 		@rtype: float
 		"""
-		self.isMuted and self.unmute()
-		# Ignore MyPy type hint because setter volumeLevel is not read-only
-		self.volumeLevel = 0.0  # type: ignore
+		if self.isMuted:
+			self.unmute()
+		self.volumeLevel = 0.0
 		return self.volumeLevel
 
 	@property
@@ -340,56 +326,44 @@ class AudioSource(metaclass=ABCMeta):
 		@return: a state of the audio source (muted or no)
 		@rtype: bool
 		"""
-		state = False if self.volume is None else self.volume.GetMute()
-		if not config.conf[addonName]["muteCompletely"]:
+		volume = self.volume
+		state = False if volume is None else bool(volume.GetMute())
+		if not getAddonConfig()["muteCompletely"]:
 			return (self.mutedKey in cfg.muted) or state
 		return state
 
-	def mute(self) -> bool:
-		"""Mute the current audio source.
-		@return: a state of the audio source (muted or no)
-		@rtype: bool
-		"""
+	def mute(self) -> None:
+		"""Mute the current audio source, completely or by decreasing its volume level."""
 		# Exact volume level before muting, restored when the audio source is unmuted
-		level: Optional[float] = None
-		try:
-			if config.conf[addonName]["muteCompletely"]:
-				self.volume.SetMute(True, None)  # type: ignore
-			elif not self.isMuted:
-				level = self.volumeLevel
-				# Incorrect handling of AttributeError by MyPy 0.812: https://github.com/python/mypy/issues/8056
-				self.volumeLevel = level * (100 - config.conf[addonName]["mutePercentage"]) / 100.0  # type: ignore
-		except AttributeError:
-			return False
-		else:
-			# The file is written only when the list of muted audio sources changes
-			if self.mutedKey not in cfg.muted:
-				cfg.addMuted(self.mutedKey, level).save()
-			return True
+		level: float | None = None
+		volume = self.volume
+		if volume is None:
+			return
+		if getAddonConfig()["muteCompletely"]:
+			volume.SetMute(1, None)
+		elif not self.isMuted:
+			level = self.volumeLevel
+			self.volumeLevel = level * (100 - getAddonConfig()["mutePercentage"]) / 100.0
+		# The file is written only when the list of muted audio sources changes
+		if self.mutedKey not in cfg.muted:
+			cfg.addMuted(self.mutedKey, level).save()
 
-	def unmute(self) -> bool:
-		"""Unmute the current audio source.
-		@return: a state of the audio source (muted or no)
-		@rtype: bool
-		"""
-		try:
-			# The getattr() function is used for correct processing by the MyPy analyzer
-			getattr(self.volume, "SetMute")(False, None)
-			if self.isMuted:
-				level = cfg.getMutedLevel(self.mutedKey)
-				if level is None:
-					# Muted by a previous version of the add-on, which did not save the exact level
-					percentage = config.conf[addonName]["mutePercentage"]
-					level = min(1.0, self.volumeLevel * 100.0 / (100.0 - percentage))
-				# Setter volumeLevel is not read-only, MyPy issue
-				self.volumeLevel = level  # type: ignore
-		except AttributeError:
-			return False
-		else:
-			# The file is written only when the list of muted audio sources changes
-			if self.mutedKey in cfg.muted:
-				cfg.delMuted(self.mutedKey).save()
-			return True
+	def unmute(self) -> None:
+		"""Unmute the current audio source and restore its volume level before muting."""
+		volume = self.volume
+		if volume is None:
+			return
+		volume.SetMute(0, None)
+		if self.isMuted:
+			level = cfg.getMutedLevel(self.mutedKey)
+			if level is None:
+				# Muted by a previous version of the add-on, which did not save the exact level
+				percentage = getAddonConfig()["mutePercentage"]
+				level = min(1.0, self.volumeLevel * 100.0 / (100.0 - percentage))
+			self.volumeLevel = level
+		# The file is written only when the list of muted audio sources changes
+		if self.mutedKey in cfg.muted:
+			cfg.delMuted(self.mutedKey).save()
 
 	@property
 	@abstractmethod
@@ -402,7 +376,7 @@ class AudioSource(metaclass=ABCMeta):
 		raise NotImplementedError("This property must be overridden in the child class!")
 
 	@abstractmethod
-	def getChannelVolumeLevel(self, channel: int) -> float:
+	def getChannelVolumeLevel(self, channel: int = -1) -> float:
 		"""Get the volume level of the specified audio source channel.
 		The method must be overridden for each type of sound sources.
 		@param channel: the number of the specified audio channel
@@ -430,13 +404,14 @@ class AudioSource(metaclass=ABCMeta):
 		@return: current volume level
 		@rtype: float [-1.0, 0.0..1.0]
 		"""
-		self.isMuted and self.unmute()
+		if self.isMuted:
+			self.unmute()
 		if channel < 0:
 			channel = self.channel
 		level: float = self.getChannelVolumeLevel(channel)
 		if level < 0:
 			return level
-		level = stepLevel(level, config.conf[addonName]["step"])
+		level = stepLevel(level, getAddonConfig()["step"])
 		self.setChannelVolumeLevel(level, channel)
 		return level
 
@@ -447,13 +422,14 @@ class AudioSource(metaclass=ABCMeta):
 		@return: current volume level
 		@rtype: float [-1.0, 0.0..1.0]
 		"""
-		self.isMuted and self.unmute()
+		if self.isMuted:
+			self.unmute()
 		if channel < 0:
 			channel = self.channel
 		level: float = self.getChannelVolumeLevel(channel)
 		if level < 0:
 			return level
-		level = stepLevel(level, -config.conf[addonName]["step"])
+		level = stepLevel(level, -getAddonConfig()["step"])
 		self.setChannelVolumeLevel(level, channel)
 		return level
 
@@ -464,7 +440,8 @@ class AudioSource(metaclass=ABCMeta):
 		@return: current volume level
 		@rtype: float [-1.0, 1.0]
 		"""
-		self.isMuted and self.unmute()
+		if self.isMuted:
+			self.unmute()
 		if channel < 0:
 			channel = self.channel
 		self.setChannelVolumeLevel(1.0, channel)
@@ -477,7 +454,8 @@ class AudioSource(metaclass=ABCMeta):
 		@return: current volume level
 		@rtype: float [-1.0, 0.0]
 		"""
-		self.isMuted and self.unmute()
+		if self.isMuted:
+			self.unmute()
 		if channel < 0:
 			channel = self.channel
 		self.setChannelVolumeLevel(0.0, channel)
@@ -491,7 +469,7 @@ class AudioSource(metaclass=ABCMeta):
 		if self.channelCount <= 0:
 			return -1.0
 		level: float = (
-			sum((self.getChannelVolumeLevel(channel) for channel in range(self.channelCount)))
+			sum(self.getChannelVolumeLevel(channel) for channel in range(self.channelCount))
 			/ self.channelCount
 		)
 		for channel in range(self.channelCount):
@@ -514,41 +492,60 @@ class DeviceSource(AudioSource):
 	"""The default device of its data flow for communications"""
 
 	@property
+	@override
+	def volume(self) -> EndpointVolume | None:
+		"""The volume interface of the audio device.
+		@return: volume control object
+		@rtype: Optional[EndpointVolume]
+		"""
+		return cast(EndpointVolume | None, self._volume)
+
+	@property
+	@override
 	def volumeLevel(self) -> float:
 		"""Get the volume level of the audio device.
 		@return: current volume level
 		@rtype: float [-1.0, 0.0..1.0]
 		"""
+		volume = self.volume
+		if volume is None:
+			return -1.0
 		try:
-			# Incorrect handling of AttributeError by MyPy 0.812: https://github.com/python/mypy/issues/8056
-			return self.volume.GetMasterVolumeLevelScalar()  # type: ignore
-		except (AttributeError, TypeError):
+			return volume.GetMasterVolumeLevelScalar()
+		except COMError:
 			return -1.0
 
 	@volumeLevel.setter
+	@override
 	def volumeLevel(self, level: float) -> None:
 		"""Set the volume level of the audio device.
 		@param level: target volume level
 		@type level: float [0.0..1.0]
 		"""
+		volume = self.volume
+		if volume is None:
+			return
 		try:
-			# Incorrect handling of AttributeError by MyPy
-			self.volume.SetMasterVolumeLevelScalar(level, None)  # type: ignore
-		except (AttributeError, TypeError):
+			volume.SetMasterVolumeLevelScalar(level, None)
+		except COMError:
 			pass
 
 	@property
+	@override
 	def channelCount(self) -> int:
 		"""Get the number of channels available in the current audio device.
 		@return: the number of channels
 		@rtype: int
 		"""
+		volume = self.volume
+		if volume is None:
+			return 0
 		try:
-			# Incorrect handling of AttributeError by MyPy
-			return self.volume.GetChannelCount()  # type: ignore
-		except (AttributeError, TypeError):
+			return volume.GetChannelCount()
+		except COMError:
 			return 0
 
+	@override
 	def getChannelVolumeLevel(self, channel: int = -1) -> float:
 		"""Get the volume level of the specified audio source channel.
 		@param channel: the number of the specified audio channel
@@ -558,12 +555,15 @@ class DeviceSource(AudioSource):
 		"""
 		if channel < 0:
 			channel = self.channel
+		volume = self.volume
+		if volume is None:
+			return -1.0
 		try:
-			# Incorrect handling of AttributeError by MyPy 0.812: https://github.com/python/mypy/issues/8056
-			return self.volume.GetChannelVolumeLevelScalar(channel)  # type: ignore
-		except (AttributeError, TypeError):
+			return volume.GetChannelVolumeLevelScalar(channel)
+		except COMError:
 			return -1.0
 
+	@override
 	def setChannelVolumeLevel(self, level: float, channel: int = -1) -> None:
 		"""Set the volume level of the specified audio source channel.
 		@param channel: the number of the specified audio channel
@@ -573,27 +573,31 @@ class DeviceSource(AudioSource):
 		"""
 		if channel < 0:
 			channel = self.channel
+		volume = self.volume
+		if volume is None:
+			return
 		try:
-			# Incorrect handling of AttributeError by MyPy
-			self.volume.SetChannelVolumeLevelScalar(channel, level, None)  # type: ignore
-		except (AttributeError, TypeError):
+			volume.SetChannelVolumeLevelScalar(channel, level, None)
+		except COMError:
 			pass
 
 
-def _deviceDecibels(volume: object, channel: Optional[int]) -> Optional[float]:
+def _deviceDecibels(volume: EndpointVolume | None, channel: int | None) -> float | None:
 	"""Read the volume level of an audio device in decibels.
 	@param volume: the volume interface of the device
-	@type volume: pycaw.IAudioEndpointVolume
+	@type volume: Optional[EndpointVolume]
 	@param channel: the number of the channel, None for the master volume level
 	@type channel: Optional[int]
 	@return: the volume level in decibels, None if it cannot be read
 	@rtype: Optional[float]
 	"""
+	if volume is None:
+		return None
 	try:
 		if channel is None:
-			return volume.GetMasterVolumeLevel()  # type: ignore
-		return volume.GetChannelVolumeLevel(channel)  # type: ignore
-	except (AttributeError, TypeError, COMError):
+			return volume.GetMasterVolumeLevel()
+		return volume.GetChannelVolumeLevel(channel)
+	except COMError:
 		return None
 
 
@@ -602,7 +606,8 @@ class OutputDeviceSource(DeviceSource):
 
 	kind = SourceKind.OUTPUT_DEVICE
 
-	def getVolumeDecibels(self, channel: Optional[int] = None) -> Optional[float]:
+	@override
+	def getVolumeDecibels(self, channel: int | None = None) -> float | None:
 		"""Get the volume level of the device in decibels (IAudioEndpointVolume).
 		@param channel: the number of the channel, None for the master volume level
 		@type channel: Optional[int]
@@ -617,7 +622,8 @@ class InputDeviceSource(DeviceSource):
 
 	kind = SourceKind.INPUT_DEVICE
 
-	def getVolumeDecibels(self, channel: Optional[int] = None) -> Optional[float]:
+	@override
+	def getVolumeDecibels(self, channel: int | None = None) -> float | None:
 		"""Get the volume level of the device in decibels (IAudioEndpointVolume).
 		@param channel: the number of the channel, None for the master volume level
 		@type channel: Optional[int]
@@ -628,14 +634,14 @@ class InputDeviceSource(DeviceSource):
 
 
 def createDevice(
-	immDevice: IMMDevice,
-	deviceClass: Type[DeviceSource],
+	immDevice: Device,
+	deviceClass: type[DeviceSource],
 	defaultIds: Iterable[str] = (),
 	communicationIds: Iterable[str] = (),
 ) -> DeviceSource:
 	"""Create the presentation of the specified audio device with its attributes.
 	@param immDevice: audio device
-	@type immDevice: pycaw.IMMDevice
+	@type immDevice: Device
 	@param deviceClass: class of the audio source according to the data flow of the device
 	@type deviceClass: Type[DeviceSource]
 	@param defaultIds: IDs of the default devices for multimedia
@@ -656,17 +662,8 @@ def createDevice(
 			PKEY_DeviceInterface_FriendlyName,
 		),
 	)
-	name = next((value for value in (friendlyName, description) if isinstance(value, str) and value), id)
-	# QueryInterface() adds a COM reference for the new pointer object. ctypes.cast() must not be used here:
-	# it creates a second pointer object without a reference, so the interface was released twice
-	# when the device objects were discarded, which crashed NVDA after the devices were rescanned.
-	device = deviceClass(
-		id=id,
-		name=name,
-		volume=immDevice.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None).QueryInterface(
-			IAudioEndpointVolume,
-		),
-	)
+	name: str = next((value for value in (friendlyName, description) if isinstance(value, str) and value), id)
+	device = deviceClass(id=id, name=name, volume=getEndpointVolume(immDevice))
 	try:
 		device.formFactor = FormFactor(formFactor)
 	except ValueError:
@@ -683,14 +680,14 @@ class AppSource(AudioSource):
 
 	kind: SourceKind
 
-	def __init__(self, name: str, sessions: List[AudioSession]) -> None:
+	def __init__(self, name: str, sessions: list[Session]) -> None:
 		"""Initialize the application with its audio sessions.
 		@param name: the full name of the process, also used as the ID of the muted audio source
 		@type name: str
 		@param sessions: audio sessions of the application, at least one
-		@type sessions: List[pycaw.AudioSession]
+		@type sessions: List[Session]
 		"""
-		super(AppSource, self).__init__(
+		super().__init__(
 			id=name,
 			name=name,
 			volume=SessionGroupVolume([session.SimpleAudioVolume for session in sessions]),
@@ -700,7 +697,7 @@ class AppSource(AudioSource):
 		self.generation: int = 0
 
 	@property
-	def processIds(self) -> List[int]:
+	def processIds(self) -> list[int]:
 		"""IDs of the processes playing the audio sessions of the application.
 		@return: process IDs
 		@rtype: List[int]
@@ -714,7 +711,7 @@ class AppSource(AudioSource):
 		@rtype: str
 		"""
 		try:
-			name: str = self._sessions[0].DisplayName
+			name = self._sessions[0].DisplayName
 		except (AttributeError, COMError):
 			name = ""
 		name = {
@@ -736,30 +733,46 @@ class AppSource(AudioSource):
 			return True
 
 	@property
+	@override
+	def volume(self) -> SimpleVolume | None:
+		"""The volume interface of all audio sessions of the application.
+		@return: volume control object
+		@rtype: Optional[SimpleVolume]
+		"""
+		return cast(SimpleVolume | None, self._volume)
+
+	@property
+	@override
 	def volumeLevel(self) -> float:
 		"""Get the volume level of the audio session.
 		@return: current volume level
 		@rtype: float [-1.0, 0.0..1.0]
 		"""
+		volume = self.volume
+		if volume is None:
+			return -1.0
 		try:
-			# Incorrect handling of AttributeError by MyPy
-			return self.volume.GetMasterVolume()  # type: ignore
-		except (AttributeError, TypeError):
+			return volume.GetMasterVolume()
+		except COMError:
 			return -1.0
 
 	@volumeLevel.setter
+	@override
 	def volumeLevel(self, level: float) -> None:
 		"""Set the volume level of the audio session.
 		@param level: target volume level
 		@type level: float [0.0..1.0]
 		"""
+		volume = self.volume
+		if volume is None:
+			return
 		try:
-			# Incorrect handling of AttributeError by MyPy
-			self.volume.SetMasterVolume(level, None)  # type: ignore
-		except (AttributeError, TypeError):
+			volume.SetMasterVolume(level, None)
+		except COMError:
 			pass
 
 	@property
+	@override
 	def channelCount(self) -> int:
 		"""Get the number of channels of the first audio session of the application (usually 2).
 		The channel levels are relative to the volume level of the session.
@@ -772,6 +785,7 @@ class AppSource(AudioSource):
 		except (AttributeError, COMError):
 			return 0
 
+	@override
 	def getChannelVolumeLevel(self, channel: int = -1) -> float:
 		"""Get the volume level of the specified channel of the first audio session.
 		@param channel: the number of the specified audio channel
@@ -786,6 +800,7 @@ class AppSource(AudioSource):
 		except (AttributeError, COMError):
 			return -1.0
 
+	@override
 	def setChannelVolumeLevel(self, level: float, channel: int = -1) -> None:
 		"""Set the volume level of the specified channel of all audio sessions of the application.
 		Sessions without such a channel are skipped.
@@ -817,6 +832,7 @@ class RecordingAppSource(AppSource):
 	kind = SourceKind.RECORDING_APP
 
 	@property
+	@override
 	def mutedKey(self) -> str:
 		"""Key of the application in the list of muted audio sources, distinct from the same playback application.
 		A colon cannot be a part of a file name, so it cannot clash with a process name.
@@ -851,9 +867,10 @@ class DeviceNotifications(MMNotificationClient):
 		@param registry: the registry to mark outdated
 		@type registry: AudioSourceRegistry
 		"""
-		super(DeviceNotifications, self).__init__()
+		super().__init__()
 		self._registry = registry
 
+	@override
 	def on_default_device_changed(
 		self,
 		flow: str,
@@ -865,14 +882,17 @@ class DeviceNotifications(MMNotificationClient):
 		"""The default device for a role has changed."""
 		self._registry.markDevicesChanged()
 
+	@override
 	def on_device_added(self, added_device_id: str) -> None:
 		"""A new audio device has been added."""
 		self._registry.markDevicesChanged()
 
+	@override
 	def on_device_removed(self, removed_device_id: str) -> None:
 		"""An audio device has been removed."""
 		self._registry.markDevicesChanged()
 
+	@override
 	def on_device_state_changed(self, device_id: str, new_state: str, new_state_id: int) -> None:
 		"""An audio device has been enabled, disabled, plugged in or unplugged."""
 		self._registry.markDevicesChanged()
@@ -888,10 +908,11 @@ class SessionNotifications(AudioSessionNotification):
 		@param registry: the registry to mark outdated
 		@type registry: AudioSourceRegistry
 		"""
-		super(SessionNotifications, self).__init__()
+		super().__init__()
 		self._registry = registry
 
-	def on_session_created(self, new_session: AudioSession) -> None:
+	@override
+	def on_session_created(self, new_session: Any) -> None:
 		"""A new audio session has been created, it may belong to an already found application."""
 		self._registry.markAppsChanged()
 
@@ -901,12 +922,12 @@ class SessionManagerEntry(NamedTuple):
 
 	flow: EDataFlow
 	deviceId: str
-	manager: IAudioSessionManager2
+	manager: SessionManager
 	# None if the subscription has failed: the sessions are still listed
-	notifications: Optional[SessionNotifications]
+	notifications: SessionNotifications | None
 
 
-class AudioSourceRegistry(object):
+class AudioSourceRegistry:
 	"""All audio sources whose volume can be adjusted.
 	The list of audio devices is kept until it is rescanned, while applications are looked up on demand:
 	their audio sessions appear and disappear all the time, and looking them up takes a few milliseconds.
@@ -914,17 +935,18 @@ class AudioSourceRegistry(object):
 
 	def __init__(self) -> None:
 		"""Initially no audio devices are known, they are detected by start() or scanDevices()."""
-		self._devices: List[DeviceSource] = []
+		super().__init__()
+		self._devices: list[DeviceSource] = []
 		# Devices hidden in the add-on settings, used when the devices are rescanned after a notification
-		self._hide: List[str] = []
+		self._hide: list[str] = []
 		# Flags set by the notification handlers in Windows threads and applied in the main thread
 		self._devicesChanged: bool = False
 		# Incremented whenever the found applications may be outdated
 		self._generation: int = 0
-		self._enumerator = None
-		self._deviceNotifications: Optional[DeviceNotifications] = None
+		self._enumerator: DeviceEnumerator | None = None
+		self._deviceNotifications: DeviceNotifications | None = None
 		# Session managers of all active audio devices, the default output device is the first one
-		self._sessionManagers: List[SessionManagerEntry] = []
+		self._sessionManagers: list[SessionManagerEntry] = []
 
 	def start(self, hide: Iterable[str] = ()) -> None:
 		"""Detect the audio devices and subscribe to the notifications about audio devices and sessions.
@@ -934,11 +956,11 @@ class AudioSourceRegistry(object):
 		"""
 		self.scanDevices(hide)
 		try:
-			self._enumerator = AudioUtilities.GetDeviceEnumerator()
+			self._enumerator = getDeviceEnumerator()
 			self._deviceNotifications = DeviceNotifications(self)
 			self._enumerator.RegisterEndpointNotificationCallback(self._deviceNotifications)
 		except COMError:
-			log.debugWarning("Unable to subscribe to the notifications about audio devices", exc_info=True)
+			logDebugWarning("Unable to subscribe to the notifications about audio devices")
 			self._enumerator = self._deviceNotifications = None
 		self._subscribeSessions()
 
@@ -949,10 +971,7 @@ class AudioSourceRegistry(object):
 			try:
 				self._enumerator.UnregisterEndpointNotificationCallback(self._deviceNotifications)
 			except COMError:
-				log.debugWarning(
-					"Unable to unsubscribe from the notifications about audio devices",
-					exc_info=True,
-				)
+				logDebugWarning("Unable to unsubscribe from the notifications about audio devices")
 		self._enumerator = self._deviceNotifications = None
 
 	def _subscribeSessions(self) -> None:
@@ -961,18 +980,18 @@ class AudioSourceRegistry(object):
 		The default output device is the first one, so its applications are listed first.
 		"""
 		try:
-			enumerator = AudioUtilities.GetDeviceEnumerator()
+			enumerator = getDeviceEnumerator()
 		except COMError:
-			log.debugWarning("Unable to get the audio device enumerator", exc_info=True)
+			logDebugWarning("Unable to get the audio device enumerator")
 			return
 		defaultIds = self.getDefaultDeviceIds(enumerator, ERole.eMultimedia)
-		entries: List[SessionManagerEntry] = []
+		entries: list[SessionManagerEntry] = []
 		for flow in (EDataFlow.eRender, EDataFlow.eCapture):
 			try:
 				collection = enumerator.EnumAudioEndpoints(flow.value, DEVICE_STATE.ACTIVE.value)
 				count = collection.GetCount()
 			except COMError:
-				log.debugWarning("Unable to list the active audio devices", exc_info=True)
+				logDebugWarning("Unable to list the active audio devices")
 				continue
 			for i in range(count):
 				try:
@@ -981,16 +1000,13 @@ class AudioSourceRegistry(object):
 					manager = getSessionManager(immDevice)
 				except COMError:
 					continue
-				notifications: Optional[SessionNotifications] = SessionNotifications(self)
+				notifications: SessionNotifications | None = SessionNotifications(self)
 				try:
 					manager.RegisterSessionNotification(notifications)
 					# Windows sends the notifications only after the session enumerator has been requested
-					manager.GetSessionEnumerator()
+					_ = manager.GetSessionEnumerator()
 				except COMError:
-					log.debugWarning(
-						f"Unable to subscribe to the notifications about audio sessions of {id}",
-						exc_info=True,
-					)
+					logDebugWarning(f"Unable to subscribe to the notifications about audio sessions of {id}")
 					notifications = None
 				entries.append(SessionManagerEntry(flow, id, manager, notifications))
 		entries.sort(key=lambda entry: entry.deviceId not in defaultIds)
@@ -1004,9 +1020,8 @@ class AudioSourceRegistry(object):
 			try:
 				entry.manager.UnregisterSessionNotification(entry.notifications)
 			except COMError:
-				log.debugWarning(
+				logDebugWarning(
 					f"Unable to unsubscribe from the notifications about audio sessions of {entry.deviceId}",
-					exc_info=True,
 				)
 		self._sessionManagers = []
 
@@ -1042,7 +1057,7 @@ class AudioSourceRegistry(object):
 		return app.generation != self._generation or app.isExpired
 
 	@property
-	def devices(self) -> List[DeviceSource]:
+	def devices(self) -> list[DeviceSource]:
 		"""Audio devices found by the last scan, the default output device is the first one.
 		The list is rescanned if Windows has notified about changes of the audio devices.
 		@return: audio devices whose volume can be adjusted
@@ -1061,7 +1076,7 @@ class AudioSourceRegistry(object):
 		self._devicesChanged = False
 		self._devices = self.getAllDevices(self._hide)
 
-	def getAllDevices(self, hide: Iterable[str] = ()) -> List[DeviceSource]:
+	def getAllDevices(self, hide: Iterable[str] = ()) -> list[DeviceSource]:
 		"""Detect the active audio devices without changing the list of devices kept by the registry.
 		The default output device is always the first one, even if it is hidden,
 		the other output devices and then the input devices follow.
@@ -1072,7 +1087,7 @@ class AudioSourceRegistry(object):
 		@rtype: List[DeviceSource]
 		"""
 		try:
-			enumerator = AudioUtilities.GetDeviceEnumerator()
+			enumerator = getDeviceEnumerator()
 			defaultDevice = enumerator.GetDefaultAudioEndpoint(
 				EDataFlow.eRender.value,
 				ERole.eMultimedia.value,
@@ -1081,10 +1096,10 @@ class AudioSourceRegistry(object):
 			communicationIds = self.getDefaultDeviceIds(enumerator, ERole.eCommunications)
 			default = createDevice(defaultDevice, OutputDeviceSource, defaultIds, communicationIds)
 		except COMError:
-			log.debugWarning("Unable to get the default output audio device", exc_info=True)
+			logDebugWarning("Unable to get the default output audio device")
 			return []
-		default._default = True
-		devices: List[DeviceSource] = [default]
+		default.default = True
+		devices: list[DeviceSource] = [default]
 		skip = {default.id, *hide}
 		for flow, deviceClass in (
 			(EDataFlow.eRender, OutputDeviceSource),
@@ -1112,14 +1127,13 @@ class AudioSourceRegistry(object):
 		@rtype: bool
 		"""
 		try:
-			immDevice = AudioUtilities.GetDeviceEnumerator().GetDevice(id)
-			return immDevice.QueryInterface(IMMEndpoint).GetDataFlow() == EDataFlow.eCapture.value
+			return getDataFlow(getDeviceEnumerator().GetDevice(id)) == EDataFlow.eCapture.value
 		except COMError:
 			# A device removed from Windows: the data flow is the second number of its ID, e.g. {0.0.1.00000000}.{...}
 			return id.startswith("{0.0.1.")
 
 	@staticmethod
-	def getOutputDevices() -> List[Tuple[str, str]]:
+	def getOutputDevices() -> list[tuple[str, str]]:
 		"""Get all active output devices in the order of Windows, regardless of the hidden devices and categories.
 		Only the names are read, unlike utils.mmdevice.getOutputDevices() of NVDA, which wraps every device
 		with AudioUtilities.CreateDevice() and reads its whole property store.
@@ -1127,15 +1141,15 @@ class AudioSourceRegistry(object):
 		@rtype: List[Tuple[str, str]]
 		"""
 		try:
-			collection = AudioUtilities.GetDeviceEnumerator().EnumAudioEndpoints(
+			collection = getDeviceEnumerator().EnumAudioEndpoints(
 				EDataFlow.eRender.value,
 				DEVICE_STATE.ACTIVE.value,
 			)
 			count = collection.GetCount()
 		except COMError:
-			log.debugWarning("Unable to list the active output devices", exc_info=True)
+			logDebugWarning("Unable to list the active output devices")
 			return []
-		devices: List[Tuple[str, str]] = []
+		devices: list[tuple[str, str]] = []
 		for i in range(count):
 			try:
 				immDevice = collection.Item(i)
@@ -1155,16 +1169,12 @@ class AudioSourceRegistry(object):
 		@rtype: str
 		"""
 		try:
-			return (
-				AudioUtilities.GetDeviceEnumerator()
-				.GetDefaultAudioEndpoint(EDataFlow.eRender.value, role.value)
-				.GetId()
-			)
+			return getDeviceEnumerator().GetDefaultAudioEndpoint(EDataFlow.eRender.value, role.value).GetId()
 		except COMError:
 			return ""
 
 	@staticmethod
-	def setDefaultOutput(id: str, roles: List[ERole]) -> bool:
+	def setDefaultOutput(id: str, roles: list[ERole]) -> bool:
 		"""Make the output device the default device of Windows for the roles.
 		All programs that use the default device, including NVDA with its "default" output, move to it immediately.
 		@param id: the device ID
@@ -1175,23 +1185,23 @@ class AudioSourceRegistry(object):
 		@rtype: bool
 		"""
 		try:
-			AudioUtilities.SetDefaultDevice(id, roles)
+			cast(Any, AudioUtilities).SetDefaultDevice(id, roles)
 		except (OSError, COMError):
 			log.error(f"Unable to set the default output device {id}", exc_info=True)
 			return False
 		return True
 
 	@staticmethod
-	def getDefaultDeviceIds(enumerator: object, role: ERole) -> List[str]:
+	def getDefaultDeviceIds(enumerator: DeviceEnumerator, role: ERole) -> list[str]:
 		"""Get the IDs of the default output and input devices for the specified role.
 		@param enumerator: the device enumerator
-		@type enumerator: pycaw.IMMDeviceEnumerator
+		@type enumerator: DeviceEnumerator
 		@param role: the role of the default devices, e.g. multimedia or communications
 		@type role: ERole
 		@return: IDs of the default devices, without the data flows that have no default device
 		@rtype: List[str]
 		"""
-		ids: List[str] = []
+		ids: list[str] = []
 		for flow in (EDataFlow.eRender, EDataFlow.eCapture):
 			try:
 				ids.append(enumerator.GetDefaultAudioEndpoint(flow.value, role.value).GetId())
@@ -1199,21 +1209,21 @@ class AudioSourceRegistry(object):
 				continue
 		return ids
 
-	def getSessions(self, flow: EDataFlow) -> List[AudioSession]:
+	def getSessions(self, flow: EDataFlow) -> list[Session]:
 		"""Get the audio sessions of all active devices of the data flow, the default device goes first.
 		The caller applies the notified changes with _update() before.
 		@param flow: output (eRender) or input (eCapture) devices
 		@type flow: EDataFlow
 		@return: audio sessions of the devices
-		@rtype: List[pycaw.AudioSession]
+		@rtype: List[Session]
 		"""
-		sessions: List[AudioSession] = []
+		sessions: list[Session] = []
 		for entry in self._sessionManagers:
 			if entry.flow == flow:
 				sessions.extend(listSessions(entry.manager))
 		return sessions
 
-	def _getApps(self, flow: EDataFlow, appClass: Type[AppT], hide: Iterable[str]) -> List[AppT]:
+	def _getApps(self, flow: EDataFlow, appClass: type[AppT], hide: Iterable[str]) -> list[AppT]:
 		"""Get the applications with audio sessions on the active devices of the data flow.
 		There is one audio source per process name, in the order of the audio sessions,
 		and all audio sessions of the application on all devices are adjusted together.
@@ -1230,9 +1240,10 @@ class AudioSourceRegistry(object):
 		# Read before the sessions are listed: a notification received meanwhile makes the result outdated
 		generation = self._generation
 		hidden = set(hide)
-		groups: Dict[str, List[AudioSession]] = {}
+		groups: dict[str, list[Session]] = {}
 		for session in self.getSessions(flow):
-			name = session.Process.name() if session.Process else ""
+			process = session.Process
+			name = process.name() if process else ""
 			if name and name not in hidden:
 				groups.setdefault(name, []).append(session)
 		apps = [appClass(name, sessions) for name, sessions in groups.items()]
@@ -1240,7 +1251,7 @@ class AudioSourceRegistry(object):
 			app.generation = generation
 		return apps
 
-	def getApps(self, hide: Iterable[str] = ()) -> List[PlaybackAppSource]:
+	def getApps(self, hide: Iterable[str] = ()) -> list[PlaybackAppSource]:
 		"""Get the applications playing sound on any active output device.
 		@param hide: names of the processes hidden in the add-on settings
 		@type hide: Iterable[str]
@@ -1249,7 +1260,7 @@ class AudioSourceRegistry(object):
 		"""
 		return self._getApps(EDataFlow.eRender, PlaybackAppSource, hide)
 
-	def getRecordingApps(self, hide: Iterable[str] = ()) -> List[RecordingAppSource]:
+	def getRecordingApps(self, hide: Iterable[str] = ()) -> list[RecordingAppSource]:
 		"""Get the applications recording sound from any active input device.
 		@param hide: names of the processes hidden in the add-on settings
 		@type hide: Iterable[str]
@@ -1263,7 +1274,7 @@ class AudioSourceRegistry(object):
 		name: str,
 		pid: int = 0,
 		kind: SourceKind = SourceKind.PLAYBACK_APP,
-	) -> Optional[AppSource]:
+	) -> AppSource | None:
 		"""Find the application playing or recording sound by its process ID or name.
 		The process ID is not enough on its own: e.g. in web browsers the sound is usually played
 		by a child process, not by the process of the focused window.
@@ -1279,7 +1290,7 @@ class AudioSourceRegistry(object):
 		@return: the application, None if it has no audio session in the category
 		@rtype: Optional[AppSource]
 		"""
-		apps: List[AppSource] = [
+		apps: list[AppSource] = [
 			*(self.getRecordingApps() if kind == SourceKind.RECORDING_APP else self.getApps()),
 		]
 		if pid:
