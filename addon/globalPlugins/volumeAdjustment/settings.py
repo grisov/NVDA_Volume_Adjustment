@@ -256,25 +256,6 @@ class VASettingsPanel(SettingsPanel):
 		)
 		self.followFocusChk.SetValue(config.conf[addonName]["focus"])
 
-		procs: List[str] = getProcessNames()
-		self.procs = procs + [proc for proc in cfg.processes if proc not in procs]
-		self.hideProcesses = addonHelper.addLabeledControl(
-			# Translators: The label of the Checkable list in the settings panel
-			_("Hide &processes:"),
-			nvdaControls.CustomCheckListBox,
-			choices=self.procs,
-		)
-		if len(self.procs) > 0:
-			self.hideProcesses.SetCheckedStrings(cfg.processes)
-			self.hideProcesses.SetSelection(0)
-
-		procButtons = guiHelper.ButtonHelper(orientation=wx.HORIZONTAL)
-		self.updateProcessesButton = procButtons.addButton(self, id=wx.ID_REFRESH)
-		self.clearProcessesButton = procButtons.addButton(self, id=wx.ID_CLEAR)
-		addonHelper.addItem(procButtons)
-		self.updateProcessesButton.Bind(wx.EVT_BUTTON, self.onUpdateProcessesButton)
-		self.clearProcessesButton.Bind(wx.EVT_BUTTON, self.onClearProcessesButton)
-
 		# Names of all audio devices shown in the lists of hidden devices, by their IDs
 		self.devs: Dict[str, str] = {}
 		self.hideOutputDevices = addonHelper.addLabeledControl(
@@ -315,28 +296,25 @@ class VASettingsPanel(SettingsPanel):
 			wx.EVT_BUTTON,
 			lambda event: self.onClearDevicesButton(self.hideInputDevices, isInput=True),
 		)
-		self.quickMuteDevices = addonHelper.addLabeledControl(
-			# Translators: The label of the Checkable list in the settings panel: the input devices
-			# muted and unmuted together by one command
-			_("Microp&hones of the quick mute:"),
+
+		procs: List[str] = getProcessNames()
+		self.procs = procs + [proc for proc in cfg.processes if proc not in procs]
+		self.hideProcesses = addonHelper.addLabeledControl(
+			# Translators: The label of the Checkable list in the settings panel
+			_("Hide &processes:"),
 			nvdaControls.CustomCheckListBox,
-			choices=[],
+			choices=self.procs,
 		)
-		self.fillDeviceList(self.quickMuteDevices, isInput=True, includeHidden=True, saved=cfg.quickMute)
-		quickMuteButtons = guiHelper.ButtonHelper(orientation=wx.HORIZONTAL)
-		self.updateQuickMuteButton = quickMuteButtons.addButton(self, id=wx.ID_REFRESH)
-		self.clearQuickMuteButton = quickMuteButtons.addButton(self, id=wx.ID_CLEAR)
-		addonHelper.addItem(quickMuteButtons)
-		self.updateQuickMuteButton.Bind(
-			wx.EVT_BUTTON,
-			lambda event: self.onUpdateDevicesButton(
-				self.quickMuteDevices, isInput=True, saved=cfg.quickMute
-			),
-		)
-		self.clearQuickMuteButton.Bind(
-			wx.EVT_BUTTON,
-			lambda event: self.onClearDevicesButton(self.quickMuteDevices, isInput=True),
-		)
+		if len(self.procs) > 0:
+			self.hideProcesses.SetCheckedStrings(cfg.processes)
+			self.hideProcesses.SetSelection(0)
+
+		procButtons = guiHelper.ButtonHelper(orientation=wx.HORIZONTAL)
+		self.updateProcessesButton = procButtons.addButton(self, id=wx.ID_REFRESH)
+		self.clearProcessesButton = procButtons.addButton(self, id=wx.ID_CLEAR)
+		addonHelper.addItem(procButtons)
+		self.updateProcessesButton.Bind(wx.EVT_BUTTON, self.onUpdateProcessesButton)
+		self.clearProcessesButton.Bind(wx.EVT_BUTTON, self.onClearProcessesButton)
 
 		self.muteMode = addonHelper.addLabeledControl(
 			# Translators: This is the label for a choice list in the settings panel.
@@ -370,6 +348,28 @@ class VASettingsPanel(SettingsPanel):
 			wx.CheckBox(self, label=_("&Warn before lowering or muting the volume of NVDA itself")),
 		)
 		self.warnNvdaVolumeChk.SetValue(config.conf[addonName]["warnNvdaVolume"])
+		self.quickMuteDevices = addonHelper.addLabeledControl(
+			# Translators: The label of the Checkable list in the settings panel: the input devices
+			# muted and unmuted together by one command
+			_("Microp&hones of the quick mute:"),
+			nvdaControls.CustomCheckListBox,
+			choices=[],
+		)
+		self.fillDeviceList(self.quickMuteDevices, isInput=True, includeHidden=True, saved=cfg.quickMute)
+		quickMuteButtons = guiHelper.ButtonHelper(orientation=wx.HORIZONTAL)
+		self.updateQuickMuteButton = quickMuteButtons.addButton(self, id=wx.ID_REFRESH)
+		self.clearQuickMuteButton = quickMuteButtons.addButton(self, id=wx.ID_CLEAR)
+		addonHelper.addItem(quickMuteButtons)
+		self.updateQuickMuteButton.Bind(
+			wx.EVT_BUTTON,
+			lambda event: self.onUpdateDevicesButton(
+				self.quickMuteDevices, isInput=True, saved=cfg.quickMute
+			),
+		)
+		self.clearQuickMuteButton.Bind(
+			wx.EVT_BUTTON,
+			lambda event: self.onClearDevicesButton(self.quickMuteDevices, isInput=True),
+		)
 		self.defaultGesturesChk = addonHelper.addItem(
 			# Translators: This is the label for a checkbox in the settings panel.
 			wx.CheckBox(self, label=_("Use default &keyboard shortcuts")),
