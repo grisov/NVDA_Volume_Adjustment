@@ -23,6 +23,7 @@
 - All active output and input devices are always available, the option "Control all available audio devices" has been removed from settings panel.
 - The volume level is announced in percent with or without the percent sign, or, for audio devices can be announced in decibels (add-on settings).
 - The option "Hide audio sessions with the same names" has been removed, the audio sessions of an application are always adjusted together.
+- Microphones selected in the add-on settings can be muted and unmuted in Windows with one command for all programs at once.
 - The add-on uses the pycaw module bundled with NVDA and no longer calls its helpers that read the whole property store of audio devices (GetAllSessions, GetSpeakers, GetAllDevices, CreateDevice) on frequent code paths.
 - Updated the add-on build tooling to the latest NV Access addonTemplate.
 
