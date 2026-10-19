@@ -6,11 +6,13 @@
 from __future__ import annotations
 import os.path
 import subprocess
+import wave
 from typing import Callable, List, Optional, Tuple, TypeVar
 import addonHandler
 import config
 import core
 import globalPluginHandler
+import nvwave
 import tones
 import ui
 import wx
@@ -66,9 +68,10 @@ from .settings import (  # noqa E402
 )
 
 UNDEFINED_APP: str = "UndefinedCurrentApplicationName"
-# Beeps of the quick mute of the microphones: frequency in Hz and duration in milliseconds
-QUICK_UNMUTE_BEEP = (880, 60)
-QUICK_MUTE_BEEP = (440, 60)
+# Sounds of the quick mute of the microphones, generated for the add-on
+_soundsDir = os.path.join(os.path.dirname(__file__), "sounds")
+MICROPHONES_ON_SOUND = os.path.join(_soundsDir, "micOn.wav")
+MICROPHONES_OFF_SOUND = os.path.join(_soundsDir, "micOff.wav")
 # Number of the function keys F1..F12 bound to the output devices
 FUNCTION_KEYS = 12
 # Prefixes of the names of the scripts created for each output device, see bindSwitchingMethods()
@@ -970,11 +973,27 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			except (AttributeError, COMError):
 				log.debugWarning(f"Unable to change the mute state of {device.name}", exc_info=True)
 
+	def playSound(self, path: str) -> int:
+		"""Play a sound of the add-on without waiting for its end.
+		@param path: the path of the wave file
+		@type path: str
+		@return: the duration of the sound in milliseconds, 0 if it cannot be played
+		@rtype: int
+		"""
+		try:
+			with wave.open(path, "rb") as sound:
+				duration = round(sound.getnframes() / sound.getframerate() * 1000)
+			nvwave.playWaveFile(path, asynchronous=True)
+		except Exception:
+			log.error(f"Unable to play {path}", exc_info=True)
+			return 0
+		return duration
+
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Mute or unmute the microphones selected for the quick mute"))
 	def script_toggleQuickMute(self, gesture: InputGesture) -> None:
 		"""Mute all microphones selected in the add-on settings if any of them is on, otherwise unmute them all.
-		The beep is played before unmuting and after muting, so the microphones do not record it.
+		Only a sound is played: after muting and before unmuting, so the microphones do not record it.
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
@@ -997,13 +1016,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not all(isMuted):
 			# Any microphone on: all of them are muted, so the first press always gives silence
 			self.setQuickMute(devices, mute=True)
-			tones.beep(*QUICK_MUTE_BEEP)
-			# Translators: The message when the microphones selected for the quick mute have been muted
-			ui.message(_("Microphones muted"))
+			self.playSound(MICROPHONES_OFF_SOUND)
 			return
-		# Only the beep is played: the microphones are unmuted when it has been played, so it is not recorded
-		tones.beep(*QUICK_UNMUTE_BEEP)
-		core.callLater(QUICK_UNMUTE_BEEP[1] + 20, self.setQuickMute, devices, False)
+		# The microphones are unmuted when the sound has been played, so it is not recorded
+		duration = self.playSound(MICROPHONES_ON_SOUND)
+		core.callLater(duration + 20, self.setQuickMute, devices, False)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Open the Sound dialog of Windows"))
