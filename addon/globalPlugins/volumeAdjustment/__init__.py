@@ -1085,6 +1085,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"kb:NVDA+windows+home": "volumeMax",
 		"kb:NVDA+windows+end": "volumeMin",
 		"kb:NVDA+windows+escape": "mute",
+		# Switching between audio sources
 		"kb:NVDA+windows+rightArrow": "next",
 		"kb:NVDA+windows+leftArrow": "prev",
 		"kb:NVDA+control+windows+rightArrow": "nextCategory",
