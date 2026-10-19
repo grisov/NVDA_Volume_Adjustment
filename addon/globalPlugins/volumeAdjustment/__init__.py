@@ -7,7 +7,8 @@ from __future__ import annotations
 import os.path
 import subprocess
 import wave
-from typing import Callable, List, Optional, Tuple, TypeVar
+from typing import Any, cast, override
+from collections.abc import Callable
 import addonHandler
 import config
 import core
@@ -30,7 +31,7 @@ from synthDriverHandler import getSynth, setSynth
 from enum import Enum
 from pycaw.utils import ERole
 from utils.mmdevice import getOutputDevices
-from .audiocore import cfg
+from .audiocore import addonName, addonSummary, cfg, getAddonConfig, getNvdaConfig, logDebugWarning
 from .sources import (
 	LEVEL_TOLERANCE,
 	AppSource,
@@ -49,14 +50,6 @@ except addonHandler.AddonError:
 	log.warning("Unable to init translations. This may be because the addon is running from NVDA scratchpad.")
 _: Callable[[str], str]
 ngettext: Callable[[str, str, int], str]
-GlobalPluginType = TypeVar("GlobalPluginType", bound=globalPluginHandler.GlobalPlugin)
-
-_addonDir = os.path.join(os.path.dirname(__file__), "..", "..")
-if isinstance(_addonDir, bytes):
-	_addonDir = _addonDir.decode("mbcs")
-_curAddon = addonHandler.Addon(_addonDir)
-addonName: str = _curAddon.manifest["name"]
-addonSummary: str = _curAddon.manifest["summary"]
 
 from .settings import (  # noqa E402
 	NvdaVolumeWarningDialog,
@@ -72,6 +65,22 @@ UNDEFINED_APP: str = "UndefinedCurrentApplicationName"
 _soundsDir = os.path.join(os.path.dirname(__file__), "sounds")
 MICROPHONES_ON_SOUND = os.path.join(_soundsDir, "micOn.wav")
 MICROPHONES_OFF_SOUND = os.path.join(_soundsDir, "micOff.wav")
+
+
+def getSoundDuration(path: str) -> int:
+	"""Get the duration of a wave file.
+	@param path: the path of the wave file
+	@type path: str
+	@return: the duration in milliseconds, 0 if the file cannot be read
+	@rtype: int
+	"""
+	try:
+		with wave.open(path, "rb") as sound:
+			return round(sound.getnframes() / sound.getframerate() * 1000)
+	except (OSError, EOFError, wave.Error):
+		return 0
+
+
 # Number of the function keys F1..F12 bound to the output devices
 FUNCTION_KEYS = 12
 # Prefixes of the names of the scripts created for each output device, see bindSwitchingMethods()
@@ -89,9 +98,17 @@ class OutputTarget(Enum):
 	COMMUNICATION = "communication"
 
 
-def disableInSecureMode(decoratedCls: GlobalPluginType) -> GlobalPluginType:
-	if appArgs.secure:
-		return globalPluginHandler.GlobalPlugin
+def disableInSecureMode[PluginT: type[globalPluginHandler.GlobalPlugin]](decoratedCls: PluginT) -> PluginT:
+	"""Replace the global plugin with an empty one in the secure mode of NVDA (e.g. on the logon screen).
+	@param decoratedCls: the global plugin of the add-on
+	@type decoratedCls: Type[globalPluginHandler.GlobalPlugin]
+	@return: the global plugin to use, the empty base class in the secure mode
+	@rtype: Type[globalPluginHandler.GlobalPlugin]
+	"""
+	# appArgs of NVDA has no type annotations
+	if cast(Any, appArgs).secure:
+		# The empty base class stands for the plugin: NVDA only creates it and calls its methods
+		return cast(PluginT, globalPluginHandler.GlobalPlugin)
 	return decoratedCls
 
 
@@ -101,9 +118,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	scriptCategory: str = addonSummary
 
-	def __init__(self, *args, **kwargs) -> None:
+	def __init__(self, *args: Any, **kwargs: Any) -> None:
 		"""Initializing initial configuration values and other fields."""
-		super(GlobalPlugin, self).__init__(*args, **kwargs)
+		super().__init__(*args, **kwargs)
 		confspec = {
 			"status": "boolean(default=true)",
 			"step": "integer(default=1,min=1,max=20)",
@@ -120,47 +137,50 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			"warnNvdaVolume": "boolean(default=true)",
 			"gestures": "boolean(default=false)",
 		}
-		config.conf.spec[addonName] = confspec
+		cast(Any, config.conf).spec[addonName] = confspec
 		settingsDialogs.NVDASettingsDialog.categoryClasses.append(VASettingsPanel)
 		# Remember the default output audio device
-		self._defaultOutputDevice: str = config.conf["audio"]["outputDevice"]
+		self._defaultOutputDevice: str = getNvdaConfig("audio")["outputDevice"]
 		# Audio source selected with arrows: its category and ID, None to adjust the application in focus
-		self._selected: Optional[SourceKey] = None
+		self._selected: SourceKey | None = None
 		# The audio source whose name was announced last, so it is not repeated on every keypress
-		self._previous: Optional[SourceKey] = None
+		self._previous: SourceKey | None = None
 		# Application of the selected or focused process, reused between keypresses
-		self._session: Optional[AppSource] = None
+		self._session: AppSource | None = None
 		# Whether the warning about lowering the volume of NVDA itself is currently shown
 		self._isWarningShown: bool = False
 		# Bind default gestures if necessary
-		config.conf[addonName]["gestures"] and self.bindGestures(self.__defaultGestures)
+		if getAddonConfig()["gestures"]:
+			# ScriptableObject.bindGestures of NVDA has no type annotations
+			self.bindGestures(self.__defaultGestures)  # pyright: ignore[reportUnknownMemberType]
 		# Creating the switching methods for the output devices 1-12
 		self.bindSwitchingMethods()
 		registry.start(cfg.devices)
 
-	def terminate(self, *args, **kwargs) -> None:
+	@override
+	def terminate(self, *args: Any, **kwargs: Any) -> None:
 		"""This will be called when NVDA is finished with this global plugin."""
-		if config.conf[addonName]["unmuteOnExit"]:
+		if getAddonConfig()["unmuteOnExit"]:
 			# It takes a few milliseconds and uses the COM objects of audio devices created in this thread
 			try:
 				self.unmuteAllAudioSources()
 			except Exception:
-				log.exception("Unable to unmute audio sources on exit")
+				log.error("Unable to unmute audio sources on exit", exc_info=True)
 		registry.stop()
 		try:
 			settingsDialogs.NVDASettingsDialog.categoryClasses.remove(VASettingsPanel)
 		except ValueError:
 			log.warning("Can't remove %s Settings panel from NVDA settings dialogs", addonSummary)
-		super(GlobalPlugin, self).terminate(*args, **kwargs)
+		super().terminate(*args, **kwargs)
 
-	def event_gainFocus(self, obj: NVDAObject, NextHandler: Callable) -> None:
+	def event_gainFocus(self, obj: NVDAObject, NextHandler: Callable[[], None]) -> None:
 		"""Track the application in focus if the corresponding option is enabled.
 		@param obj: the object to track if focused
 		@type obj: NVDAObject
 		@param nextHandler: next event handler
 		@type nextHandler: Callable
 		"""
-		if config.conf[addonName]["focus"]:
+		if getAddonConfig()["focus"]:
 			self._selected = None
 			# The name of the application in focus is announced on the next keypress
 			self._previous = None
@@ -168,7 +188,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self._session = None
 		NextHandler()
 
-	def getFocusedProcess(self) -> Tuple[str, int]:
+	def getFocusedProcess(self) -> tuple[str, int]:
 		"""Get the application name and the process ID of the object in system focus.
 		@return: the application name and the process ID, 0 if it is unknown
 		@rtype: Tuple[str, int]
@@ -197,7 +217,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self._session = session
 		return True
 
-	def getSession(self, kind: SourceKind, name: str) -> Optional[AppSource]:
+	def getSession(self, kind: SourceKind, name: str) -> AppSource | None:
 		"""Get the application of the specified process in the specified category.
 		The previously found application is reused while the same process stays selected,
 		so repeated keypresses do not enumerate all audio sessions again.
@@ -220,8 +240,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def formatVolumeLevel(
 		self,
 		volumeLevel: float,
-		source: Optional[AudioSource] = None,
-		channel: Optional[int] = None,
+		source: AudioSource | None = None,
+		channel: int | None = None,
 	) -> str:
 		"""Get the text of the volume level announcement, e.g. "Volume 29%", "Volume 29" or "Volume -12.5 dB".
 		Decibels are announced if they are selected in the add-on settings and the source provides them,
@@ -237,7 +257,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		# Translators: The message is announced during volume control
 		volume = _("Volume")
-		if source is not None and config.conf[addonName]["units"] == "decibels":
+		if source is not None and getAddonConfig()["units"] == "decibels":
 			decibels = source.getVolumeDecibels(channel)
 			if decibels is not None:
 				# Translators: The unit of the volume level in decibels, announced after the number, e.g. "Volume -12.5 dB"
@@ -246,7 +266,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				return f"{volume} {round(decibels, 1) + 0.0:.1f} {unit}"
 		# Rounded: Windows stores volume levels as 32-bit floats, 29 % is read back as 28.999999 %
 		level = round(volumeLevel * 100.0)
-		if config.conf[addonName]["units"] == "number":
+		if getAddonConfig()["units"] == "number":
 			# The short form of the earlier versions, e.g. "Volume 29"
 			return f"{volume} {level}"
 		return f"{volume} {level}%"
@@ -254,8 +274,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def announceVolumeLevel(
 		self,
 		volumeLevel: float,
-		source: Optional[AudioSource] = None,
-		channel: Optional[int] = None,
+		source: AudioSource | None = None,
+		channel: int | None = None,
 	) -> None:
 		"""Announce the current volume level.
 		@param volumeLevel: value of volume level
@@ -279,7 +299,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		volume = source.volume
 		# The level is announced only when the add-on decreased it: a source muted by Windows or another program is silent
 		if (
-			not config.conf[addonName]["muteCompletely"]
+			not getAddonConfig()["muteCompletely"]
 			and source.mutedKey in cfg.muted
 			and not (volume is not None and volume.GetMute())
 		):
@@ -325,7 +345,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Translators: The message when feature currently is not supported
 		ui.message(_("Not supported"))
 
-	def getChannelSource(self) -> Optional[AudioSource]:
+	def getChannelSource(self) -> AudioSource | None:
 		"""Get the selected audio source for a channel command.
 		The channels of applications are changed by NVDA sound split too, so they are not changed while
 		sound split is enabled: the add-on and NVDA would overwrite each other's levels.
@@ -337,7 +357,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if source is None:
 			return None
 		# Any state except "disabled" (0) applies sound split levels to all audio sessions, even "both channels"
-		if isinstance(source, AppSource) and config.conf["audio"]["soundSplitState"] != 0:
+		if isinstance(source, AppSource) and getNvdaConfig("audio")["soundSplitState"] != 0:
 			# Translators: The message when the channels of an application cannot be adjusted
 			# because NVDA sound split is enabled and uses them
 			ui.message(_("Channels are used by NVDA sound split"))
@@ -347,7 +367,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return None
 		return source
 
-	def getAllSources(self) -> List[AudioSource]:
+	def getAllSources(self) -> list[AudioSource]:
 		"""List of all audio sources available for switching, in the order of the categories:
 		output devices, input devices, playback applications, recording applications.
 		Hidden categories, devices and processes are skipped.
@@ -355,12 +375,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@return: the audio sources, the list changes dynamically
 		@rtype: List[AudioSource]
 		"""
-		sources: List[AudioSource] = []
+		sources: list[AudioSource] = []
 		for kind in getVisibleCategories():
 			sources.extend(self.getSources(kind))
 		return sources
 
-	def getSources(self, kind: SourceKind) -> List[AudioSource]:
+	def getSources(self, kind: SourceKind) -> list[AudioSource]:
 		"""List of the audio sources of one category, hidden devices and processes are skipped.
 		@param kind: the category of audio sources
 		@type kind: SourceKind
@@ -415,10 +435,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def unmuteAllAudioSources(self) -> None:
 		"""Unmute all muted audio devices and audio sessions."""
 		for device in registry.devices:
-			device.isMuted and device.unmute()
+			if device.isMuted:
+				device.unmute()
 		# Hidden processes are unmuted too: they may have been muted before they were hidden
 		for app in [*registry.getApps(), *registry.getRecordingApps()]:
-			app.isMuted and app.unmute()
+			if app.isMuted:
+				app.unmute()
 
 	def getSourceTitle(self, source: AudioSource) -> str:
 		"""Get the name of the audio source to announce.
@@ -434,7 +456,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return "{default}: {title}".format(default=_("Default audio device"), title=source.name)
 		return source.name
 
-	def getCurrentSourceKey(self, sources: List[AudioSource]) -> Optional[SourceKey]:
+	def getCurrentSourceKey(self, sources: list[AudioSource]) -> SourceKey | None:
 		"""Get the key of the audio source that switching starts from.
 		@param sources: the audio sources available for switching, not empty
 		@type sources: List[AudioSource]
@@ -444,7 +466,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		if self._selected is not None:
 			return self._selected
-		if config.conf[addonName]["focus"]:
+		if getAddonConfig()["focus"]:
 			focused = registry.findApp(*self.getFocusedProcess())
 			return getSourceKey(focused) if focused is not None else None
 		# Without focus tracking the first source is adjusted until another one is selected
@@ -464,7 +486,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if announceCategory:
 			title = f"{getCategoryName(source.kind)}, {title}"
 		ui.message(title)
-		if config.conf[addonName]["status"]:
+		if getAddonConfig()["status"]:
 			self.announceMuted(source) if source.isMuted else self.announceVolumeLevel(
 				source.volumeLevel,
 				source,
@@ -492,7 +514,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# The category is announced when it changes, or when the previous source is not known
 		self.selectSource(
 			source,
-			announceCategory=config.conf[addonName]["announceCategories"]
+			announceCategory=getAddonConfig()["announceCategories"]
 			and (current is None or current[0] != source.kind),
 		)
 
@@ -531,7 +553,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self._previous = key
 		return source
 
-	def getAudioSource(self) -> Optional[AudioSource]:
+	def getAudioSource(self) -> AudioSource | None:
 		"""Get the object of the audio source selected with arrows (device or application),
 		this can be instance inherited from the sources.AudioSource class.
 		Also announces the name of the application at the first treatment.
@@ -578,7 +600,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param action: the change of the volume and its announcement
 		@type action: Callable[[], None]
 		"""
-		if not config.conf[addonName]["warnNvdaVolume"] or not self.isNvdaSession(source):
+		if not getAddonConfig()["warnNvdaVolume"] or not self.isNvdaSession(source):
 			action()
 			return
 		if self._isWarningShown:
@@ -586,11 +608,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 		def showWarning() -> None:
 			self._isWarningShown = True
+			confirmed = False
 			try:
-				with NvdaVolumeWarningDialog(gui.mainFrame) as dialog:
+				dialog = NvdaVolumeWarningDialog(cast(wx.Window, gui.mainFrame))
+				with dialog:
 					confirmed = dialog.ShowModal() == ReturnCode.OK
 					if confirmed and dialog.dontShowAgainChk.GetValue():
-						config.conf[addonName]["warnNvdaVolume"] = False
+						getAddonConfig()["warnNvdaVolume"] = False
 			finally:
 				self._isWarningShown = False
 			if confirmed:
@@ -598,7 +622,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 		wx.CallAfter(showWarning)
 
-	def getSelectedAudioSource(self) -> Optional[AudioSource]:
+	def getSelectedAudioSource(self) -> AudioSource | None:
 		"""Get the audio source to adjust: the application in focus or the source selected in the list.
 		Announces if the selected application does not play any sound.
 		@return: the selected audio source, None if there is nothing to adjust
@@ -610,7 +634,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self._selected = self._previous = None
 			self._session = None
 		if self._selected is None:
-			if config.conf[addonName]["focus"]:
+			if getAddonConfig()["focus"]:
 				if not self.selectProcessInFocus():
 					return None
 				# Incorrect narrowing of the attribute by MyPy
@@ -816,7 +840,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@rtype: str
 		"""
 		if target == OutputTarget.NVDA:
-			return config.conf["audio"]["outputDevice"]
+			return getNvdaConfig("audio")["outputDevice"]
 		if target == OutputTarget.DEFAULT:
 			return registry.getDefaultOutputId(ERole.eMultimedia)
 		return registry.getDefaultOutputId(ERole.eCommunications)
@@ -831,8 +855,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@type name: str
 		"""
 		if target == OutputTarget.NVDA:
-			config.conf["audio"]["outputDevice"] = id
-			if setSynth(getSynth().name):
+			getNvdaConfig("audio")["outputDevice"] = id
+			# The synthesizer is restarted to use the new output device
+			synth = getSynth()
+			if synth is not None and setSynth(synth.name):
 				tones.terminate()
 				tones.initialize()
 		else:
@@ -856,7 +882,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@param name: the name of the device
 		@type name: str
 		"""
-		if id not in [deviceId for deviceId, deviceName in registry.getOutputDevices()]:
+		if id not in [deviceId for deviceId, _deviceName in registry.getOutputDevices()]:
 			# Translators: The message when the output device has been disconnected or disabled since NVDA was started,
 			# {name} is the name of the device
 			ui.message(_("{name} is not available").format(name=name))
@@ -874,7 +900,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		devices = registry.getOutputDevices()
 		if not devices:
 			return
-		ids = [id for id, name in devices]
+		ids = [id for id, _name in devices]
 		current = self.getCurrentOutputId(target)
 		if current in ids:
 			index = (ids.index(current) + step) % len(devices)
@@ -947,7 +973,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		self.selectOutputDeviceByStep(OutputTarget.COMMUNICATION, step=-1)
 
-	def getQuickMuteDevices(self) -> List[InputDeviceSource]:
+	def getQuickMuteDevices(self) -> list[InputDeviceSource]:
 		"""Get the connected input devices selected for the quick mute in the add-on settings.
 		Hidden devices and categories do not matter: the quick mute works for all selected microphones.
 		@return: the connected input devices of the quick mute
@@ -960,7 +986,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			if isinstance(device, InputDeviceSource) and device.id in ids
 		]
 
-	def setQuickMute(self, devices: List[InputDeviceSource], mute: bool) -> None:
+	def setQuickMute(self, devices: list[InputDeviceSource], mute: bool) -> None:
 		"""Mute or unmute the input devices in Windows, so all programs get silence or sound from them.
 		@param devices: the input devices of the quick mute
 		@type devices: List[InputDeviceSource]
@@ -972,23 +998,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				# Incorrect handling of AttributeError by MyPy
 				device.volume.SetMute(int(mute), None)  # type: ignore
 			except (AttributeError, COMError):
-				log.debugWarning(f"Unable to change the mute state of {device.name}", exc_info=True)
+				logDebugWarning(f"Unable to change the mute state of {device.name}")
 
-	def playSound(self, path: str) -> int:
-		"""Play a sound of the add-on without waiting for its end.
+	def playSound(self, path: str) -> None:
+		"""Play a sound of the add-on without waiting for its end, an error is logged.
 		@param path: the path of the wave file
 		@type path: str
-		@return: the duration of the sound in milliseconds, 0 if it cannot be played
-		@rtype: int
 		"""
 		try:
-			with wave.open(path, "rb") as sound:
-				duration = round(sound.getnframes() / sound.getframerate() * 1000)
 			nvwave.playWaveFile(path, asynchronous=True)
 		except Exception:
 			log.error(f"Unable to play {path}", exc_info=True)
-			return 0
-		return duration
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Mute or unmute the microphones selected for the quick mute"))
@@ -1007,7 +1027,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			# Translators: The message when none of the microphones selected for the quick mute is connected
 			ui.message(_("The microphones selected for the quick mute are not connected"))
 			return
-		isMuted = []
+		isMuted: list[bool] = []
 		for device in devices:
 			try:
 				# Incorrect handling of AttributeError by MyPy
@@ -1020,8 +1040,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self.playSound(MICROPHONES_OFF_SOUND)
 			return
 		# The microphones are unmuted when the sound has been played, so it is not recorded
-		duration = self.playSound(MICROPHONES_ON_SOUND)
-		core.callLater(duration + 20, self.setQuickMute, devices, False)
+		self.playSound(MICROPHONES_ON_SOUND)
+		# core.callLater of NVDA has no type annotations
+		cast(Any, core).callLater(
+			getSoundDuration(MICROPHONES_ON_SOUND) + 20,
+			self.setQuickMute,
+			devices,
+			False,
+		)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Open the Sound dialog of Windows"))
@@ -1035,7 +1061,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		system32 = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32")
 		if os.path.isfile(os.path.join(system32, "mmsys.cpl")):
 			try:
-				subprocess.Popen([os.path.join(system32, "control.exe"), "mmsys.cpl"])
+				_ = subprocess.Popen([os.path.join(system32, "control.exe"), "mmsys.cpl"])
 				return
 			except OSError:
 				log.error("Unable to open the Sound dialog of Windows", exc_info=True)
@@ -1064,7 +1090,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		@rtype: Callable[[GlobalPlugin, InputGesture], None]
 		"""
 
-		def script_selectOutputDevice(self, gesture: InputGesture) -> None:
+		def script_selectOutputDevice(self: GlobalPlugin, gesture: InputGesture) -> None:
 			"""Switch to the output device of the script.
 			@param gesture: gesture assigned to this method
 			@type gesture: InputGesture
@@ -1111,8 +1137,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 						description.format(number=number, name=name),
 					),
 				)
-				if config.conf[addonName]["gestures"] and number <= FUNCTION_KEYS:
-					self.bindGesture(f"kb:NVDA+windows+{modifiers}f{number}", scriptName)
+				if getAddonConfig()["gestures"] and number <= FUNCTION_KEYS:
+					# ScriptableObject.bindGesture of NVDA has no type annotations
+					self.bindGesture(  # pyright: ignore[reportUnknownMemberType]
+						f"kb:NVDA+windows+{modifiers}f{number}",
+						scriptName,
+					)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Select next channel"))
@@ -1126,7 +1156,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return
 		source.channel += 1
 		self.announceChannel(source.channel)
-		if config.conf[addonName]["status"]:
+		if getAddonConfig()["status"]:
 			self.announceMuted(source) if source.isMuted else self.announceVolumeLevel(
 				source.getChannelVolumeLevel(),
 				source,
@@ -1145,7 +1175,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return
 		source.channel -= 1
 		self.announceChannel(source.channel)
-		if config.conf[addonName]["status"]:
+		if getAddonConfig()["status"]:
 			self.announceMuted(source) if source.isMuted else self.announceVolumeLevel(
 				source.getChannelVolumeLevel(),
 				source,

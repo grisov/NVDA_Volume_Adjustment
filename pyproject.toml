@@ -50,10 +50,19 @@ lint = [
 	"prek==0.4.8",
 	"pyright[nodejs]==1.1.414",
 ]
+# Packages bundled with NVDA 2026.2 and used by the add-on, only for type checking with pyright:
+# they are not included in the add-on
+nvda = [
+	"comtypes==1.4.13",
+	"pycaw==20251023",
+	"wxPython==4.2.4",
+	"configobj==5.0.9",
+]
 dev = [
 	{ include-group = "build" },
 	{ include-group = "l10n" },
 	{ include-group = "lint" },
+	{ include-group = "nvda" },
 ]
 
 [tool.ruff]
