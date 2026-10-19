@@ -23,8 +23,12 @@ from gui.message import DefaultButtonSet, DialogType, MessageDialog
 from gui.settingsDialogs import SettingsPanel
 from logHandler import log
 from queueHandler import eventQueue, queueFunction
-from .audiocore import addonSummary, cfg, getAddonConfig
-from .sources import Connection, DeviceSource, FormFactor, InputDeviceSource, SourceKind, registry
+from .devices import isInputDevice
+from .configuration import addonSummary, cfg, getAddonConfig
+from .messages import getCategoryName, getOnlyVisibleCategoryMessage
+from .registry import registry
+from .model import SourceKind
+from .sources import InputDeviceSource, getVisibleCategories, setVisibleCategories
 
 try:
 	addonHandler.initTranslation()
@@ -33,118 +37,10 @@ except addonHandler.AddonError:
 _: Callable[[str], str]
 
 
-def getCategoryName(kind: SourceKind) -> str:
-	"""Get the name of the category of audio sources to announce.
-	@param kind: the category of audio sources
-	@type kind: SourceKind
-	@return: the translated name of the category
-	@rtype: str
-	"""
-	if kind == SourceKind.OUTPUT_DEVICE:
-		# Translators: The name of the category of audio sources announced while switching between them
-		return _("Output devices")
-	if kind == SourceKind.INPUT_DEVICE:
-		# Translators: The name of the category of audio sources announced while switching between them
-		return _("Input devices")
-	if kind == SourceKind.PLAYBACK_APP:
-		# Translators: The name of the category of audio sources announced while switching between them
-		return _("Playback apps")
-	# Translators: The name of the category of audio sources announced while switching between them
-	return _("Recording apps")
-
-
-def getDeviceDetails(device: DeviceSource) -> list[str]:
-	"""Get the attributes of the audio device to announce after its name or volume level:
-	its type, how it is connected and whether it is a default device of Windows.
-	The internal connection is not announced: it would be misleading e.g. for the speakers of a monitor.
-	@param device: the audio device
-	@type device: DeviceSource
-	@return: the translated attributes, those that are not known are skipped
-	@rtype: List[str]
-	"""
-	formFactors = {
-		# Translators: The type of an audio device announced after its name
-		FormFactor.REMOTE_NETWORK_DEVICE: _("network device"),
-		# Translators: The type of an audio device announced after its name
-		FormFactor.SPEAKERS: _("speakers"),
-		# Translators: The type of an audio device announced after its name, e.g. a line input or output
-		FormFactor.LINE_LEVEL: _("line"),
-		# Translators: The type of an audio device announced after its name
-		FormFactor.HEADPHONES: _("headphones"),
-		# Translators: The type of an audio device announced after its name
-		FormFactor.MICROPHONE: _("microphone"),
-		# Translators: The type of an audio device announced after its name: headphones with a microphone
-		FormFactor.HEADSET: _("headset"),
-		# Translators: The type of an audio device announced after its name: a telephone handset
-		FormFactor.HANDSET: _("handset"),
-		# Translators: The type of an audio device announced after its name: a digital audio output
-		FormFactor.UNKNOWN_DIGITAL_PASSTHROUGH: _("digital output"),
-		# Translators: The type of an audio device announced after its name: the S/PDIF digital interface
-		FormFactor.SPDIF: _("S/PDIF"),
-		# Translators: The type of an audio device announced after its name: the speakers of a monitor or TV (HDMI)
-		FormFactor.DIGITAL_AUDIO_DISPLAY_DEVICE: _("digital display"),
-	}
-	connections = {
-		# Translators: How an audio device is connected, announced after its name
-		Connection.USB: _("USB"),
-		# Translators: How an audio device is connected, announced after its name
-		Connection.BLUETOOTH: _("Bluetooth"),
-		# Translators: How an audio device is connected, announced after its name: a software device,
-		# e.g. a virtual audio cable
-		Connection.VIRTUAL: _("virtual"),
-	}
-	details = [formFactors.get(device.formFactor, ""), connections.get(device.connection, "")]
-	if device.isDefaultDevice:
-		# Translators: Announced after the name of an audio device that is the default device of Windows
-		details.append(_("default"))
-	if device.isDefaultCommunicationDevice:
-		# Translators: Announced after the name of an audio device that is the default communication device of Windows
-		details.append(_("communication"))
-	return [detail for detail in details if detail]
-
-
-def getOnlyVisibleCategoryMessage(category: str, hiding: bool = False) -> str:
-	"""Get the message that the category is already the only visible one,
-	when it is shown as the only category or the user tries to hide it.
-	@param category: the name of the category
-	@type category: str
-	@param hiding: whether the user tries to hide the category
-	@type hiding: bool
-	@return: the message to announce
-	@rtype: str
-	"""
-	# Translators: The message when the category of audio sources is already the only visible one,
-	# e.g. when the user tries to hide it, {category} is its name, e.g. "Recording apps"
-	message = _("{category} is already the only visible category").format(category=category)
-	if not hiding:
-		return message
-	# Translators: The message when the user tries to hide the only visible category of audio sources,
-	# followed by the message that it is already the only visible category
-	prefix = _("Category cannot be hidden.")
-	return f"{prefix} {message}"
-
-
-def getVisibleCategories() -> list[SourceKind]:
-	"""Categories of audio sources available for switching, in their order.
-	@return: the visible categories, all of them if the saved value contains none
-	@rtype: List[SourceKind]
-	"""
-	visible: str = getAddonConfig()["categories"]
-	return [kind for kind in SourceKind if kind.value in visible] or list(SourceKind)
-
-
-def setVisibleCategories(categories: list[SourceKind]) -> None:
-	"""Save the visible categories of audio sources, always in the order of the categories.
-	@param categories: the categories to show
-	@type categories: List[SourceKind]
-	"""
-	getAddonConfig()["categories"] = "".join(kind.value for kind in SourceKind if kind in categories)
-
-
 def getProcessNames() -> list[str]:
 	"""Names of the processes playing or recording sound, each listed once.
-	@return: names of the processes with audio sessions, the playing ones first
-	@rtype: List[str]
+
+	:return: names of the processes with audio sessions, the playing ones first
 	"""
 	names = [app.name for app in [*registry.getApps(), *registry.getRecordingApps()]]
 	return list(dict.fromkeys(names))
@@ -155,8 +51,8 @@ class AddonsReloadDialog(wx.Dialog):
 
 	def __init__(self, parent: wx.Window) -> None:
 		"""Layout of dialog box elements to show.
-		@param parent: parent top level window
-		@type parent: wx.Window
+
+		:param parent: parent top level window
 		"""
 		# Translators: The title of the dialog which appears when the user enables or disables the default gestures
 		super().__init__(parent, title=_("Gestures Configuration Change"))
@@ -195,8 +91,8 @@ class AddonsReloadDialog(wx.Dialog):
 
 	def onReloadNowButton(self, eventt: wx.PyEvent) -> None:
 		"""Executed when the appropriate button in the dialog box is pressed.
-		@param event: event that occurs when a wx.Button is pressed
-		@type event: wx.PyEvent
+
+		:param event: event that occurs when a wx.Button is pressed
 		"""
 		panel = cast("VASettingsPanel", self.GetParent())
 		getAddonConfig()["gestures"] = panel.defaultGesturesChk.GetValue()
@@ -210,8 +106,8 @@ class NvdaVolumeWarningDialog(MessageDialog):
 
 	def __init__(self, parent: wx.Window) -> None:
 		"""Create the warning dialog.
-		@param parent: parent top level window
-		@type parent: wx.Window
+
+		:param parent: parent top level window
 		"""
 		super().__init__(
 			parent,
@@ -230,8 +126,8 @@ class NvdaVolumeWarningDialog(MessageDialog):
 	@override
 	def _addContents(self, contentsSizer: guiHelper.BoxSizerHelper) -> None:
 		"""Add the checkbox that disables the warning.
-		@param contentsSizer: the sizer of the dialog contents
-		@type contentsSizer: guiHelper.BoxSizerHelper
+
+		:param contentsSizer: the sizer of the dialog contents
 		"""
 		self.dontShowAgainChk = contentsSizer.addItem(
 			# Translators: The label of a checkbox in the warning about lowering the volume of NVDA itself
@@ -246,16 +142,16 @@ class VASettingsPanel(SettingsPanel):
 
 	def __init__(self, parent: wx.Window) -> None:
 		"""Initializing the add-on settings panel object.
-		@param parent: parent top level window
-		@type parent: wx.Window
+
+		:param parent: parent top level window
 		"""
 		super().__init__(parent)
 
 	@override
 	def makeSettings(self, sizer: wx.BoxSizer) -> None:
 		"""Populate the panel with settings controls.
-		@param sizer: The sizer to which to add the settings controls.
-		@type sizer: wx.BoxSizer
+
+		:param sizer: The sizer to which to add the settings controls.
 		"""
 		self.sizer = sizer
 		# BoxSizerHelper works with any window, NVDA annotates its parent as a dialog
@@ -444,8 +340,8 @@ class VASettingsPanel(SettingsPanel):
 	def onMuteModeChoice(self, event: wx.PyEvent) -> None:
 		"""Select the mute mode - completely turn off or partial decrease of the volume level,
 		dynamically controls the showing of the volume mute slider.
-		@param event: event binder object which processes changing of the wx.Choice
-		@type event: wx.PyEvent
+
+		:param event: event binder object which processes changing of the wx.Choice
 		"""
 		mode: int = self.muteMode.GetClientData(self.muteMode.GetSelection())
 		self.mutePercentageSlider.Show(show=bool(mode))
@@ -454,8 +350,8 @@ class VASettingsPanel(SettingsPanel):
 
 	def onGesturesCheckbox(self, event: wx.PyEvent) -> None:
 		"""Enabling or disabling default keyboard shortcuts.
-		@param event: event binder object which processes changing of the wx.Checkbox
-		@type event: wx.PyEvent
+
+		:param event: event binder object which processes changing of the wx.Checkbox
 		"""
 		if not AddonsReloadDialog(self).ShowModal():
 			self.defaultGesturesChk.SetValue(not event.IsChecked())
@@ -469,20 +365,17 @@ class VASettingsPanel(SettingsPanel):
 		saved: dict[str, str] | None = None,
 	) -> None:
 		"""Fill a checkable list of output or input devices: the devices to hide or the microphones of the quick mute.
-		@param control: the checkable list of output or input devices
-		@type control: nvdaControls.CustomCheckListBox
-		@param isInput: whether the list contains input devices
-		@type isInput: bool
-		@param includeHidden: whether the saved devices are listed and checked, also those not connected now
-		@type includeHidden: bool
-		@param saved: the saved devices of the list, the hidden devices by default
-		@type saved: Optional[Dict[str, str]]
+
+		:param control: the checkable list of output or input devices
+		:param isInput: whether the list contains input devices
+		:param includeHidden: whether the saved devices are listed and checked, also those not connected now
+		:param saved: the saved devices of the list, the hidden devices by default
 		"""
 		if saved is None:
 			saved = cfg.devices
 		items: dict[str, str] = {}
 		if includeHidden:
-			items.update((id, name) for id, name in saved.items() if registry.isInputDevice(id) == isInput)
+			items.update((id, name) for id, name in saved.items() if isInputDevice(id) == isInput)
 		for device in registry.getAllDevices():
 			if isinstance(device, InputDeviceSource) == isInput:
 				items.setdefault(device.id, device.name)
@@ -503,30 +396,27 @@ class VASettingsPanel(SettingsPanel):
 	) -> None:
 		"""Update the list of connected audio devices when the appropriate button is pressed,
 		the saved devices are checked again.
-		@param control: the checkable list of output or input devices
-		@type control: nvdaControls.CustomCheckListBox
-		@param isInput: whether the list contains input devices
-		@type isInput: bool
-		@param saved: the saved devices of the list, the hidden devices by default
-		@type saved: Optional[Dict[str, str]]
+
+		:param control: the checkable list of output or input devices
+		:param isInput: whether the list contains input devices
+		:param saved: the saved devices of the list, the hidden devices by default
 		"""
 		self.fillDeviceList(control, isInput, includeHidden=True, saved=saved)
 		control.SetFocus()
 
 	def onClearDevicesButton(self, control: nvdaControls.CustomCheckListBox, isInput: bool) -> None:
 		"""Uncheck all audio devices and remove those that are not connected now.
-		@param control: the checkable list of output or input devices
-		@type control: nvdaControls.CustomCheckListBox
-		@param isInput: whether the list contains input devices
-		@type isInput: bool
+
+		:param control: the checkable list of output or input devices
+		:param isInput: whether the list contains input devices
 		"""
 		self.fillDeviceList(control, isInput, includeHidden=False)
 		control.SetFocus()
 
 	def onUpdateProcessesButton(self, event: wx.PyEvent) -> None:
 		"""Update the list of currently running processes when the appropriate button is pressed.
-		@param event: event that occurs when a wx.Button is pressed
-		@type event: wx.PyEvent
+
+		:param event: event that occurs when a wx.Button is pressed
 		"""
 		procs = getProcessNames()
 		self.procs = procs + [proc for proc in cfg.processes if proc not in procs]
@@ -539,8 +429,8 @@ class VASettingsPanel(SettingsPanel):
 
 	def onClearProcessesButton(self, event: wx.PyEvent) -> None:
 		"""Uncheck all installed checkboxes and remove unnecessary processes.
-		@param event: event that occurs when a wx.Button is pressed
-		@type event: wx.PyEvent
+
+		:param event: event that occurs when a wx.Button is pressed
 		"""
 		self.procs = getProcessNames()
 		self.hideProcesses.Clear()
@@ -551,8 +441,8 @@ class VASettingsPanel(SettingsPanel):
 
 	def onVisibleCategoriesCheck(self, event: wx.CommandEvent) -> None:
 		"""Keep at least one category of audio sources visible.
-		@param event: event that occurs when an item of the checkable list is checked or unchecked
-		@type event: wx.CommandEvent
+
+		:param event: event that occurs when an item of the checkable list is checked or unchecked
 		"""
 		if self.visibleCategories.GetCheckedItems():
 			return
