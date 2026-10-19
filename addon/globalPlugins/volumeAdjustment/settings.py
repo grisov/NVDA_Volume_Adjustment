@@ -167,13 +167,13 @@ class AddonsReloadDialog(wx.Dialog):
 		sHelper.addItem(wx.StaticText(self, label=message))
 		if not getAddonConfig()["gestures"]:
 			sHelper.addItem(
-				# Translators: The warning is displayed before switching on default addon gestures
 				wx.StaticText(
 					self,
 					label=_(
+						# Translators: The warning is displayed before switching on default addon gestures
 						"Warning! Using the feature to set the maximum volume level may damage your hearing.",
 					),
-				),  # noqa E501
+				),
 			)
 
 		bHelper = sHelper.addDialogDismissButtons(guiHelper.ButtonHelper(wx.HORIZONTAL))
@@ -215,8 +215,8 @@ class NvdaVolumeWarningDialog(MessageDialog):
 		"""
 		super().__init__(
 			parent,
-			# Translators: The warning shown before the volume of NVDA itself is lowered or muted
 			_(
+				# Translators: The warning shown before the volume of NVDA itself is lowered or muted
 				"This is the audio session of NVDA itself. "
 				"Lowering or muting its volume also lowers or silences NVDA speech, "
 				"and Windows keeps this volume even after NVDA is restarted. "
