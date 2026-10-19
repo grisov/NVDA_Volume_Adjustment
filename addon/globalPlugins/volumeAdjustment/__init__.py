@@ -22,7 +22,9 @@ from logHandler import log
 from NVDAObjects import NVDAObject
 from scriptHandler import script
 from synthDriverHandler import getSynth, setSynth
-from utils.mmdevice import AudioOutputDevice, getOutputDevices
+from enum import Enum
+from pycaw.utils import ERole
+from utils.mmdevice import getOutputDevices
 from .audiocore import cfg
 from .sources import AppSource, AudioSource, PlaybackAppSource, SourceKey, SourceKind, getSourceKey, registry
 
@@ -51,6 +53,21 @@ from .settings import (  # noqa E402
 )
 
 UNDEFINED_APP: str = "UndefinedCurrentApplicationName"
+# Number of the function keys F1..F12 bound to the output devices
+FUNCTION_KEYS = 12
+# Prefixes of the names of the scripts created for each output device, see bindSwitchingMethods()
+OUTPUT_DEVICE_SCRIPTS = ("switchNvdaOutputToDevice", "setDefaultOutputDevice", "setCommunicationDevice")
+
+
+class OutputTarget(Enum):
+	"""What the switching between output devices changes."""
+
+	# The output device of NVDA speech and sounds
+	NVDA = "nvda"
+	# The default output device of Windows (console and multimedia roles)
+	DEFAULT = "default"
+	# The default communication device of Windows
+	COMMUNICATION = "communication"
 
 
 def disableInSecureMode(decoratedCls: GlobalPluginType) -> GlobalPluginType:
@@ -97,7 +114,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._isWarningShown: bool = False
 		# Bind default gestures if necessary
 		config.conf[addonName]["gestures"] and self.bindGestures(self.__defaultGestures)
-		# Creating individual switching methods for each output audio device detected in the system
+		# Creating the switching methods for the output devices 1-12
 		self.bindSwitchingMethods()
 		registry.start(cfg.devices)
 
@@ -697,102 +714,211 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		self.showOnlyCategory(SourceKind.RECORDING_APP)
 
-	def setOutputDevice(self, device: AudioOutputDevice) -> None:
-		"""Switche the NVDA output to the specified audio device.
-		@param device: audio output device
-		@type device: AudioOutputDevice
+	def getCurrentOutputId(self, target: OutputTarget) -> str:
+		"""Get the ID of the output device currently used for the target.
+		@param target: NVDA output or a default device of Windows
+		@type target: OutputTarget
+		@return: the device ID, "default" or empty if NVDA or Windows uses no specific device
+		@rtype: str
 		"""
-		config.conf["audio"]["outputDevice"] = device.id
-		status: bool = setSynth(getSynth().name)
-		if status:
-			tones.terminate()
-			tones.initialize()
-		ui.message(device.friendlyName)
+		if target == OutputTarget.NVDA:
+			return config.conf["audio"]["outputDevice"]
+		if target == OutputTarget.DEFAULT:
+			return registry.getDefaultOutputId(ERole.eMultimedia)
+		return registry.getDefaultOutputId(ERole.eCommunications)
 
-	def selectOutputDevice(self, step: int) -> AudioOutputDevice:
-		"""Select an audio device from the list with an offset to the specified step.
-		@param step: offset step in the list of available audio devices
+	def setOutputDevice(self, target: OutputTarget, id: str, name: str) -> None:
+		"""Switch the output of NVDA or a default device of Windows to the specified device and announce its name.
+		@param target: NVDA output or a default device of Windows
+		@type target: OutputTarget
+		@param id: the device ID, the configuration default of NVDA for its "default" output
+		@type id: str
+		@param name: the name of the device to announce
+		@type name: str
+		"""
+		if target == OutputTarget.NVDA:
+			config.conf["audio"]["outputDevice"] = id
+			if setSynth(getSynth().name):
+				tones.terminate()
+				tones.initialize()
+		else:
+			roles = (
+				[ERole.eConsole, ERole.eMultimedia]
+				if target == OutputTarget.DEFAULT
+				else [ERole.eCommunications]
+			)
+			if not registry.setDefaultOutput(id, roles):
+				# Translators: The message when Windows does not allow to change its default audio device
+				ui.message(_("Unable to set the default device"))
+				return
+		ui.message(name)
+
+	def selectOutputDeviceById(self, target: OutputTarget, id: str, name: str) -> None:
+		"""Switch to the output device found when NVDA was started, if it is still available.
+		@param target: NVDA output or a default device of Windows
+		@type target: OutputTarget
+		@param id: the device ID
+		@type id: str
+		@param name: the name of the device
+		@type name: str
+		"""
+		if id not in [deviceId for deviceId, deviceName in registry.getOutputDevices()]:
+			# Translators: The message when the output device has been disconnected or disabled since NVDA was started,
+			# {name} is the name of the device
+			ui.message(_("{name} is not available").format(name=name))
+			return
+		self.setOutputDevice(target, id, name)
+
+	def selectOutputDeviceByStep(self, target: OutputTarget, step: int) -> None:
+		"""Switch to the next or previous output device in the order of Windows.
+		If no specific device is used (e.g. NVDA follows the default device), the first or last one is selected.
+		@param target: NVDA output or a default device of Windows
+		@type target: OutputTarget
+		@param step: offset in the list of output devices
 		@type step: int (usually 1 or -1)
-		@return: selected audio device
-		@rtype: AudioOutputDevice
 		"""
-		devices: List[AudioOutputDevice] = [device for device in getOutputDevices(includeDefault=True)]
-		if devices[0].id == "":
-			devices[0].id = "default"
-		try:
-			current: int = [dev.id for dev in devices].index(config.conf["audio"]["outputDevice"])
-		except ValueError:
-			current = 0
-		return devices[(current + step) % len(devices)]
+		devices = registry.getOutputDevices()
+		if not devices:
+			return
+		ids = [id for id, name in devices]
+		current = self.getCurrentOutputId(target)
+		if current in ids:
+			index = (ids.index(current) + step) % len(devices)
+		else:
+			index = 0 if step > 0 else -1
+		self.setOutputDevice(target, *devices[index])
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
-	@script(description=_("Next audio output device"))
+	@script(description=_("Switch NVDA output to the next device"))
 	def script_nextOutputDevice(self, gesture: InputGesture) -> None:
-		"""Switch the output to the next available audio device.
+		"""Switch NVDA output to the next active output device.
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		device: AudioOutputDevice = self.selectOutputDevice(step=1)
-		self.setOutputDevice(device)
+		self.selectOutputDeviceByStep(OutputTarget.NVDA, step=1)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
-	@script(description=_("Previous audio output device"))
+	@script(description=_("Switch NVDA output to the previous device"))
 	def script_prevOutputDevice(self, gesture: InputGesture) -> None:
-		"""Switch the output to the previous available audio device.
+		"""Switch NVDA output to the previous active output device.
 		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		device: AudioOutputDevice = self.selectOutputDevice(step=-1)
-		self.setOutputDevice(device)
+		self.selectOutputDeviceByStep(OutputTarget.NVDA, step=-1)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
-	@script(description=_("Switch the output to the selected audio device"))
-	def script_switchTo(self, gesture: InputGesture) -> None:
-		"""Switch NVDA audio output to the selected sound device.
-		@param gesture: gesture assigned to this method
+	@script(description=_("Switch NVDA output to the default device"))
+	def script_switchNvdaOutputToDefault(self, gesture: InputGesture) -> None:
+		"""Switch NVDA output to the default output device of Windows, so NVDA follows its changes.
+		@param gesture: the input gesture in question
 		@type gesture: InputGesture
 		"""
-		index = int(gesture.displayName.lower()[-2:].replace("f", "")) - 1
-		self.setOutputDevice(device=[dev for dev in getOutputDevices(includeDefault=True)][index])
+		# The first item is the "default" output with its name translated by NVDA; the devices are not read
+		default = next(getOutputDevices(includeDefault=True))
+		self.setOutputDevice(OutputTarget.NVDA, default.id, default.friendlyName)
 
-	def switchingMethodsFactory(
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Set the next device as the default output device"))
+	def script_nextDefaultOutputDevice(self, gesture: InputGesture) -> None:
+		"""Make the next active output device the default output device of Windows.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		self.selectOutputDeviceByStep(OutputTarget.DEFAULT, step=1)
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Set the previous device as the default output device"))
+	def script_prevDefaultOutputDevice(self, gesture: InputGesture) -> None:
+		"""Make the previous active output device the default output device of Windows.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		self.selectOutputDeviceByStep(OutputTarget.DEFAULT, step=-1)
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Set the next device as the default communication device"))
+	def script_nextCommunicationDevice(self, gesture: InputGesture) -> None:
+		"""Make the next active output device the default communication device of Windows.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		self.selectOutputDeviceByStep(OutputTarget.COMMUNICATION, step=1)
+
+	# Translators: The name of the method that displayed in the NVDA input gestures dialog
+	@script(description=_("Set the previous device as the default communication device"))
+	def script_prevCommunicationDevice(self, gesture: InputGesture) -> None:
+		"""Make the previous active output device the default communication device of Windows.
+		@param gesture: the input gesture in question
+		@type gesture: InputGesture
+		"""
+		self.selectOutputDeviceByStep(OutputTarget.COMMUNICATION, step=-1)
+
+	def outputDeviceScriptFactory(
 		self,
-		index: int,
-		device: AudioOutputDevice,
+		target: OutputTarget,
+		id: str,
+		name: str,
+		description: str,
 	) -> Callable[[GlobalPlugin, InputGesture], None]:
-		"""Create a separate switching method for each output audio device detected in the system.
-		@param index: sequence number of the detected audio device
-		@type index: int, index>=0
-		@param device: output audio device in the system
-		@type device: AudioOutputDevice
-		@return: the instance of the method to switch to the specified audio device
+		"""Create the script that switches to the specified output device.
+		@param target: NVDA output or a default device of Windows
+		@type target: OutputTarget
+		@param id: the device ID
+		@type id: str
+		@param name: the name of the device
+		@type name: str
+		@param description: the name of the script in the NVDA input gestures dialog
+		@type description: str
+		@return: the script
 		@rtype: Callable[[GlobalPlugin, InputGesture], None]
 		"""
 
-		def script_switchingMethod(self, gesture: InputGesture) -> None:
-			"""Switch NVDA audio output to the specified sound device.
+		def script_selectOutputDevice(self, gesture: InputGesture) -> None:
+			"""Switch to the output device of the script.
 			@param gesture: gesture assigned to this method
 			@type gesture: InputGesture
 			"""
-			self.setOutputDevice(device)
+			self.selectOutputDeviceById(target, id, name)
 
-		# Translators: The name of the method that displayed in the NVDA input gestures dialog
-		script_switchingMethod.__doc__ = _("Switch the output to the device {number} ({name})").format(
-			number=index,
-			name=device.friendlyName,
-		)  # noqa E501
-		return script_switchingMethod
+		return script(description=description)(script_selectOutputDevice)
 
 	def bindSwitchingMethods(self) -> None:
-		"""Bind all created switching methods to the current global plugin class instance,
-		should be called in the class constructor.
+		"""Create the scripts that switch NVDA output and the default devices of Windows to each output device
+		found when NVDA is started, and bind the first 12 of them to F1-F12 with the modifiers of each target
+		if the default gestures are enabled. Devices connected later are available after NVDA is restarted.
+		Should be called in the class constructor.
 		"""
-		outputDevices: List[AudioOutputDevice] = [device for device in getOutputDevices(includeDefault=True)]
-		for i in range(len(outputDevices)):
-			name = f"script_switchToDevice{i}"
-			setattr(self.__class__, name, self.switchingMethodsFactory(i, outputDevices[i]))
-			if config.conf[addonName]["gestures"] and i < 12:
-				self.bindGesture("kb:NVDA+windows+f%d" % (i + 1), name.split("_", 1)[1])
+		# The scripts of the devices found the previous time the plugin was created, e.g. before the add-ons were reloaded
+		for scriptName in [name for name in vars(self.__class__) if name.startswith("script_")]:
+			if scriptName[len("script_") :].rstrip("0123456789") in OUTPUT_DEVICE_SCRIPTS:
+				delattr(self.__class__, scriptName)
+		# Translators: The name of the method that displayed in the NVDA input gestures dialog,
+		# {number} is the number of the output device in the order of Windows, e.g. 1 for F1, {name} is its name
+		nvdaDescription = _("Switch NVDA output to the device {number} ({name})")
+		# Translators: The name of the method that displayed in the NVDA input gestures dialog,
+		# {number} is the number of the output device in the order of Windows, e.g. 1 for F1, {name} is its name
+		defaultDescription = _("Set the device {number} ({name}) as the default output device")
+		# Translators: The name of the method that displayed in the NVDA input gestures dialog,
+		# {number} is the number of the output device in the order of Windows, e.g. 1 for F1, {name} is its name
+		communicationDescription = _("Set the device {number} ({name}) as the default communication device")
+		targets = (
+			(OutputTarget.NVDA, "", nvdaDescription),
+			(OutputTarget.DEFAULT, "shift+", defaultDescription),
+			(OutputTarget.COMMUNICATION, "control+", communicationDescription),
+		)
+		devices = registry.getOutputDevices()
+		for scriptPrefix, (target, modifiers, description) in zip(OUTPUT_DEVICE_SCRIPTS, targets):
+			for number, (id, name) in enumerate(devices, 1):
+				scriptName = f"{scriptPrefix}{number}"
+				setattr(
+					self.__class__,
+					f"script_{scriptName}",
+					self.outputDeviceScriptFactory(
+						target, id, name, description.format(number=number, name=name)
+					),
+				)
+				if config.conf[addonName]["gestures"] and number <= FUNCTION_KEYS:
+					self.bindGesture(f"kb:NVDA+{modifiers}windows+f{number}", scriptName)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Select next channel"))
@@ -937,6 +1063,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Output audio devices
 		"kb:NVDA+windows+pageUp": "nextOutputDevice",
 		"kb:NVDA+windows+pageDown": "prevOutputDevice",
+		"kb:NVDA+windows+d": "switchNvdaOutputToDefault",
+		"kb:NVDA+shift+windows+pageUp": "nextDefaultOutputDevice",
+		"kb:NVDA+shift+windows+pageDown": "prevDefaultOutputDevice",
+		"kb:NVDA+control+windows+pageUp": "nextCommunicationDevice",
+		"kb:NVDA+control+windows+pageDown": "prevCommunicationDevice",
 		# Customize channels volume
 		"kb:NVDA+shift+windows+rightArrow": "nextChannel",
 		"kb:NVDA+shift+windows+leftArrow": "prevChannel",
