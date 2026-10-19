@@ -9,7 +9,7 @@ from __future__ import annotations
 import unittest
 from typing import Any
 
-from . import addon, audio, dialog, events, focus, log, module, options, spoken
+from . import addon, audio, brailled, dialog, events, focus, log, module, options, spoken
 from .fakes import FakeSession, FakeWarningDialog, comError
 
 # Options of the tests: the defaults of the add-on, with gestures and every announcement under control of the tests
@@ -35,7 +35,8 @@ class AddonTestCase(unittest.TestCase):
 	- self.outputs, self.inputs: the active audio devices, the default output device first;
 	- self.playing, self.recording: the audio sessions of programs on output and input devices;
 	- self.windowsOutputs, self.windows: the output devices and default devices of Windows for outputs.py;
-	- support.spoken: the messages announced by the add-on, support.events: sounds, mute changes and delays.
+	- support.spoken: the messages announced by the add-on, support.brailled: the same on a braille display;
+	- support.events: sounds, mute changes and delays.
 	"""
 
 	def setUp(self) -> None:
@@ -45,6 +46,7 @@ class AddonTestCase(unittest.TestCase):
 		audio.clear()
 		audio.update({"outputDevice": "default", "soundSplitState": 0})
 		spoken.clear()
+		brailled.clear()
 		events.clear()
 		log.errors.clear()
 		dialog.update(shown=0, result=1, dontShow=False)
@@ -63,6 +65,7 @@ class AddonTestCase(unittest.TestCase):
 		self.patch(module("protection"), "NvdaVolumeWarningDialog", FakeWarningDialog)
 		self.plugin = addon.GlobalPlugin()
 		spoken.clear()
+		brailled.clear()
 
 	def tearDown(self) -> None:
 		self.plugin.terminate()

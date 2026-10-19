@@ -7,7 +7,7 @@
 
 import os
 
-from volumeAdjustmentSupport import module, options
+from volumeAdjustmentSupport import brailled, module, options
 from volumeAdjustmentSupport.case import AddonTestCase
 from volumeAdjustmentSupport.fakes import FakeSession, makeDevice
 
@@ -86,7 +86,22 @@ class TestArrows(NavigationTestCase):
 
 	def test_status_after_the_name(self):
 		options["status"] = True
-		self.assertEqual(self.press("next"), ["USB headphones", "Volume 30%"])
+		self.assertEqual(self.press("next"), ["USB headphones, Volume 30%"])
+		self.assertEqual(brailled, ["USB headphones: 30%"])
+
+	def test_short_name_and_level_on_a_braille_display(self):
+		options["status"] = True
+		options["announceCategories"] = True
+		options["deviceDetails"] = True
+		self.press("next")
+		self.press("next")
+		self.speakers.volume.mute = 1
+		self.press("prevCategory")
+		self.assertEqual(brailled, ["USB headphones: 30%", "Microphone: 70%", "Speakers: muted"])
+
+	def test_only_the_name_on_a_braille_display_without_the_status(self):
+		self.press("prev")
+		self.assertEqual(brailled, ["obs64"])
 
 	def test_category_name_at_its_boundary(self):
 		options["announceCategories"] = True
@@ -97,7 +112,7 @@ class TestArrows(NavigationTestCase):
 		options["status"] = True
 		options["deviceDetails"] = True
 		self.headphones.connection = module("model").Connection.USB
-		self.assertEqual(self.press("next"), ["USB headphones", "Volume 30%, USB"])
+		self.assertEqual(self.press("next"), ["USB headphones, Volume 30%, USB"])
 
 	def test_selected_source_is_adjusted(self):
 		self.press("next")

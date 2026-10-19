@@ -381,13 +381,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if source is None:
 			return
 		source.channel += 1
-		announceChannel(source.channel)
-		if getAddonConfig()["status"]:
-			announceMuted(source) if source.isMuted else announceVolumeLevel(
-				source.getChannelVolumeLevel(),
-				source,
-				source.channel,
-			)
+		announceChannel(source)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Select previous channel"))
@@ -397,13 +391,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if source is None:
 			return
 		source.channel -= 1
-		announceChannel(source.channel)
-		if getAddonConfig()["status"]:
-			announceMuted(source) if source.isMuted else announceVolumeLevel(
-				source.getChannelVolumeLevel(),
-				source,
-				source.channel,
-			)
+		announceChannel(source)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Increase the volume of the selected channel"))

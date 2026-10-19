@@ -29,6 +29,8 @@ PACKAGE = "volumeAdjustment"
 
 # What the add-on did, inspected by the tests
 spoken: list[str] = []
+# The messages shown on a braille display: NVDA shows the spoken text unless a braille text is given
+brailled: list[str] = []
 events: list[Any] = []
 # The add-on section and the audio section of the NVDA configuration
 options: dict[str, Any] = {}
@@ -105,6 +107,12 @@ def _callLater(delay: int, function: Any, *args: Any, **kwargs: Any) -> None:
 	function(*args, **kwargs)
 
 
+def _message(text: str, speechPriority: Any = None, brailleText: str | None = None) -> None:
+	"""Stands for ui.message: records the spoken text and the text shown on a braille display."""
+	spoken.append(text)
+	brailled.append(text if brailleText is None else brailleText)
+
+
 class _MessageDialog:
 	"""Stands for gui.message.MessageDialog: keeps the arguments and adds the contents like the real one."""
 
@@ -134,7 +142,7 @@ def _installNvda(configPath: str) -> None:
 	)
 	_module("globalVars", appArgs=types.SimpleNamespace(secure=False, configPath=configPath))
 	_module("logHandler", log=log)
-	_module("ui", message=spoken.append)
+	_module("ui", message=_message)
 	_module("api", getFocusObject=lambda: focus)
 	_module(
 		"tones",

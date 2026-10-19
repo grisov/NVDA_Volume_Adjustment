@@ -7,7 +7,7 @@
 
 import types
 
-from volumeAdjustmentSupport import module, options, spoken
+from volumeAdjustmentSupport import brailled, module, options, spoken
 from volumeAdjustmentSupport.case import AddonTestCase
 from volumeAdjustmentSupport.fakes import FakeSession, makeDevice
 
@@ -47,6 +47,16 @@ class TestVolumeLevel(AddonTestCase):
 		nearZero = types.SimpleNamespace(getVolumeDecibels=lambda channel=None: -0.04)
 		self.assertEqual(messages.formatVolumeLevel(1.0, nearZero), "Volume 0.0 dB")
 
+	def test_only_the_level_on_a_braille_display(self):
+		device = makeDevice("output", "{a}", "Speakers", level=0.5)
+		messages.announceVolumeLevel(0.29, device)
+		options["units"] = "number"
+		messages.announceVolumeLevel(0.29, device)
+		options["units"] = "decibels"
+		messages.announceVolumeLevel(0.5, device)
+		self.assertEqual(spoken, ["Volume 29%", "Volume 29", "Volume -20.0 dB"])
+		self.assertEqual(brailled, ["29%", "29", "-20.0 dB"])
+
 
 class TestMuted(AddonTestCase):
 	def setUp(self):
@@ -56,15 +66,15 @@ class TestMuted(AddonTestCase):
 	def test_complete_mute_without_level(self):
 		options["muteCompletely"] = True
 		self.cfg.addMuted("{a}")
-		self.assertEqual(messages.formatMuted(self.device), "The sound is muted")
+		self.assertEqual(messages.formatMuted(self.device), ("The sound is muted", "muted"))
 
 	def test_volume_down_mode_with_the_remaining_level(self):
 		self.cfg.addMuted("{a}", 0.52)
-		self.assertEqual(messages.formatMuted(self.device), "The sound is muted, Volume 13%")
+		self.assertEqual(messages.formatMuted(self.device), ("The sound is muted, Volume 13%", "muted 13%"))
 
 	def test_muted_by_windows_without_level(self):
 		self.device.volume.mute = 1
-		self.assertEqual(messages.formatMuted(self.device), "The sound is muted")
+		self.assertEqual(messages.formatMuted(self.device), ("The sound is muted", "muted"))
 
 
 class TestDeviceDetails(AddonTestCase):
@@ -145,8 +155,11 @@ class TestCategories(AddonTestCase):
 
 class TestOtherMessages(AddonTestCase):
 	def test_channels_are_numbered_from_one(self):
-		messages.announceChannel(0)
-		messages.announceChannel(1)
+		options["status"] = False
+		device = makeDevice("output", "{a}", "Speakers")
+		messages.announceChannel(device)
+		device.channel = 1
+		messages.announceChannel(device)
 		self.assertEqual(spoken, ["Channel 1", "Channel 2"])
 
 	def test_application_without_sound(self):
