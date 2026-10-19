@@ -225,24 +225,33 @@ class VASettingsPanel(SettingsPanel):
 		self.visibleCategories.SetCheckedItems([i for i, kind in enumerate(SourceKind) if kind in visible])
 		self.visibleCategories.SetSelection(0)
 		self.visibleCategories.Bind(wx.EVT_CHECKLISTBOX, self.onVisibleCategoriesCheck)
+		# Translators: The label of the component in the settings panel
+		stepLabel = _("Volume level change &step:")
 		self.volumeStep = addonHelper.addLabeledControl(
-			# Translators: The label of the component in the settings panel
-			_("Volume level change &step:"),
+			# The step is in percents: the sign is added to the translated label, which is not changed
+			f"{stepLabel[:-1]}, %:" if stepLabel.endswith(":") else f"{stepLabel}, %",
 			nvdaControls.SelectOnFocusSpinCtrl,
 			value=str(config.conf[addonName]["step"]),
 			min=1,
 			max=20,
 		)
+		self.units = addonHelper.addLabeledControl(
+			# Translators: The label of the choice list of the units of the announced volume level in the settings panel
+			labelText=_("Announce the volume &level in:"),
+			wxCtrlClass=wx.Choice,
+			choices=[],
+		)
+		# Translators: An item in the choice list of the units of the announced volume level
+		self.units.Append(_("Percent"), "percent")
+		# Translators: An item in the choice list of the units of the announced volume level,
+		# only audio devices provide their volume levels in decibels
+		self.units.Append(_("Decibels, if the source supports it"), "decibels")
+		self.units.Select(int(config.conf[addonName]["units"] == "decibels"))
 		self.followFocusChk = addonHelper.addItem(
 			# Translators: This is the label for a checkbox in the settings panel.
 			wx.CheckBox(self, label=_("Change the volume of the current &application")),
 		)
 		self.followFocusChk.SetValue(config.conf[addonName]["focus"])
-		self.hideDuplicatesChk = addonHelper.addItem(
-			# Translators: This is the label for a checkbox in the settings panel.
-			wx.CheckBox(self, label=_("Hide audio sessions with the same &names")),
-		)
-		self.hideDuplicatesChk.SetValue(config.conf[addonName]["duplicates"])
 
 		procs: List[str] = getProcessNames()
 		self.procs = procs + [proc for proc in cfg.processes if proc not in procs]
@@ -461,7 +470,7 @@ class VASettingsPanel(SettingsPanel):
 		setVisibleCategories([kind for i, kind in enumerate(SourceKind) if i in checked])
 		config.conf[addonName]["step"] = self.volumeStep.GetValue()
 		config.conf[addonName]["focus"] = self.followFocusChk.GetValue()
-		config.conf[addonName]["duplicates"] = self.hideDuplicatesChk.GetValue()
+		config.conf[addonName]["units"] = self.units.GetClientData(self.units.GetSelection())
 		config.conf[addonName]["muteCompletely"] = not self.muteMode.GetClientData(
 			self.muteMode.GetSelection(),
 		)

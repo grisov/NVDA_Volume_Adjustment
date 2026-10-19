@@ -9,6 +9,7 @@
 - All audio sessions of an application are adjusted and muted together; previously only the first session of the application was changed.
 - Applications are now found on all active output devices, not only on the default one, and an application playing on several devices is adjusted on all of them at once.
 - The volume of the left and right channels can now be adjusted for applications too, unless NVDA sound split is enabled.
+- Channels are numbered from 1.
 - Applications recording sound can now be selected and adjusted as well; the audio sources are switched in the order: output devices, input devices, applications playing sound, applications recording sound.
 - When switching to an audio source of another category, the category name is announced before the source name; this can be turned off in the add-on settings.
 - Categories of audio sources can be shown or hidden with NVDA+Windows+O, I, P and R, and NVDA+Shift+Windows with the same letters shows only that category.
@@ -20,6 +21,8 @@
 - NVDA+Windows+F1-F12 switch NVDA output to the output devices found when NVDA starts, and NVDA+Windows+D switches it to the default output device.
 - NVDA+Windows+S opens the classic Sound dialog of Windows, or the Sound page of the Windows Settings if the dialog is not available.
 - All active output and input devices are always available, the option "Control all available audio devices" has been removed from settings panel.
+- The volume level is announced with its unit; audio devices can be announced in decibels (add-on settings).
+- The option "Hide audio sessions with the same names" has been removed, the audio sessions of an application are always adjusted together.
 - The add-on uses the pycaw module bundled with NVDA and no longer calls its helpers that read the whole property store of audio devices (GetAllSessions, GetSpeakers, GetAllDevices, CreateDevice) on frequent code paths.
 - Updated the add-on build tooling to the latest NV Access addonTemplate.
 

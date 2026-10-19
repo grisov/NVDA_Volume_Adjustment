@@ -89,8 +89,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		confspec = {
 			"status": "boolean(default=true)",
 			"step": "integer(default=1,min=1,max=20)",
+			# Units of the announced volume level: decibels only for the sources that provide them (audio devices)
+			"units": 'option("percent", "decibels", default="percent")',
 			"focus": "boolean(default=true)",
-			"duplicates": "boolean(default=true)",
 			# Letters of the visible categories of audio sources, see sources.SourceKind
 			"categories": 'string(default="OIPR")',
 			"announceCategories": "boolean(default=true)",
@@ -197,24 +198,52 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self._session = registry.findApp(name, kind=kind)
 		return self._session
 
-	def formatVolumeLevel(self, volumeLevel: float) -> str:
-		"""Get the text of the volume level announcement, e.g. "Volume 29".
+	def formatVolumeLevel(
+		self,
+		volumeLevel: float,
+		source: Optional[AudioSource] = None,
+		channel: Optional[int] = None,
+	) -> str:
+		"""Get the text of the volume level announcement, e.g. "Volume 29%" or "Volume -12.5 dB".
+		Decibels are announced if they are selected in the add-on settings and the source provides them,
+		otherwise percents. The volume is always adjusted in percents, like the volume slider of Windows.
 		@param volumeLevel: value of volume level
 		@type volumeLevel: float, from 0.0 to 1.0
+		@param source: the audio source of the level, None to announce percents
+		@type source: Optional[AudioSource]
+		@param channel: the number of the channel of the level, None for the master volume level
+		@type channel: Optional[int]
 		@return: the text to announce
 		@rtype: str
 		"""
+		# Translators: The message is announced during volume control
+		volume = _("Volume")
+		if source is not None and config.conf[addonName]["units"] == "decibels":
+			decibels = source.getVolumeDecibels(channel)
+			if decibels is not None:
+				# Translators: The unit of the volume level in decibels, announced after the number, e.g. "Volume -12.5 dB"
+				unit = _("dB")
+				# Adding 0.0 turns -0.0 (e.g. rounded -0.04 dB) into 0.0, so no minus sign is announced
+				return f"{volume} {round(decibels, 1) + 0.0:.1f} {unit}"
 		# Rounded: Windows stores volume levels as 32-bit floats, 29 % is read back as 28.999999 %
 		level = round(volumeLevel * 100.0)
-		# Translators: The message is announced during volume control
-		return "%s %d" % (_("Volume"), level)
+		return f"{volume} {level}%"
 
-	def announceVolumeLevel(self, volumeLevel: float) -> None:
+	def announceVolumeLevel(
+		self,
+		volumeLevel: float,
+		source: Optional[AudioSource] = None,
+		channel: Optional[int] = None,
+	) -> None:
 		"""Announce the current volume level.
 		@param volumeLevel: value of volume level
 		@type volumeLevel: float, from 0.0 to 1.0
+		@param source: the audio source of the level, for the announcement in decibels
+		@type source: Optional[AudioSource]
+		@param channel: the number of the channel of the level, None for the master volume level
+		@type channel: Optional[int]
 		"""
-		ui.message(self.formatVolumeLevel(volumeLevel))
+		ui.message(self.formatVolumeLevel(volumeLevel, source, channel))
 
 	def announceMuted(self, source: AudioSource) -> None:
 		"""Announce that the sound was muted.
@@ -232,22 +261,28 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			and source.mutedKey in cfg.muted
 			and not (volume is not None and volume.GetMute())
 		):
-			message = f"{message}, {self.formatVolumeLevel(source.volumeLevel)}"
+			message = f"{message}, {self.formatVolumeLevel(source.volumeLevel, source)}"
 		ui.message(message)
 
 	def announceChannel(self, number: int) -> None:
-		"""Announce the number of the selected audio channel.
-		@param number: the number of audio channel
+		"""Announce the number of the selected audio channel, counted from 1 for the user.
+		@param number: the number of audio channel, from 0
 		@type number: int
 		"""
 		# Translators: Message about the number of the selected audio channel
-		ui.message(_("Channel %d") % number)
+		ui.message(_("Channel %d") % (number + 1))
 
-	def announceNotPlaying(self, app: str) -> None:
-		"""Announce that the application does not play any sound, so its volume cannot be adjusted.
+	def announceNotPlaying(self, app: str, kind: SourceKind = SourceKind.PLAYBACK_APP) -> None:
+		"""Announce that the application does not play or record any sound, so its volume cannot be adjusted.
 		@param app: the name of the application
 		@type app: str
+		@param kind: playback or recording applications
+		@type kind: SourceKind
 		"""
+		if kind == SourceKind.RECORDING_APP:
+			# Translators: The message when the selected recording application does not record any sound
+			ui.message(_("{app} is not recording any sound.").format(app=app))
+			return
 		# Translators: The message when the selected application does not play any sound
 		ui.message(_("{app} is not playing any sound.").format(app=app))
 
@@ -396,7 +431,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			title = f"{getCategoryName(source.kind)}, {title}"
 		ui.message(title)
 		if config.conf[addonName]["status"]:
-			self.announceMuted(source) if source.isMuted else self.announceVolumeLevel(source.volumeLevel)
+			self.announceMuted(source) if source.isMuted else self.announceVolumeLevel(
+				source.volumeLevel, source
+			)
 
 	def switchAudioSource(self, step: int) -> None:
 		"""Select the next or previous audio source in the list and announce it.
@@ -484,7 +521,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return device
 		app = self.getSession(kind, id)
 		if app is None:
-			self.announceNotPlaying(id.replace(".exe", ""))
+			self.announceNotPlaying(id.replace(".exe", ""), kind)
 			return None
 		return self.announceTitleOnce(app)
 
@@ -560,7 +597,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		source = self.getSelectedAudioSource()
 		if source is None:
 			return
-		self.announceVolumeLevel(source.volumeUp())
+		self.announceVolumeLevel(source.volumeUp(), source)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Decrease the volume"))
@@ -576,7 +613,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		def volumeDown() -> None:
 			volumeLevel = source.volumeDown()
 			if volumeLevel > 0.0:
-				self.announceVolumeLevel(volumeLevel)
+				self.announceVolumeLevel(volumeLevel, source)
 				return
 			source.mute()
 			self.announceMuted(source)
@@ -593,7 +630,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		source = self.getSelectedAudioSource()
 		if source is None:
 			return
-		self.announceVolumeLevel(source.volumeMax())
+		self.announceVolumeLevel(source.volumeMax(), source)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Set the minimum volume level"))
@@ -605,7 +642,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		source = self.getSelectedAudioSource()
 		if source is None:
 			return
-		self.runWithNvdaWarning(source, lambda: self.announceVolumeLevel(source.volumeMin()))
+		self.runWithNvdaWarning(source, lambda: self.announceVolumeLevel(source.volumeMin(), source))
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Mute selected audio source"))
@@ -619,7 +656,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return
 		if source.isMuted:
 			source.unmute()
-			self.announceVolumeLevel(source.volumeLevel)
+			self.announceVolumeLevel(source.volumeLevel, source)
 			return
 
 		def mute() -> None:
@@ -978,6 +1015,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if config.conf[addonName]["status"]:
 			self.announceMuted(source) if source.isMuted else self.announceVolumeLevel(
 				source.getChannelVolumeLevel(),
+				source,
+				source.channel,
 			)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
@@ -995,6 +1034,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if config.conf[addonName]["status"]:
 			self.announceMuted(source) if source.isMuted else self.announceVolumeLevel(
 				source.getChannelVolumeLevel(),
+				source,
+				source.channel,
 			)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
@@ -1011,7 +1052,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if level < 0:
 			self.announceNotSupported()
 			return
-		self.announceVolumeLevel(level)
+		self.announceVolumeLevel(level, source, source.channel)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Decrease the volume of the selected channel"))
@@ -1027,7 +1068,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if level < 0:
 			self.announceNotSupported()
 			return
-		self.announceVolumeLevel(level)
+		self.announceVolumeLevel(level, source, source.channel)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Set the maximum volume level for the selected channel"))
@@ -1043,7 +1084,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if level < 0:
 			self.announceNotSupported()
 			return
-		self.announceVolumeLevel(level)
+		self.announceVolumeLevel(level, source, source.channel)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Set the minimum volume level for the selected channel"))
@@ -1059,7 +1100,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if level < 0:
 			self.announceNotSupported()
 			return
-		self.announceVolumeLevel(level)
+		self.announceVolumeLevel(level, source, source.channel)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Set the average volume level for all channels"))
@@ -1075,7 +1116,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if level < 0:
 			self.announceNotSupported()
 			return
-		self.announceVolumeLevel(level)
+		self.announceVolumeLevel(level, source, source.channel)
 
 	__defaultGestures = {
 		# Volume level

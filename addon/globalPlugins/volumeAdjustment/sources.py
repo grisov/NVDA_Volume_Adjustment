@@ -204,6 +204,16 @@ class AudioSource(metaclass=ABCMeta):
 		"""
 		return self._id
 
+	def getVolumeDecibels(self, channel: Optional[int] = None) -> Optional[float]:
+		"""Get the volume level in decibels, if the audio source provides it.
+		Only audio devices do: the applications have just the levels from 0 to 100 %.
+		@param channel: the number of the channel, None for the master volume level
+		@type channel: Optional[int]
+		@return: the volume level in decibels, None if it is not available
+		@rtype: Optional[float]
+		"""
+		return None
+
 	@property
 	def mutedKey(self) -> str:
 		"""Key of the audio source in the list of muted audio sources saved in the add-on configuration.
@@ -570,16 +580,51 @@ class DeviceSource(AudioSource):
 			pass
 
 
+def _deviceDecibels(volume: object, channel: Optional[int]) -> Optional[float]:
+	"""Read the volume level of an audio device in decibels.
+	@param volume: the volume interface of the device
+	@type volume: pycaw.IAudioEndpointVolume
+	@param channel: the number of the channel, None for the master volume level
+	@type channel: Optional[int]
+	@return: the volume level in decibels, None if it cannot be read
+	@rtype: Optional[float]
+	"""
+	try:
+		if channel is None:
+			return volume.GetMasterVolumeLevel()  # type: ignore
+		return volume.GetChannelVolumeLevel(channel)  # type: ignore
+	except (AttributeError, TypeError, COMError):
+		return None
+
+
 class OutputDeviceSource(DeviceSource):
 	"""Audio output device, e.g. speakers or headphones."""
 
 	kind = SourceKind.OUTPUT_DEVICE
+
+	def getVolumeDecibels(self, channel: Optional[int] = None) -> Optional[float]:
+		"""Get the volume level of the device in decibels (IAudioEndpointVolume).
+		@param channel: the number of the channel, None for the master volume level
+		@type channel: Optional[int]
+		@return: the volume level in decibels, None if it cannot be read
+		@rtype: Optional[float]
+		"""
+		return _deviceDecibels(self.volume, channel)
 
 
 class InputDeviceSource(DeviceSource):
 	"""Audio input device, e.g. a microphone."""
 
 	kind = SourceKind.INPUT_DEVICE
+
+	def getVolumeDecibels(self, channel: Optional[int] = None) -> Optional[float]:
+		"""Get the volume level of the device in decibels (IAudioEndpointVolume).
+		@param channel: the number of the channel, None for the master volume level
+		@type channel: Optional[int]
+		@return: the volume level in decibels, None if it cannot be read
+		@rtype: Optional[float]
+		"""
+		return _deviceDecibels(self.volume, channel)
 
 
 def createDevice(
