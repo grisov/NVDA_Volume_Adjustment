@@ -1,5 +1,5 @@
 # devices.py
-# Audio devices of Windows: the output devices, the default devices and the data flow of a device
+# Audio devices of Windows: the active devices, the default devices and the data flow of a device
 # A part of the NVDA Volume Adjustment add-on
 # This file is covered by the GNU General Public License.
 # See the file COPYING for more details.
@@ -59,21 +59,19 @@ def isInputDevice(id: str) -> bool:
 		return id.startswith("{0.0.1.")
 
 
-def getOutputDevices() -> list[tuple[str, str]]:
-	"""Get all active output devices in the order of Windows, regardless of the hidden devices and categories.
+def getActiveDevices(flow: EDataFlow) -> list[tuple[str, str]]:
+	"""Get all active devices of the data flow in the order of Windows, regardless of the hidden devices and categories.
 	Only the names are read, unlike utils.mmdevice.getOutputDevices() of NVDA, which wraps every device
 	with AudioUtilities.CreateDevice() and reads its whole property store.
 
-	:return: IDs and names of the output devices
+	:param flow: output or input devices
+	:return: IDs and names of the devices
 	"""
 	try:
-		collection = getDeviceEnumerator().EnumAudioEndpoints(
-			EDataFlow.eRender.value,
-			DEVICE_STATE.ACTIVE.value,
-		)
+		collection = getDeviceEnumerator().EnumAudioEndpoints(flow.value, DEVICE_STATE.ACTIVE.value)
 		count = collection.GetCount()
 	except COMError:
-		logDebugWarning("Unable to list the active output devices")
+		logDebugWarning(f"Unable to list the active devices of the data flow {flow.name}")
 		return []
 	devices: list[tuple[str, str]] = []
 	for i in range(count):
@@ -85,6 +83,22 @@ def getOutputDevices() -> list[tuple[str, str]]:
 		(name,) = getDeviceProperties(immDevice, [PKEY_Device_FriendlyName])
 		devices.append((id, name if isinstance(name, str) and name else id))
 	return devices
+
+
+def getOutputDevices() -> list[tuple[str, str]]:
+	"""Get all active output devices in the order of Windows.
+
+	:return: IDs and names of the output devices
+	"""
+	return getActiveDevices(EDataFlow.eRender)
+
+
+def getInputDevices() -> list[tuple[str, str]]:
+	"""Get all active input devices in the order of Windows.
+
+	:return: IDs and names of the input devices
+	"""
+	return getActiveDevices(EDataFlow.eCapture)
 
 
 def getDefaultOutputId(role: ERole) -> str:
@@ -99,8 +113,8 @@ def getDefaultOutputId(role: ERole) -> str:
 		return ""
 
 
-def setDefaultOutput(id: str, roles: list[ERole]) -> bool:
-	"""Make the output device the default device of Windows for the roles.
+def setDefaultDevice(id: str, roles: list[ERole]) -> bool:
+	"""Make the output or input device the default device of Windows for the roles.
 	All programs that use the default device, including NVDA with its "default" output, move to it immediately.
 
 	:param id: the device ID
@@ -110,7 +124,7 @@ def setDefaultOutput(id: str, roles: list[ERole]) -> bool:
 	try:
 		cast(Any, AudioUtilities).SetDefaultDevice(id, roles)
 	except (OSError, COMError):
-		log.error(f"Unable to set the default output device {id}", exc_info=True)
+		log.error(f"Unable to set the default device {id}", exc_info=True)
 		return False
 	return True
 

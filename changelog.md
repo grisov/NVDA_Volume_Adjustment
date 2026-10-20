@@ -9,6 +9,7 @@
 - The category name is announced when switching to an audio source of another category; this can be turned off in the add-on settings.
 - The channels of applications can be adjusted too, unless NVDA sound split is enabled.
 - Commands to set the default output device and the default communication device of Windows, by the number of the device or to the next or previous device.
+- Commands to set the default input device and the default communication input device of Windows, by the number of the device found when NVDA starts. (#24)
 - A command to switch NVDA output back to the default output device.
 - A command to open the classic Sound dialog of Windows, or the Sound page of the Windows Settings if the dialog is not available.
 - Quick mute: one command mutes and unmutes in Windows the microphones selected in the add-on settings, for all programs at once. A short sound is played after muting and before unmuting.

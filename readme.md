@@ -70,6 +70,14 @@ The commands for every single device are listed in the NVDA "Input gestures" dia
 * NVDA+Windows+D - switch NVDA back to the default output device, so it follows the default device of Windows.
 * NVDA+Windows+S - open the Sound dialog of Windows.
 
+## Input devices
+Two groups of commands use the digit keys 1-9 and 0 to switch to the 1st to 10th input device:
+
+* NVDA+Windows+Shift - the default input device of Windows;
+* NVDA+Windows+Control - the default communication input device of Windows.
+
+These commands are created for the input devices found when NVDA starts: a device connected later gets its own commands after NVDA is restarted. A command for a device that has been disconnected announces that the device is not available. The commands for every single device are listed in the NVDA "Input gestures" dialog with the device names, so you can assign other shortcuts to them.
+
 ## Quick mute of microphones
 NVDA+Windows+Space mutes or unmutes in Windows all microphones selected in the add-on settings, so every program gets silence: video calls, messengers, recorders and others. You do not need to remember a different shortcut in each program.
 
