@@ -40,10 +40,18 @@ _: Callable[[str], str]
 from .settings import VASettingsPanel  # noqa E402
 
 
-# Number of the function keys F1..F12 bound to the output devices
-FUNCTION_KEYS = 12
-# Prefixes of the names of the scripts created for each output device, see bindSwitchingMethods()
-OUTPUT_DEVICE_SCRIPTS = ("switchNvdaOutputToDevice", "setDefaultOutputDevice", "setCommunicationDevice")
+# The function keys F1-F12 bound to the output devices
+FUNCTION_KEYS = tuple(f"f{number}" for number in range(1, 13))
+# The digit keys bound to the input devices, 0 for the 10th device like on the keyboard
+DIGIT_KEYS = tuple("1234567890")
+# Prefixes of the names of the scripts created for each output and input device, see bindSwitchingMethods()
+DEVICE_SCRIPTS = (
+	"switchNvdaOutputToDevice",
+	"setDefaultOutputDevice",
+	"setCommunicationDevice",
+	"setDefaultInputDevice",
+	"setCommunicationInputDevice",
+)
 
 
 def disableInSecureMode[PluginT: type[globalPluginHandler.GlobalPlugin]](decoratedCls: PluginT) -> PluginT:
@@ -82,7 +90,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if getAddonConfig()["gestures"]:
 			# ScriptableObject.bindGestures of NVDA has no type annotations
 			self.bindGestures(self.__defaultGestures)  # pyright: ignore[reportUnknownMemberType]
-		# Creating the switching methods for the output devices found when NVDA starts
+		# Creating the switching methods for the output and input devices found when NVDA starts
 		self.bindSwitchingMethods()
 		registry.start(cfg.devices)
 
@@ -306,14 +314,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		devices.openSoundDialog()
 
-	def outputDeviceScriptFactory(
+	def deviceScriptFactory(
 		self,
 		target: OutputTarget,
 		id: str,
 		name: str,
 		description: str,
 	) -> Callable[[GlobalPlugin, InputGesture], None]:
-		"""Create the script that switches to the specified output device.
+		"""Create the script that switches to the specified output or input device.
 
 		:param target: NVDA output or a default device of Windows
 		:param id: the device ID
@@ -322,21 +330,22 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		:return: the script
 		"""
 
-		def script_selectOutputDevice(self: GlobalPlugin, gesture: InputGesture) -> None:
-			"""Switch to the output device of the script."""
+		def script_selectDevice(self: GlobalPlugin, gesture: InputGesture) -> None:
+			"""Switch to the device of the script."""
 			self.outputs.selectOutputDeviceById(target, id, name)
 
-		return script(description=description)(script_selectOutputDevice)
+		return script(description=description)(script_selectDevice)
 
 	def bindSwitchingMethods(self) -> None:
 		"""Create the scripts that switch NVDA output and the default devices of Windows to each output device
 		found when NVDA is started, and bind the first 12 of them to F1-F12 with the modifiers of each target
-		if the default gestures are enabled. Devices connected later are available after NVDA is restarted.
-		Should be called in the class constructor.
+		if the default gestures are enabled. Also create the scripts that set each input device found when NVDA
+		is started as the default input or communication device, bound to the digits 1-9 and 0 the same way.
+		Devices connected later are available after NVDA is restarted. Should be called in the class constructor.
 		"""
 		# The scripts of the devices found the previous time the plugin was created, e.g. before the add-ons were reloaded
 		for scriptName in [name for name in vars(self.__class__) if name.startswith("script_")]:
-			if scriptName[len("script_") :].rstrip("0123456789") in OUTPUT_DEVICE_SCRIPTS:
+			if scriptName[len("script_") :].rstrip("0123456789") in DEVICE_SCRIPTS:
 				delattr(self.__class__, scriptName)
 		# Translators: The name of the method that displayed in the NVDA input gestures dialog,
 		# {number} is the number of the output device in the order of Windows, e.g. 1 for F1, {name} is its name
@@ -347,29 +356,40 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Translators: The name of the method that displayed in the NVDA input gestures dialog,
 		# {number} is the number of the output device in the order of Windows, e.g. 1 for F1, {name} is its name
 		communicationDescription = _("Set the device {number} ({name}) as the default communication device")
-		targets = (
-			(OutputTarget.NVDA, "", nvdaDescription),
-			(OutputTarget.DEFAULT, "shift+", defaultDescription),
-			(OutputTarget.COMMUNICATION, "control+", communicationDescription),
+		# Translators: The name of the method that displayed in the NVDA input gestures dialog,
+		# {number} is the number of the input device in the order of Windows, {name} is its name
+		defaultInputDescription = _("Set the input device {number} ({name}) as the default input device")
+		communicationInputDescription = _(
+			# Translators: The name of the method that displayed in the NVDA input gestures dialog,
+			# {number} is the number of the input device in the order of Windows, {name} is its name
+			"Set the input device {number} ({name}) as the default communication input device",
 		)
-		outputDevices = devices.getOutputDevices()
-		for scriptPrefix, (target, modifiers, description) in zip(OUTPUT_DEVICE_SCRIPTS, targets):
-			for number, (id, name) in enumerate(outputDevices, 1):
+		outputs = devices.getOutputDevices()
+		inputs = devices.getInputDevices()
+		targets = (
+			(OutputTarget.NVDA, outputs, "", FUNCTION_KEYS, nvdaDescription),
+			(OutputTarget.DEFAULT, outputs, "shift+", FUNCTION_KEYS, defaultDescription),
+			(OutputTarget.COMMUNICATION, outputs, "control+", FUNCTION_KEYS, communicationDescription),
+			(OutputTarget.DEFAULT_INPUT, inputs, "shift+", DIGIT_KEYS, defaultInputDescription),
+			(OutputTarget.COMMUNICATION_INPUT, inputs, "control+", DIGIT_KEYS, communicationInputDescription),
+		)
+		for scriptPrefix, (target, deviceList, modifiers, keys, description) in zip(DEVICE_SCRIPTS, targets):
+			for number, (id, name) in enumerate(deviceList, 1):
 				scriptName = f"{scriptPrefix}{number}"
 				setattr(
 					self.__class__,
 					f"script_{scriptName}",
-					self.outputDeviceScriptFactory(
+					self.deviceScriptFactory(
 						target,
 						id,
 						name,
 						description.format(number=number, name=name),
 					),
 				)
-				if getAddonConfig()["gestures"] and number <= FUNCTION_KEYS:
+				if getAddonConfig()["gestures"] and number <= len(keys):
 					# ScriptableObject.bindGesture of NVDA has no type annotations
 					self.bindGesture(  # pyright: ignore[reportUnknownMemberType]
-						f"kb:NVDA+windows+{modifiers}f{number}",
+						f"kb:NVDA+windows+{modifiers}{keys[number - 1]}",
 						scriptName,
 					)
 

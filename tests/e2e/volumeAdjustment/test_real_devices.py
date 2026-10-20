@@ -70,6 +70,15 @@ class TestRealDevices(unittest.TestCase):
 		self.assertIn(devices.getDefaultOutputId(ERole.eCommunications), ids)
 		self.assertIsNotNone(devices.getDevice(ids[0]))
 
+	def test_input_devices_with_their_names(self):
+		devices = module("devices")
+		inputs = devices.getInputDevices()
+		self.assertEqual(
+			[id for id, _name in inputs],
+			[device.id for device in self.devices if isinstance(device, self.sources.InputDeviceSource)],
+		)
+		self.assertTrue(all(name and devices.isInputDevice(id) for id, name in inputs))
+
 	def test_applications_of_all_devices(self):
 		self.registry.start()
 		try:

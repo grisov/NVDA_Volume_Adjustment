@@ -34,7 +34,7 @@ class AddonTestCase(unittest.TestCase):
 
 	- self.outputs, self.inputs: the active audio devices, the default output device first;
 	- self.playing, self.recording: the audio sessions of programs on output and input devices;
-	- self.windowsOutputs, self.windows: the output devices and default devices of Windows for outputs.py;
+	- self.windowsOutputs, self.windowsInputs, self.windows: the devices and default devices of Windows for outputs.py;
 	- support.spoken: the messages announced by the add-on, support.brailled: the same on a braille display;
 	- support.events: sounds, mute changes and delays.
 	"""
@@ -59,6 +59,7 @@ class AddonTestCase(unittest.TestCase):
 		self.playing: list[FakeSession] = []
 		self.recording: list[FakeSession] = []
 		self.windowsOutputs: list[tuple[str, str]] = []
+		self.windowsInputs: list[tuple[str, str]] = []
 		self.windows: dict[str, Any] = {"default": "", "communication": "", "fail": False, "set": []}
 		self.registry = module("registry").registry
 		self._installWorld()
@@ -107,7 +108,7 @@ class AddonTestCase(unittest.TestCase):
 		self.registry._devicesChanged = False
 		self.registry._sessionManagers = []
 
-		def setDefaultOutput(id: str, roles: list[Any]) -> bool:
+		def setDefaultDevice(id: str, roles: list[Any]) -> bool:
 			self.windows["set"].append((id, [role.name for role in roles]))
 			if self.windows["fail"]:
 				return False
@@ -123,8 +124,9 @@ class AddonTestCase(unittest.TestCase):
 
 		replacements = {
 			"getOutputDevices": lambda: list(self.windowsOutputs),
+			"getInputDevices": lambda: list(self.windowsInputs),
 			"getDefaultOutputId": getDefaultOutputId,
-			"setDefaultOutput": setDefaultOutput,
+			"setDefaultDevice": setDefaultDevice,
 			"getDevice": getDevice,
 		}
 		for name, function in replacements.items():

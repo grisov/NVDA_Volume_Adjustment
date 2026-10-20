@@ -1,5 +1,5 @@
 # outputs.py
-# Switching the output device of NVDA and the default output devices of Windows
+# Switching the output device of NVDA and the default output and input devices of Windows
 # A part of the NVDA Volume Adjustment add-on
 # This file is covered by the GNU General Public License.
 # See the file COPYING for more details.
@@ -12,13 +12,13 @@ import ui
 from pycaw.utils import ERole
 from synthDriverHandler import getSynth, setSynth
 from utils.mmdevice import getOutputDevices as getNvdaOutputDevices
-from .devices import getDefaultOutputId, getDevice, getOutputDevices, setDefaultOutput
+from .devices import getDefaultOutputId, getDevice, getInputDevices, getOutputDevices, setDefaultDevice
 from .configuration import getNvdaConfig
 from .messages import announceDeviceNotAvailable, announceUnableToSetDefaultDevice, getAnnouncedDeviceDetails
 
 
 class OutputTarget(Enum):
-	"""What the switching between output devices changes."""
+	"""What the switching between audio devices changes."""
 
 	# The output device of NVDA speech and sounds
 	NVDA = "nvda"
@@ -26,10 +26,22 @@ class OutputTarget(Enum):
 	DEFAULT = "default"
 	# The default communication device of Windows
 	COMMUNICATION = "communication"
+	# The default input device of Windows (console and multimedia roles)
+	DEFAULT_INPUT = "defaultInput"
+	# The default communication input device of Windows
+	COMMUNICATION_INPUT = "communicationInput"
+
+	@property
+	def isInput(self) -> bool:
+		"""Whether the target is a default input device of Windows.
+
+		:return: True for the default input devices, False for the output devices
+		"""
+		return self in (OutputTarget.DEFAULT_INPUT, OutputTarget.COMMUNICATION_INPUT)
 
 
 class OutputSwitcher:
-	"""Switches the output of NVDA or a default device of Windows to another output device."""
+	"""Switches the output of NVDA or a default device of Windows to another device."""
 
 	def getCurrentOutputId(self, target: OutputTarget) -> str:
 		"""Get the ID of the output device currently used for the target.
@@ -59,24 +71,25 @@ class OutputSwitcher:
 				tones.initialize()
 		else:
 			roles = (
-				[ERole.eConsole, ERole.eMultimedia]
-				if target == OutputTarget.DEFAULT
-				else [ERole.eCommunications]
+				[ERole.eCommunications]
+				if target in (OutputTarget.COMMUNICATION, OutputTarget.COMMUNICATION_INPUT)
+				else [ERole.eConsole, ERole.eMultimedia]
 			)
-			if not setDefaultOutput(id, roles):
+			if not setDefaultDevice(id, roles):
 				announceUnableToSetDefaultDevice()
 				return
 		# The attributes are read after switching: the default roles may have changed
 		ui.message(", ".join([name, *getAnnouncedDeviceDetails(getDevice(id))]))
 
 	def selectOutputDeviceById(self, target: OutputTarget, id: str, name: str) -> None:
-		"""Switch to the output device found when NVDA was started, if it is still available.
+		"""Switch to the output or input device found when NVDA was started, if it is still available.
 
 		:param target: NVDA output or a default device of Windows
 		:param id: the device ID
 		:param name: the name of the device
 		"""
-		if id not in [deviceId for deviceId, _deviceName in getOutputDevices()]:
+		activeDevices = getInputDevices() if target.isInput else getOutputDevices()
+		if id not in [deviceId for deviceId, _deviceName in activeDevices]:
 			announceDeviceNotAvailable(name)
 			return
 		self.setOutputDevice(target, id, name)
