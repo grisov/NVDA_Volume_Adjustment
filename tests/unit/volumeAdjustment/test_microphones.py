@@ -76,3 +76,8 @@ class TestQuickMute(AddonTestCase):
 		self.assertIn(("later", 20), events)
 		self.assertEqual(self.headset.volume.mute, 0)
 		self.assertEqual(log.errors, [])
+
+	def test_microphones_stay_muted_when_nvda_exits(self):
+		self.press("toggleQuickMute")
+		self.plugin.navigator.unmuteAllAudioSources()
+		self.assertEqual([self.headset.volume.GetMute(), self.webcam.volume.GetMute()], [1, 1])

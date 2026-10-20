@@ -31,7 +31,7 @@ def activeOutputDevices() -> int:
 class TestRealDevices(unittest.TestCase):
 	def setUp(self):
 		self.registry = module("registry").AudioSourceRegistry()
-		self.devices = self.registry.getAllDevices()
+		self.devices = self.registry.detectDevices()
 		self.model = module("model")
 		self.sources = module("sources")
 
@@ -86,7 +86,7 @@ class TestRealDevices(unittest.TestCase):
 				{entry.deviceId for entry in self.registry._sessionManagers if entry.flow == EDataFlow.eRender},
 				{id for id, _name in module("devices").getOutputDevices()},
 			)
-			for app in [*self.registry.getApps(), *self.registry.getRecordingApps()]:
+			for app in [*self.registry.getPlaybackApps(), *self.registry.getRecordingApps()]:
 				self.assertTrue(0.0 <= app.volumeLevel <= 1.0, app.name)
 		finally:
 			self.registry.stop()
@@ -95,7 +95,7 @@ class TestRealDevices(unittest.TestCase):
 		# The COM objects are released correctly: this crashed NVDA when ctypes.cast() was used
 		for _ in range(30):
 			self.registry.start()
-			self.registry.getApps()
+			self.registry.getPlaybackApps()
 			self.registry.markDevicesChanged()
 			_ = self.registry.devices
 			self.registry.stop()

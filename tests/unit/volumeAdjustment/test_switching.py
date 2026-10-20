@@ -13,7 +13,7 @@ PREFIXES = ("switchNvdaOutputToDevice", "setDefaultOutputDevice", "setCommunicat
 INPUT_PREFIXES = ("setDefaultInputDevice", "setCommunicationInputDevice")
 
 
-class OutputsTestCase(AddonTestCase):
+class SwitchingTestCase(AddonTestCase):
 	def setUp(self):
 		super().setUp()
 		self.windowsOutputs[:] = [
@@ -29,7 +29,7 @@ class OutputsTestCase(AddonTestCase):
 		self.plugin.bindSwitchingMethods()
 
 
-class TestDeviceCommands(OutputsTestCase):
+class TestDeviceCommands(SwitchingTestCase):
 	def test_one_command_per_device_found_when_nvda_starts(self):
 		for prefix in PREFIXES:
 			self.assertTrue(all(hasattr(self.plugin, f"script_{prefix}{number}") for number in (1, 2, 3)))
@@ -60,7 +60,7 @@ class TestDeviceCommands(OutputsTestCase):
 		self.assertFalse(any(hasattr(self.plugin, f"script_{prefix}3") for prefix in PREFIXES))
 
 
-class TestNvdaOutput(OutputsTestCase):
+class TestNvdaOutput(SwitchingTestCase):
 	def test_device_by_number(self):
 		self.assertEqual(self.press("switchNvdaOutputToDevice3"), ["HDMI monitor"])
 		self.assertEqual(audio["outputDevice"], "{hdmi}")
@@ -86,7 +86,7 @@ class TestNvdaOutput(OutputsTestCase):
 		self.assertEqual(audio["outputDevice"], "default")
 
 
-class TestWindowsDefaults(OutputsTestCase):
+class TestWindowsDefaults(SwitchingTestCase):
 	def test_default_output_device(self):
 		self.assertEqual(self.press("setDefaultOutputDevice3"), ["HDMI monitor"])
 		self.assertEqual(self.windows["set"], [("{hdmi}", ["eConsole", "eMultimedia"])])
@@ -126,7 +126,7 @@ class TestWindowsDefaults(OutputsTestCase):
 		self.assertEqual(self.press("nextOutputDevice"), [])
 
 
-class TestInputDevices(OutputsTestCase):
+class TestInputDevices(SwitchingTestCase):
 	def test_commands_for_the_input_devices_found_when_nvda_starts(self):
 		for prefix in INPUT_PREFIXES:
 			self.assertTrue(all(hasattr(self.plugin, f"script_{prefix}{number}") for number in (1, 2)))

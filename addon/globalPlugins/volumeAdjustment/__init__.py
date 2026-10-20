@@ -4,8 +4,10 @@
 # Copyright (C) 2020-2026 Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>
 
 from __future__ import annotations
-from typing import Any, cast, override
+
 from collections.abc import Callable
+from typing import Any, cast, override
+
 import addonHandler
 import config
 import globalPluginHandler
@@ -15,21 +17,27 @@ from inputCore import InputGesture
 from logHandler import log
 from NVDAObjects import NVDAObject
 from scriptHandler import script
+
 from . import devices
-from .configuration import addonName, addonSummary, cfg, confspec, getAddonConfig
+from .configuration import (
+	addonName,
+	addonSummary,
+	cfg,
+	confspec,
+	getAddonConfig,
+)
 from .messages import (
 	announceChannel,
 	announceChannelVolumeLevel,
 	announceMuted,
-	announceNotSupported,
 	announceVolumeLevel,
 )
 from .microphones import QuickMute
+from .model import LEVEL_TOLERANCE, SourceKind
 from .navigation import SourceNavigator
-from .outputs import OutputSwitcher, OutputTarget
 from .protection import NvdaVolumeGuard
 from .registry import registry
-from .model import LEVEL_TOLERANCE, SourceKind
+from .switching import DeviceSwitcher, SwitchTarget
 
 try:
 	addonHandler.initTranslation()
@@ -38,7 +46,6 @@ except addonHandler.AddonError:
 _: Callable[[str], str]
 
 from .settings import VASettingsPanel  # noqa E402
-
 
 # The function keys F1-F12 bound to the output devices
 FUNCTION_KEYS = tuple(f"f{number}" for number in range(1, 13))
@@ -82,8 +89,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.navigator = SourceNavigator()
 		# The warning before the volume of NVDA itself is lowered or muted
 		self.guard = NvdaVolumeGuard()
-		# Switching the output devices of NVDA and Windows
-		self.outputs = OutputSwitcher()
+		# Switching the output device of NVDA and the default devices of Windows
+		self.switcher = DeviceSwitcher()
 		# The quick mute of the selected microphones
 		self.quickMute = QuickMute()
 		# Bind default gestures if necessary
@@ -110,7 +117,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			log.warning("Can't remove %s Settings panel from NVDA settings dialogs", addonSummary)
 		super().terminate(*args, **kwargs)
 
-	def event_gainFocus(self, obj: NVDAObject, NextHandler: Callable[[], None]) -> None:
+	def event_gainFocus(self, obj: NVDAObject, nextHandler: Callable[[], None]) -> None:
 		"""Track the application in focus if the corresponding option is enabled.
 
 		:param obj: the object to track if focused
@@ -118,7 +125,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		"""
 		if getAddonConfig()["focus"]:
 			self.navigator.onFocusChanged()
-		NextHandler()
+		nextHandler()
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Increase the volume"))
@@ -259,43 +266,43 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	@script(description=_("Switch NVDA output to the next device"))
 	def script_nextOutputDevice(self, gesture: InputGesture) -> None:
 		"""Switch NVDA output to the next active output device."""
-		self.outputs.selectOutputDeviceByStep(OutputTarget.NVDA, step=1)
+		self.switcher.selectOutputDeviceByStep(SwitchTarget.NVDA, step=1)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Switch NVDA output to the previous device"))
 	def script_prevOutputDevice(self, gesture: InputGesture) -> None:
 		"""Switch NVDA output to the previous active output device."""
-		self.outputs.selectOutputDeviceByStep(OutputTarget.NVDA, step=-1)
+		self.switcher.selectOutputDeviceByStep(SwitchTarget.NVDA, step=-1)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Switch NVDA output to the default device"))
 	def script_switchNvdaOutputToDefault(self, gesture: InputGesture) -> None:
 		"""Switch NVDA output to the default output device of Windows, so NVDA follows its changes."""
-		self.outputs.switchNvdaOutputToDefault()
+		self.switcher.switchNvdaOutputToDefault()
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Set the next device as the default output device"))
 	def script_nextDefaultOutputDevice(self, gesture: InputGesture) -> None:
 		"""Make the next active output device the default output device of Windows."""
-		self.outputs.selectOutputDeviceByStep(OutputTarget.DEFAULT, step=1)
+		self.switcher.selectOutputDeviceByStep(SwitchTarget.DEFAULT, step=1)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Set the previous device as the default output device"))
 	def script_prevDefaultOutputDevice(self, gesture: InputGesture) -> None:
 		"""Make the previous active output device the default output device of Windows."""
-		self.outputs.selectOutputDeviceByStep(OutputTarget.DEFAULT, step=-1)
+		self.switcher.selectOutputDeviceByStep(SwitchTarget.DEFAULT, step=-1)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Set the next device as the default communication device"))
 	def script_nextCommunicationDevice(self, gesture: InputGesture) -> None:
 		"""Make the next active output device the default communication device of Windows."""
-		self.outputs.selectOutputDeviceByStep(OutputTarget.COMMUNICATION, step=1)
+		self.switcher.selectOutputDeviceByStep(SwitchTarget.COMMUNICATION, step=1)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Set the previous device as the default communication device"))
 	def script_prevCommunicationDevice(self, gesture: InputGesture) -> None:
 		"""Make the previous active output device the default communication device of Windows."""
-		self.outputs.selectOutputDeviceByStep(OutputTarget.COMMUNICATION, step=-1)
+		self.switcher.selectOutputDeviceByStep(SwitchTarget.COMMUNICATION, step=-1)
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Mute or unmute the microphones selected for the quick mute"))
@@ -316,7 +323,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def deviceScriptFactory(
 		self,
-		target: OutputTarget,
+		target: SwitchTarget,
 		id: str,
 		name: str,
 		description: str,
@@ -332,7 +339,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 		def script_selectDevice(self: GlobalPlugin, gesture: InputGesture) -> None:
 			"""Switch to the device of the script."""
-			self.outputs.selectOutputDeviceById(target, id, name)
+			self.switcher.selectDeviceById(target, id, name)
 
 		return script(description=description)(script_selectDevice)
 
@@ -367,11 +374,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		outputs = devices.getOutputDevices()
 		inputs = devices.getInputDevices()
 		targets = (
-			(OutputTarget.NVDA, outputs, "", FUNCTION_KEYS, nvdaDescription),
-			(OutputTarget.DEFAULT, outputs, "shift+", FUNCTION_KEYS, defaultDescription),
-			(OutputTarget.COMMUNICATION, outputs, "control+", FUNCTION_KEYS, communicationDescription),
-			(OutputTarget.DEFAULT_INPUT, inputs, "shift+", DIGIT_KEYS, defaultInputDescription),
-			(OutputTarget.COMMUNICATION_INPUT, inputs, "control+", DIGIT_KEYS, communicationInputDescription),
+			(SwitchTarget.NVDA, outputs, "", FUNCTION_KEYS, nvdaDescription),
+			(SwitchTarget.DEFAULT, outputs, "shift+", FUNCTION_KEYS, defaultDescription),
+			(SwitchTarget.COMMUNICATION, outputs, "control+", FUNCTION_KEYS, communicationDescription),
+			(SwitchTarget.DEFAULT_INPUT, inputs, "shift+", DIGIT_KEYS, defaultInputDescription),
+			(SwitchTarget.COMMUNICATION_INPUT, inputs, "control+", DIGIT_KEYS, communicationInputDescription),
 		)
 		for scriptPrefix, (target, deviceList, modifiers, keys, description) in zip(DEVICE_SCRIPTS, targets):
 			for number, (id, name) in enumerate(deviceList, 1):
@@ -420,11 +427,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		source = self.navigator.getChannelSource()
 		if source is None:
 			return
-		level: float = source.channelVolumeUp()
-		if level < 0:
-			announceNotSupported()
-			return
-		announceVolumeLevel(level, source, source.channel)
+		announceChannelVolumeLevel(source, source.channelVolumeUp())
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Decrease the volume of the selected channel"))
@@ -446,11 +449,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		source = self.navigator.getChannelSource()
 		if source is None:
 			return
-		level: float = source.channelVolumeMax()
-		if level < 0:
-			announceNotSupported()
-			return
-		announceVolumeLevel(level, source, source.channel)
+		announceChannelVolumeLevel(source, source.channelVolumeMax())
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
 	@script(description=_("Set the minimum volume level for the selected channel"))

@@ -12,8 +12,9 @@
 # pyright: reportUnknownMemberType=false, reportUnknownArgumentType=false, reportUnknownVariableType=false
 # pyright: reportUnknownLambdaType=false, reportUnusedCallResult=false, reportImplicitStringConcatenation=false
 
-from typing import cast, override
 from collections.abc import Callable
+from typing import cast, override
+
 import addonHandler
 import ui
 import wx
@@ -23,12 +24,17 @@ from gui.message import DefaultButtonSet, DialogType, MessageDialog
 from gui.settingsDialogs import SettingsPanel
 from logHandler import log
 from queueHandler import eventQueue, queueFunction
-from .devices import isInputDevice
+
 from .configuration import addonSummary, cfg, getAddonConfig
+from .devices import isInputDevice
 from .messages import getCategoryName, getOnlyVisibleCategoryMessage
-from .registry import registry
 from .model import SourceKind
-from .sources import InputDeviceSource, getVisibleCategories, setVisibleCategories
+from .registry import registry
+from .sources import (
+	InputDeviceSource,
+	getVisibleCategories,
+	setVisibleCategories,
+)
 
 try:
 	addonHandler.initTranslation()
@@ -42,7 +48,7 @@ def getProcessNames() -> list[str]:
 
 	:return: names of the processes with audio sessions, the playing ones first
 	"""
-	names = [app.name for app in [*registry.getApps(), *registry.getRecordingApps()]]
+	names = [app.name for app in [*registry.getPlaybackApps(), *registry.getRecordingApps()]]
 	return list(dict.fromkeys(names))
 
 
@@ -80,8 +86,8 @@ class AddonsReloadDialog(wx.Dialog):
 
 		# Translators: The button  in the dialog which appears when the user changed addon's default gestures
 		reloadLaterButton = bHelper.addButton(self, wx.ID_CLOSE, label=_("Reload &later"))
-		reloadLaterButton.Bind(wx.EVT_BUTTON, lambda evt: self.Close())
-		self.Bind(wx.EVT_CLOSE, lambda evt: self.Destroy())
+		# The option is saved with the other settings, the gestures take effect after the add-ons are reloaded
+		reloadLaterButton.Bind(wx.EVT_BUTTON, lambda evt: self.EndModal(wx.ID_CLOSE))
 		self.EscapeId = wx.ID_CLOSE
 
 		mainSizer.Add(sHelper.sizer, border=guiHelper.BORDER_FOR_DIALOGS, flag=wx.ALL)
@@ -89,15 +95,14 @@ class AddonsReloadDialog(wx.Dialog):
 		mainSizer.Fit(self)
 		self.CentreOnScreen()
 
-	def onReloadNowButton(self, eventt: wx.PyEvent) -> None:
+	def onReloadNowButton(self, event: wx.PyEvent) -> None:
 		"""Executed when the appropriate button in the dialog box is pressed.
 
 		:param event: event that occurs when a wx.Button is pressed
 		"""
 		panel = cast("VASettingsPanel", self.GetParent())
 		getAddonConfig()["gestures"] = panel.defaultGesturesChk.GetValue()
-		self.EndModal(1)
-		self.Destroy()
+		self.EndModal(wx.ID_OK)
 		queueFunction(eventQueue, reloadGlobalPlugins)
 
 
@@ -349,12 +354,13 @@ class VASettingsPanel(SettingsPanel):
 		self.sizer.Fit(self)
 
 	def onGesturesCheckbox(self, event: wx.PyEvent) -> None:
-		"""Enabling or disabling default keyboard shortcuts.
+		"""Enabling or disabling default keyboard shortcuts: the add-ons are reloaded now or later.
 
 		:param event: event binder object which processes changing of the wx.Checkbox
 		"""
-		if not AddonsReloadDialog(self).ShowModal():
-			self.defaultGesturesChk.SetValue(not event.IsChecked())
+		# The dialog is destroyed when it is closed with any of its buttons
+		with AddonsReloadDialog(self) as dialog:
+			dialog.ShowModal()
 		self.defaultGesturesChk.SetFocus()
 
 	def fillDeviceList(
@@ -376,7 +382,7 @@ class VASettingsPanel(SettingsPanel):
 		items: dict[str, str] = {}
 		if includeHidden:
 			items.update((id, name) for id, name in saved.items() if isInputDevice(id) == isInput)
-		for device in registry.getAllDevices():
+		for device in registry.detectDevices():
 			if isinstance(device, InputDeviceSource) == isInput:
 				items.setdefault(device.id, device.name)
 		self.devs.update(items)
@@ -471,6 +477,8 @@ class VASettingsPanel(SettingsPanel):
 		getAddonConfig()["mutePercentage"] = self.mutePercentageSlider.GetValue()
 		getAddonConfig()["unmuteOnExit"] = self.unmuteOnExitChk.GetValue()
 		getAddonConfig()["warnNvdaVolume"] = self.warnNvdaVolumeChk.GetValue()
+		# Saved here when the add-ons are reloaded later, e.g. when NVDA is restarted
+		getAddonConfig()["gestures"] = self.defaultGesturesChk.GetValue()
 		devs = {}
 		for control in (self.hideOutputDevices, self.hideInputDevices):
 			for checked in control.GetCheckedItems():

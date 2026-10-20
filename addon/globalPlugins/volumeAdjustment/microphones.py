@@ -6,16 +6,22 @@
 # Copyright (C) 2020-2026 Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>
 
 from __future__ import annotations
+
 import os.path
 import wave
 from typing import Any, cast
+
 import core
 import nvwave
 from comtypes import COMError
 from logHandler import log
+
 from .audiocore import logDebugWarning
 from .configuration import cfg
-from .messages import announceNoQuickMuteMicrophones, announceQuickMuteMicrophonesNotConnected
+from .messages import (
+	announceNoQuickMuteMicrophones,
+	announceQuickMuteMicrophonesNotConnected,
+)
 from .registry import registry
 from .sources import InputDeviceSource
 
@@ -50,7 +56,7 @@ class QuickMute:
 		ids = cfg.quickMute
 		return [
 			device
-			for device in registry.getAllDevices()
+			for device in registry.detectDevices()
 			if isinstance(device, InputDeviceSource) and device.id in ids
 		]
 

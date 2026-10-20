@@ -7,7 +7,7 @@
 
 from volumeAdjustmentSupport import module
 from volumeAdjustmentSupport.case import AddonTestCase
-from volumeAdjustmentSupport.fakes import FakeSession, makeDevice
+from volumeAdjustmentSupport.fakes import FakeSession, comError, makeDevice
 
 sources = module("sources")
 
@@ -23,21 +23,21 @@ class TestApplications(AddonTestCase):
 		self.playing[:] = [self.nvda, self.firefox, self.zoom, FakeSession(3, "firefox.exe")]
 
 	def test_one_source_per_process_in_the_order_of_sessions(self):
-		apps = self.registry.getApps()
+		apps = self.registry.getPlaybackApps()
 		self.assertEqual([app.name for app in apps], ["nvda.exe", "firefox.exe", "Zoom.exe"])
 		self.assertEqual(apps[1].processIds, [2, 3])
 		self.assertTrue(all(app.kind == sources.SourceKind.PLAYBACK_APP for app in apps))
 
 	def test_hidden_processes_and_sessions_without_a_process(self):
 		self.playing.append(FakeSession(0, ""))
-		self.assertEqual([app.name for app in self.registry.getApps(["Zoom.exe"])], ["nvda.exe", "firefox.exe"])
+		self.assertEqual([app.name for app in self.registry.getPlaybackApps(["Zoom.exe"])], ["nvda.exe", "firefox.exe"])
 
 	def test_recording_applications_are_separate(self):
 		self.recording[:] = [FakeSession(7, "Zoom.exe"), FakeSession(9, "obs64.exe")]
 		recording = self.registry.getRecordingApps()
 		self.assertEqual([app.name for app in recording], ["Zoom.exe", "obs64.exe"])
 		self.assertTrue(all(isinstance(app, sources.RecordingAppSource) for app in recording))
-		self.assertNotIn("obs64.exe", [app.name for app in self.registry.getApps()])
+		self.assertNotIn("obs64.exe", [app.name for app in self.registry.getPlaybackApps()])
 
 	def test_find_by_process_then_exact_then_partial_name(self):
 		self.playing.append(FakeSession(8, "vscode.exe"))
@@ -71,9 +71,9 @@ class TestNotifications(AddonTestCase):
 
 	def test_devices_are_rescanned_once_when_used(self):
 		scans = []
-		original = self.registry.getAllDevices
-		self.patch(self.registry, "getAllDevices", lambda hide=(): scans.append(1) or original(hide))
-		self.outputs[:] = [makeDevice("output", "{a}", "Speakers", default=True)]
+		original = self.registry.detectDevices
+		self.patch(self.registry, "detectDevices", lambda hide=(): scans.append(1) or original(hide))
+		self.outputs[:] = [makeDevice("output", "{a}", "Speakers", isDefaultDevice=True)]
 		self.registry.markDevicesChanged()
 		self.registry.markDevicesChanged()
 		self.assertEqual(scans, [])
@@ -108,3 +108,73 @@ class TestNotifications(AddonTestCase):
 		self.registry.start()
 		self.assertIsNone(self.registry._enumerator)
 		self.registry.stop()
+
+
+class FakeImmDevice:
+	"""Stands for IMMDevice: only its ID, or COMError if the device has been removed."""
+
+	def __init__(self, id: str | None) -> None:
+		self.id = id
+
+	def GetId(self) -> str:
+		if self.id is None:
+			raise comError()
+		return self.id
+
+
+class FakeCollection:
+	def __init__(self, devices):
+		self.devices = devices
+
+	def GetCount(self):
+		return len(self.devices)
+
+	def Item(self, index):
+		return self.devices[index]
+
+
+class FakeEnumerator:
+	def __init__(self, default, outputs, inputs, failingFlow=None):
+		self.default, self.outputs, self.inputs, self.failingFlow = default, outputs, inputs, failingFlow
+
+	def GetDefaultAudioEndpoint(self, flow, role):
+		if self.default is None:
+			raise comError()
+		return FakeImmDevice(self.default)
+
+	def EnumAudioEndpoints(self, flow, state):
+		if flow == self.failingFlow:
+			raise comError()
+		return FakeCollection([FakeImmDevice(id) for id in (self.outputs if flow == 0 else self.inputs)])
+
+
+class TestDeviceDetection(AddonTestCase):
+	"""The real detection of the registry with a fake device enumerator of Windows."""
+
+	def detect(self, enumerator, hide=()):
+		registryModule = module("registry")
+		self.patch(registryModule, "getDeviceEnumerator", lambda: enumerator)
+		self.patch(registryModule, "getDefaultDeviceIds", lambda enumerator, role: [])
+		self.patch(
+			registryModule,
+			"createDevice",
+			lambda immDevice, deviceClass, defaultIds, communicationIds: makeDevice(
+				"output" if deviceClass is sources.OutputDeviceSource else "input",
+				immDevice.GetId(),
+				immDevice.GetId(),
+			),
+		)
+		return [device.id for device in type(self.registry).detectDevices(self.registry, hide)]
+
+	def test_default_output_device_first_then_outputs_then_inputs(self):
+		enumerator = FakeEnumerator("{b}", ["{a}", "{b}"], ["{mic}"])
+		self.assertEqual(self.detect(enumerator, hide=["{a}"]), ["{b}", "{mic}"])
+
+	def test_input_devices_without_a_default_output_device(self):
+		self.assertEqual(self.detect(FakeEnumerator(None, [], ["{mic}"])), ["{mic}"])
+
+	def test_device_removed_while_detecting(self):
+		self.assertEqual(self.detect(FakeEnumerator("{a}", ["{a}", None], [None, "{mic}"])), ["{a}", "{mic}"])
+
+	def test_input_devices_when_the_outputs_cannot_be_listed(self):
+		self.assertEqual(self.detect(FakeEnumerator(None, ["{a}"], ["{mic}"], failingFlow=0)), ["{mic}"])

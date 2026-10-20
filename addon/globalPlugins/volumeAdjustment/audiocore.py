@@ -6,8 +6,10 @@
 # Copyright (C) 2020-2026 Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>
 
 from __future__ import annotations
-from typing import Any, cast
+
 from collections.abc import Sequence
+from typing import Any, cast
+
 from comtypes import CLSCTX_ALL, GUID, COMError
 from logHandler import log
 from pycaw.api.audiopolicy import IAudioSessionControl2, IAudioSessionManager2
@@ -16,7 +18,14 @@ from pycaw.api.mmdeviceapi import IMMEndpoint
 from pycaw.api.mmdeviceapi.depend.structures import PROPERTYKEY
 from pycaw.constants import STGM
 from pycaw.utils import AudioSession, AudioUtilities
-from .audiotypes import Device, DeviceEnumerator, EndpointVolume, Session, SessionManager
+
+from .audiotypes import (
+	Device,
+	DeviceEnumerator,
+	EndpointVolume,
+	Session,
+	SessionManager,
+)
 
 
 def logDebugWarning(message: str) -> None:

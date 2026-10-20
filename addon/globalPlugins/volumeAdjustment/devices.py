@@ -6,13 +6,16 @@
 # Copyright (C) 2020-2026 Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>
 
 from __future__ import annotations
+
 import os
 import subprocess
 from typing import Any, cast
+
 from comtypes import COMError
 from logHandler import log
 from pycaw.constants import DEVICE_STATE
 from pycaw.utils import AudioUtilities, EDataFlow, ERole
+
 from .audiocore import (
 	PKEY_Device_FriendlyName,
 	getDataFlow,
@@ -21,7 +24,12 @@ from .audiocore import (
 	logDebugWarning,
 )
 from .audiotypes import DeviceEnumerator
-from .sources import DeviceSource, InputDeviceSource, OutputDeviceSource, createDevice
+from .sources import (
+	DeviceSource,
+	InputDeviceSource,
+	OutputDeviceSource,
+	createDevice,
+)
 
 
 def getDevice(id: str) -> DeviceSource | None:

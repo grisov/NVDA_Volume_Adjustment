@@ -20,12 +20,12 @@ addon_info = AddonInfo(
 	addon_summary=_("Volume Adjustment"),
 	# Add-on description
 	# Translators: Long description to be shown for this add-on on add-on information from add-on store
-	addon_description=_("""Adjust the volume level of all audio devices installed in the system and each running program separately using simple keyboard shortcuts."""),
+	addon_description=_("""Adjust the volume of every audio device and every running program separately, switch the default audio devices of Windows and mute the microphones in all programs at once, using simple keyboard shortcuts."""),
 	# version
 	addon_version="2.0.0",
 	# Brief changelog for this version
 	# Translators: what's new content for the add-on version to be shown in the add-on store
-	addon_changelog=_("""Four categories of audio sources including microphones and recording apps, switching of the default devices of Windows, quick mute of microphones, and no more delays."""),
+	addon_changelog=_("""Four categories of audio sources including microphones and recording apps, switching of the default output and input devices of Windows, quick mute of microphones, braille support and much faster response."""),
 	# Author(s)
 	addon_author="Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>",
 	# URL for the add-on documentation support

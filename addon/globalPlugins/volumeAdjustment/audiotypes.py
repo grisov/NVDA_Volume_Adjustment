@@ -11,7 +11,9 @@ The objects get these types in audiocore, where they are obtained from pycaw.
 """
 
 from __future__ import annotations
+
 from typing import Any, Protocol
+
 import psutil
 
 

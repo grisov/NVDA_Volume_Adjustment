@@ -6,6 +6,7 @@
 # Copyright (C) 2020-2026 Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>
 
 from __future__ import annotations
+
 import math
 from collections.abc import Iterable
 from enum import Enum, IntEnum

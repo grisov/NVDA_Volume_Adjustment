@@ -6,12 +6,15 @@
 # Copyright (C) 2020-2026 Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>
 
 from __future__ import annotations
+
 import os
-from typing import cast
 from collections.abc import Callable
+from typing import cast
+
 import gui
 import wx
 from gui.message import ReturnCode
+
 from .configuration import getAddonConfig
 from .settings import NvdaVolumeWarningDialog
 from .sources import AudioSource, PlaybackAppSource
