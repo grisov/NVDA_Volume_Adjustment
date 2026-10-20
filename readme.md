@@ -88,6 +88,7 @@ If any of the selected microphones is on, all of them are muted; otherwise all o
 ## Add-on settings
 * Report the status of the sound source while switching - announce the volume or the muted state of a source or channel when it is selected.
 * Announce category names while switching - announce the category when you move into it with the arrows.
+* Announce audio device details - after the volume level or the name of an audio device, announce its type (for example headphones or microphone), its connection (USB, Bluetooth or virtual) and whether it is a default device of Windows.
 * Visible categories of audio sources - the categories you switch between, the same as with NVDA+Windows+O, I, P and R.
 * Volume level change step, % - how much one keypress changes the volume, from 1 to 20 percent.
 * Announce the volume level in - percent, percent without the percent sign, or decibels for audio devices. Programs are always announced in percent. Decibel values come from the device and its driver, so they may sometimes look unusual, for example a narrow range or values far below zero.
