@@ -6,13 +6,16 @@
 # Copyright (C) 2020-2026 Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>
 
 from __future__ import annotations
+
 import ui
 from api import getFocusObject
+
 from .configuration import cfg, getAddonConfig, getNvdaConfig
 from .messages import (
 	announceCategoryHidden,
 	announceCategoryShown,
 	announceChannelsUsedBySoundSplit,
+	announceDeviceNotAvailable,
 	announceNotPlaying,
 	announceNotSupported,
 	announceOnlyCategory,
@@ -23,11 +26,15 @@ from .messages import (
 	getSourceName,
 	getSourceTitle,
 )
-from .registry import registry
 from .model import SourceKey, SourceKind
-from .sources import AppSource, AudioSource, getSourceKey, getVisibleCategories, setVisibleCategories
-
-UNDEFINED_APP: str = "UndefinedCurrentApplicationName"
+from .registry import registry
+from .sources import (
+	AppSource,
+	AudioSource,
+	getSourceKey,
+	getVisibleCategories,
+	setVisibleCategories,
+)
 
 
 class SourceNavigator:
@@ -40,49 +47,52 @@ class SourceNavigator:
 		super().__init__()
 		# Audio source selected with arrows: its category and ID, None to adjust the application in focus
 		self._selected: SourceKey | None = None
+		# The name of the selected audio source, announced if the selected device is not available anymore
+		self._selectedName: str = ""
 		# The audio source whose name was announced last, so it is not repeated on every keypress
 		self._previous: SourceKey | None = None
 		# Application of the selected or focused process, reused between keypresses
-		self._session: AppSource | None = None
+		self._app: AppSource | None = None
 
 	def onFocusChanged(self) -> None:
 		"""Follow the application in focus: the selection with arrows is dropped."""
 		self._selected = None
 		# The name of the application in focus is announced on the next keypress
 		self._previous = None
-		# The application in focus may have changed, so its audio session is looked up again
-		self._session = None
+		# The application in focus may have changed, so it is looked up again
+		self._app = None
 
 	def getFocusedProcess(self) -> tuple[str, int]:
 		"""Get the application name and the process ID of the object in system focus.
 
-		:return: the application name and the process ID, 0 if it is unknown
+		:return: the application name and the process ID, empty and 0 if they are unknown
 		"""
 		obj = getFocusObject()
 		try:
 			appName = obj.appModule.appName
 		except AttributeError:
-			appName = UNDEFINED_APP
+			appName = ""
 		return appName, getattr(obj, "processID", 0)
 
-	def selectProcessInFocus(self) -> bool:
+	def selectAppInFocus(self) -> bool:
 		"""Select the application that is in system focus.
 		The application found after the last focus change is reused by subsequent keypresses
 		until it becomes outdated (see AudioSourceRegistry.isOutdated()).
 
 		:return: whether the application in focus plays any sound
 		"""
-		if self._session is None or registry.isOutdated(self._session):
+		if self._app is None or registry.isOutdated(self._app):
 			appName, processId = self.getFocusedProcess()
-			# The session of the focused process itself is preferred, then the one found by the app name
-			session = registry.findApp(appName, processId)
-			if session is None:
-				announceNotPlaying(appName)
+			# The application of the focused process itself is preferred, then the one found by the app name
+			app = registry.findApp(appName, processId)
+			if app is None:
+				# The application in focus may be unknown, e.g. for some system windows
+				announceNotPlaying(appName) if appName else announceNotSupported()
 				return False
-			self._session = session
+			self._app = app
 		return True
 
-	def getSession(self, kind: SourceKind, name: str) -> AppSource | None:
+	def getApp(self, kind: SourceKind, name: str) -> AppSource | None:
 		"""Get the application of the specified process in the specified category.
 		The previously found application is reused while the same process stays selected,
 		so repeated keypresses do not enumerate all audio sessions again.
@@ -92,13 +102,9 @@ class SourceNavigator:
 		:param name: the name of the running process
 		:return: the application of the specified process, None if it has no audio session
 		"""
-		if (
-			self._session is None
-			or getSourceKey(self._session) != (kind, name)
-			or registry.isOutdated(self._session)
-		):
-			self._session = registry.findApp(name, kind=kind)
-		return self._session
+		if self._app is None or getSourceKey(self._app) != (kind, name) or registry.isOutdated(self._app):
+			self._app = registry.findApp(name, kind=kind)
+		return self._app
 
 	def getChannelSource(self) -> AudioSource | None:
 		"""Get the selected audio source for a channel command.
@@ -140,7 +146,7 @@ class SourceNavigator:
 		:return: the audio sources of the category
 		"""
 		if kind == SourceKind.PLAYBACK_APP:
-			return [*registry.getApps(cfg.processes)]
+			return [*registry.getPlaybackApps(cfg.processes)]
 		if kind == SourceKind.RECORDING_APP:
 			return [*registry.getRecordingApps(cfg.processes)]
 		return [device for device in registry.devices if device.kind == kind]
@@ -177,14 +183,18 @@ class SourceNavigator:
 		announceOnlyCategory(category, count)
 
 	def unmuteAllAudioSources(self) -> None:
-		"""Unmute all muted audio devices and audio sessions."""
-		for device in registry.devices:
-			if device.isMuted:
-				device.unmute()
-		# Hidden processes are unmuted too: they may have been muted before they were hidden
-		for app in [*registry.getApps(), *registry.getRecordingApps()]:
-			if app.isMuted:
-				app.unmute()
+		"""Unmute the audio devices and applications muted by the add-on.
+		The sources muted in Windows or by the quick mute of microphones stay muted.
+		Hidden devices and processes are unmuted too: they may have been muted before they were hidden.
+		"""
+		sources: list[AudioSource] = [
+			*registry.detectDevices(),
+			*registry.getPlaybackApps(),
+			*registry.getRecordingApps(),
+		]
+		for source in sources:
+			if source.mutedKey in cfg.muted:
+				source.unmute()
 
 	def getCurrentSourceKey(self, sources: list[AudioSource]) -> SourceKey | None:
 		"""Get the key of the audio source that switching starts from.
@@ -208,8 +218,9 @@ class SourceNavigator:
 		:param announceCategory: whether the name of its category is announced before its name
 		"""
 		self._selected = self._previous = getSourceKey(source)
+		self._selectedName = getSourceName(source)
 		if isinstance(source, AppSource):
-			self._session = source
+			self._app = source
 		title = getSourceTitle(source)
 		if announceCategory:
 			title = f"{getCategoryName(source.kind)}, {title}"
@@ -275,30 +286,27 @@ class SourceNavigator:
 			self._previous = key
 		return source
 
-	def getAudioSource(self) -> AudioSource | None:
-		"""Get the object of the audio source selected with arrows (device or application),
-		this can be instance inherited from the sources.AudioSource class.
-		Also announces the name of the application at the first treatment.
+	def getListedSource(self) -> AudioSource | None:
+		"""Get the audio source selected with arrows in the list (device or application).
+		Also announces the name of the application when it is used for the first time.
+		A device that has been disconnected, disabled or hidden is announced as not available, and no other
+		device is adjusted instead: e.g. the speakers must not be changed instead of a disconnected microphone.
+		The selection is kept, so the device is adjusted again when it is available.
 
-		:return: instance of selected audio source, None if the selected application has no audio session
+		:return: the selected audio source, None if it is not available or the application has no audio session
 		"""
 		if self._selected is None:
 			return None
 		kind, id = self._selected
 		if kind in (SourceKind.OUTPUT_DEVICE, SourceKind.INPUT_DEVICE):
-			devices = registry.devices
-			device = next((device for device in devices if device.id == id), None)
+			device = next((device for device in registry.devices if device.id == id), None)
 			if device is None:
-				# The selected device has been removed or hidden: the default output device is adjusted instead
-				if not devices:
-					return None
-				device = devices[0]
-				self._selected = getSourceKey(device)
-				ui.message(getSourceTitle(device))
+				announceDeviceNotAvailable(self._selectedName or id)
+				return None
 			# The name of the application is announced again when it is selected after a device
 			self._previous = self._selected
 			return device
-		app = self.getSession(kind, id)
+		app = self.getApp(kind, id)
 		if app is None:
 			announceNotPlaying(id.replace(".exe", ""), kind)
 			return None
@@ -314,16 +322,22 @@ class SourceNavigator:
 			# The category of the selected source has been hidden with a gesture or in the add-on settings:
 			# the application in focus or the first source is adjusted instead
 			self._selected = self._previous = None
-			self._session = None
+			self._app = None
 		if self._selected is None:
 			if getAddonConfig()["focus"]:
-				session = self._session if self.selectProcessInFocus() else None
-				if session is None:
+				app = self._app if self.selectAppInFocus() else None
+				if app is None:
 					return None
-				return self.announceTitleOnce(session)
-			# Without focus tracking the first source in the list is adjusted until another one is selected
+				return self.announceTitleOnce(app)
+			# Without focus tracking the first source in the list is adjusted until another one is selected,
+			# e.g. the current default output device
 			sources = self.getAllSources()
 			if not sources:
 				return None
-			self._selected = getSourceKey(sources[0])
-		return self.getAudioSource()
+			source = sources[0]
+			if isinstance(source, AppSource):
+				return self.announceTitleOnce(source)
+			# The name of the application is announced again when it is selected after a device
+			self._previous = getSourceKey(source)
+			return source
+		return self.getListedSource()

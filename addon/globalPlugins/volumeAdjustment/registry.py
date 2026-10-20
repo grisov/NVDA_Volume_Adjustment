@@ -6,18 +6,26 @@
 # Copyright (C) 2020-2026 Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>
 
 from __future__ import annotations
-from typing import Any, NamedTuple, override
+
 from collections.abc import Iterable
+from typing import Any, NamedTuple, override
+
 from comtypes import COMError
 from pycaw.callbacks import AudioSessionNotification, MMNotificationClient
 from pycaw.constants import DEVICE_STATE
 from pycaw.utils import EDataFlow, ERole
-from .audiocore import getDeviceEnumerator, getSessionManager, listSessions, logDebugWarning
+
+from .audiocore import (
+	getDeviceEnumerator,
+	getSessionManager,
+	listSessions,
+	logDebugWarning,
+)
 from .audiotypes import DeviceEnumerator, Session, SessionManager
+from .devices import getDefaultDeviceIds
 from .model import SourceKind
 from .sources import (
 	AppSource,
-	AppT,
 	DeviceSource,
 	InputDeviceSource,
 	OutputDeviceSource,
@@ -25,7 +33,6 @@ from .sources import (
 	RecordingAppSource,
 	createDevice,
 )
-from .devices import getDefaultDeviceIds
 
 
 class DeviceNotifications(MMNotificationClient):
@@ -216,7 +223,7 @@ class AudioSourceRegistry:
 			# Devices may have appeared or disappeared, or the default output device whose applications go first has changed
 			self._unsubscribeSessions()
 			self._subscribeSessions()
-			self._devices = self.getAllDevices(self._hide)
+			self._devices = self.detectDevices(self._hide)
 
 	def isOutdated(self, app: AppSource) -> bool:
 		"""Check whether the previously found application must be looked up again:
@@ -246,47 +253,54 @@ class AudioSourceRegistry:
 		"""
 		self._hide = list(hide)
 		self._devicesChanged = False
-		self._devices = self.getAllDevices(self._hide)
+		self._devices = self.detectDevices(self._hide)
 
-	def getAllDevices(self, hide: Iterable[str] = ()) -> list[DeviceSource]:
+	def detectDevices(self, hide: Iterable[str] = ()) -> list[DeviceSource]:
 		"""Detect the active audio devices without changing the list of devices kept by the registry.
 		The default output device is always the first one, even if it is hidden,
 		the other output devices and then the input devices follow.
-		Disabled, unplugged and not present devices are skipped.
+		Disabled, unplugged and not present devices are skipped. Without a default output device
+		(e.g. all output devices are disabled) the other devices, including the input devices, are still detected.
 
 		:param hide: IDs of the audio devices to skip
 		:return: detected audio devices
 		"""
 		try:
 			enumerator = getDeviceEnumerator()
+		except COMError:
+			logDebugWarning("Unable to get the audio device enumerator")
+			return []
+		defaultIds = getDefaultDeviceIds(enumerator, ERole.eMultimedia)
+		communicationIds = getDefaultDeviceIds(enumerator, ERole.eCommunications)
+		devices: list[DeviceSource] = []
+		try:
 			defaultDevice = enumerator.GetDefaultAudioEndpoint(
 				EDataFlow.eRender.value,
 				ERole.eMultimedia.value,
 			)
-			defaultIds = getDefaultDeviceIds(enumerator, ERole.eMultimedia)
-			communicationIds = getDefaultDeviceIds(enumerator, ERole.eCommunications)
-			default = createDevice(defaultDevice, OutputDeviceSource, defaultIds, communicationIds)
+			devices.append(createDevice(defaultDevice, OutputDeviceSource, defaultIds, communicationIds))
 		except COMError:
 			logDebugWarning("Unable to get the default output audio device")
-			return []
-		default.default = True
-		devices: list[DeviceSource] = [default]
-		skip = {default.id, *hide}
+		skip = {*(device.id for device in devices), *hide}
 		for flow, deviceClass in (
 			(EDataFlow.eRender, OutputDeviceSource),
 			(EDataFlow.eCapture, InputDeviceSource),
 		):
-			collection = enumerator.EnumAudioEndpoints(flow.value, DEVICE_STATE.ACTIVE.value)
-			for i in range(collection.GetCount()):
-				immDevice = collection.Item(i)
+			try:
+				collection = enumerator.EnumAudioEndpoints(flow.value, DEVICE_STATE.ACTIVE.value)
+				count = collection.GetCount()
+			except COMError:
+				logDebugWarning(f"Unable to list the active devices of the data flow {flow.name}")
+				continue
+			for i in range(count):
 				try:
+					immDevice = collection.Item(i)
 					if immDevice.GetId() in skip:
 						continue
-					device = createDevice(immDevice, deviceClass, defaultIds, communicationIds)
+					devices.append(createDevice(immDevice, deviceClass, defaultIds, communicationIds))
 				except COMError:
+					# The device has been removed while the devices were detected
 					continue
-				if device.name:
-					devices.append(device)
 		return devices
 
 	def getSessions(self, flow: EDataFlow) -> list[Session]:
@@ -302,7 +316,12 @@ class AudioSourceRegistry:
 				sessions.extend(listSessions(entry.manager))
 		return sessions
 
-	def _getApps(self, flow: EDataFlow, appClass: type[AppT], hide: Iterable[str]) -> list[AppT]:
+	def _getApps[AppT: AppSource](
+		self,
+		flow: EDataFlow,
+		appClass: type[AppT],
+		hide: Iterable[str],
+	) -> list[AppT]:
 		"""Get the applications with audio sessions on the active devices of the data flow.
 		There is one audio source per process name, in the order of the audio sessions,
 		and all audio sessions of the application on all devices are adjusted together.
@@ -327,7 +346,7 @@ class AudioSourceRegistry:
 			app.generation = generation
 		return apps
 
-	def getApps(self, hide: Iterable[str] = ()) -> list[PlaybackAppSource]:
+	def getPlaybackApps(self, hide: Iterable[str] = ()) -> list[PlaybackAppSource]:
 		"""Get the applications playing sound on any active output device.
 
 		:param hide: names of the processes hidden in the add-on settings
@@ -356,18 +375,21 @@ class AudioSourceRegistry:
 		There is no fallback to another application: adjusting the volume of NVDA or of an unrelated program
 		instead of the requested one would be confusing.
 
-		:param name: full name or part of the process name
+		:param name: full name or part of the process name, empty if it is unknown
 		:param pid: ID of the process whose application is preferred, 0 to search by name only
 		:param kind: playback or recording applications
 		:return: the application, None if it has no audio session in the category
 		"""
 		apps: list[AppSource] = [
-			*(self.getRecordingApps() if kind == SourceKind.RECORDING_APP else self.getApps()),
+			*(self.getRecordingApps() if kind == SourceKind.RECORDING_APP else self.getPlaybackApps()),
 		]
 		if pid:
 			app = next((app for app in apps if pid in app.processIds), None)
 			if app is not None:
 				return app
+		if not name:
+			# An empty name is a part of every name
+			return None
 		name = name.lower()
 		return next((app for app in apps if app.name.lower() == name), None) or next(
 			(app for app in apps if name in app.name.lower()),

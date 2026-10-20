@@ -145,9 +145,12 @@ class TestSaving(SettingsTestCase):
 
 	def test_options(self):
 		self.panel.deviceDetailsChk.GetValue.return_value = True
+		self.panel.defaultGesturesChk.GetValue.return_value = True
 		self.panel.units.GetClientData.return_value = "decibels"
 		self.panel.onSave()
 		self.assertTrue(options["deviceDetails"])
+		# Saved with the other options when the add-ons are reloaded later
+		self.assertTrue(options["gestures"])
 		self.assertEqual(options["units"], "decibels")
 
 

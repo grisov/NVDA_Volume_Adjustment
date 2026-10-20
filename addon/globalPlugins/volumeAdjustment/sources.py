@@ -6,22 +6,14 @@
 # Copyright (C) 2020-2026 Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>
 
 from __future__ import annotations
+
 from abc import ABCMeta, abstractmethod
-from typing import TypeVar, cast, override
 from collections.abc import Callable, Iterable
+from typing import cast, override
+
 from comtypes import COMError
 from pycaw.constants import AudioSessionState
-from .configuration import cfg, getAddonConfig
-from .model import (
-	Connection,
-	FormFactor,
-	SourceKey,
-	SourceKind,
-	formatCategories,
-	parseCategories,
-	stepLevel,
-)
-from .audiotypes import Device, EndpointVolume, Session, SimpleVolume
+
 from .audiocore import (
 	PKEY_AudioEndpoint_FormFactor,
 	PKEY_Device_DeviceDesc,
@@ -31,6 +23,17 @@ from .audiocore import (
 	PKEY_Endpoint_AdapterInterfacePath,
 	getDeviceProperties,
 	getEndpointVolume,
+)
+from .audiotypes import Device, EndpointVolume, Session, SimpleVolume
+from .configuration import cfg, getAddonConfig
+from .model import (
+	Connection,
+	FormFactor,
+	SourceKey,
+	SourceKind,
+	formatCategories,
+	parseCategories,
+	stepLevel,
 )
 
 
@@ -122,8 +125,6 @@ class AudioSource(metaclass=ABCMeta):
 		self._name = name
 		self._volume = volume
 		self._channel: int = 0
-		# Whether the audio source is the default output device
-		self.default: bool = False
 
 	@property
 	def id(self) -> str:
@@ -627,7 +628,7 @@ class AppSource(AudioSource):
 	def channelCount(self) -> int:
 		"""Get the number of channels of the first audio session of the application (usually 2).
 		The channel levels are relative to the volume level of the session.
-		NVDA sound split changes the same channels, see GlobalPlugin.getChannelSource().
+		NVDA sound split changes the same channels, see SourceNavigator.getChannelSource().
 
 		:return: the number of channels, 0 if they are not available
 		"""
@@ -689,9 +690,6 @@ class RecordingAppSource(AppSource):
 		:return: the process name with a prefix
 		"""
 		return f"recording:{self.name}"
-
-
-AppT = TypeVar("AppT", bound=AppSource)
 
 
 def getSourceKey(source: AudioSource) -> SourceKey:

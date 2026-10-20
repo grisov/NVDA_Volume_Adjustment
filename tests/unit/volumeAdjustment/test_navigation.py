@@ -19,7 +19,7 @@ class NavigationTestCase(AddonTestCase):
 
 	def setUp(self):
 		super().setUp()
-		self.speakers = makeDevice("output", "{out1}", "Speakers", level=0.5, default=True)
+		self.speakers = makeDevice("output", "{out1}", "Speakers", level=0.5, isDefaultDevice=True)
 		self.headphones = makeDevice("output", "{out2}", "USB headphones", level=0.3)
 		self.microphone = makeDevice("input", "{0.0.1.00000000}.{in1}", "Microphone", level=0.7)
 		self.outputs[:] = [self.speakers, self.headphones]
@@ -150,6 +150,11 @@ class TestFocus(NavigationTestCase):
 		self.assertEqual(self.press("volumeUp"), ["notepad is not playing any sound."])
 		self.assertEqual(self.nvda.SimpleAudioVolume.level, 1.0)
 
+	def test_unknown_application_in_focus_adjusts_nothing(self):
+		self.focusOn("", 0)
+		self.assertEqual(self.press("volumeUp"), ["Not supported"])
+		self.assertEqual(self.nvda.SimpleAudioVolume.level, 1.0)
+
 	def test_arrows_start_from_the_application_in_focus(self):
 		options["status"] = False
 		self.focusOn("firefox", 2)
@@ -189,11 +194,23 @@ class TestSelection(NavigationTestCase):
 		self.assertEqual(self.press("volumeUp"), ["Volume 51%"])
 		self.assertAlmostEqual(self.speakers.volume.level, 0.51)
 
-	def test_removed_device_falls_back_to_the_default_output(self):
-		self.navigator._selected = (kind.INPUT_DEVICE, self.microphone.id)
+	def test_disconnected_device_is_not_replaced_by_another_one(self):
+		options["status"] = False
+		self.navigator.selectSource(self.microphone, announceCategory=False)
 		self.inputs.clear()
 		self.refresh()
-		self.assertEqual(self.press("volumeUp"), ["Default audio device: Speakers", "Volume 51%"])
+		self.assertEqual(self.press("volumeUp"), ["Microphone is not available"])
+		self.assertAlmostEqual(self.speakers.volume.level, 0.5)
+		# The selection is kept: the microphone is adjusted again when it is connected
+		self.inputs.append(self.microphone)
+		self.refresh()
+		self.assertEqual(self.press("volumeUp"), ["Volume 71%"])
+
+	def test_without_focus_tracking_the_new_default_device_is_adjusted(self):
+		self.press("volumeUp")
+		self.outputs[:] = [self.headphones]
+		self.refresh()
+		self.assertEqual(self.press("volumeUp"), ["Volume 31%"])
 
 	def test_application_that_stopped_playing(self):
 		self.navigator._selected = (kind.PLAYBACK_APP, "ghost.exe")
@@ -208,8 +225,9 @@ class TestSelection(NavigationTestCase):
 	def test_selection_of_a_hidden_category_is_dropped(self):
 		self.navigator._selected = (kind.RECORDING_APP, "obs64.exe")
 		options["categories"] = "OIP"
-		self.press("volumeUp")
-		self.assertEqual(self.navigator._selected, (kind.OUTPUT_DEVICE, "{out1}"))
+		self.assertEqual(self.press("volumeUp"), ["Volume 51%"])
+		self.assertIsNone(self.navigator._selected)
+		self.assertAlmostEqual(self.speakers.volume.level, 0.51)
 
 	def test_mute_and_unmute_the_selected_source(self):
 		self.speakers.volume.level = 0.52
@@ -219,6 +237,20 @@ class TestSelection(NavigationTestCase):
 	def test_volume_down_to_zero_mutes(self):
 		self.speakers.volume.level = 0.01
 		self.assertEqual(self.press("volumeDown"), ["The sound is muted, Volume 0%"])
+
+	def test_hidden_device_is_unmuted_on_exit(self):
+		self.headphones.volume.level = 0.4
+		self.navigator.selectSource(self.headphones, announceCategory=False)
+		self.press("mute")
+		self.registry.scanDevices([self.headphones.id])
+		self.navigator.unmuteAllAudioSources()
+		self.assertAlmostEqual(self.headphones.volume.level, 0.4)
+		self.assertEqual(self.cfg.muted, [])
+
+	def test_device_muted_in_windows_stays_muted_on_exit(self):
+		self.speakers.volume.mute = 1
+		self.navigator.unmuteAllAudioSources()
+		self.assertEqual(self.speakers.volume.GetMute(), 1)
 
 	def test_unmute_all_on_exit(self):
 		self.press("mute")

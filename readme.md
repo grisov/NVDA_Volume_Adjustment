@@ -5,7 +5,7 @@
 * NVDA compatibility: 2026.1 and beyond
 * Installation: through the NVDA Add-on Store ([stable version][1])
 
-Adjust the volume of every audio device and every running program separately, switch the output and default audio devices, and mute your microphones in all programs at once - all from the keyboard.
+Adjust the volume of every audio device and every running program separately, switch the output device of NVDA and the default audio devices of Windows, and mute your microphones in all programs at once - all from the keyboard.
 
 ## Keyboard shortcuts
 After installation, the add-on has no keyboard shortcuts. You can either:
@@ -32,7 +32,9 @@ All audio sessions of a program are adjusted together, even if the program plays
 
 The last visible category cannot be hidden. The name of a category is announced when you move into it; this can be turned off in the add-on settings.
 
-By default, the volume commands adjust the program in focus. When you select another source with the arrows, it stays selected until the focus moves to another window.
+By default, the volume commands adjust the program in focus. If it does not play any sound, the add-on tells you so and does not change anything. When you select another source with the arrows, it stays selected until the focus moves to another window. If the selected device is disconnected, disabled or hidden, the add-on tells you that it is not available, and the device is adjusted again as soon as it is available.
+
+When you select a source, its name is announced together with its volume level. A braille display shows them in a short form, for example "Speakers: 30%".
 
 ## Adjust the volume
 * NVDA+Windows+Up Arrow or Down Arrow - increase or decrease the volume.
@@ -89,13 +91,13 @@ If any of the selected microphones is on, all of them are muted; otherwise all o
 * Visible categories of audio sources - the categories you switch between, the same as with NVDA+Windows+O, I, P and R.
 * Volume level change step, % - how much one keypress changes the volume, from 1 to 20 percent.
 * Announce the volume level in - percent, percent without the percent sign, or decibels for audio devices. Programs are always announced in percent. Decibel values come from the device and its driver, so they may sometimes look unusual, for example a narrow range or values far below zero.
-* Change the volume of the current application - the volume commands adjust the program in focus.
+* Change the volume of the current application - the volume commands adjust the program in focus. When this option is off, they adjust the first source in the list, usually the default output device, until you select another source with the arrows.
 * Hide output devices, Hide input devices, Hide processes - the items you do not want in the list of audio sources. The "Refresh" button updates the list and keeps the checked items; the "Clear" button unchecks all items and removes the ones that are no longer present.
 * Mute mode - "Complete Mute" turns the sound off; "Volume Down" decreases the volume by the percentage set with the "Decrease the volume by, %" slider.
-* Unmute all muted audio resources at NVDA shutdown - restore the volume of the sources muted by the add-on when NVDA exits. Only the programs running at that moment can be restored.
+* Unmute all muted audio resources at NVDA shutdown - restore the volume of the sources muted by the add-on when NVDA exits. Only the programs running and the devices connected at that moment can be restored. The sources muted in Windows and the microphones of the quick mute stay muted.
 * Warn before lowering or muting the volume of NVDA itself - see "Protecting the volume of NVDA".
 * Microphones of the quick mute - the microphones muted and unmuted with NVDA+Windows+Space.
-* Use default keyboard shortcuts - turn the predefined shortcuts on or off. NVDA asks to reload the add-ons for the change to take effect.
+* Use default keyboard shortcuts - turn the predefined shortcuts on or off. The add-ons need to be reloaded for the change to take effect: you can reload them at once, or choose to reload them later, and then the change takes effect after NVDA is restarted.
 
 ## Contributions
 We are very grateful to everyone who made the effort to develop, translate and maintain this add-on:

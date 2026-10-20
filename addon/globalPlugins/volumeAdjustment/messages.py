@@ -6,13 +6,16 @@
 # Copyright (C) 2020-2026 Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>
 
 from __future__ import annotations
+
 from collections.abc import Callable
+
 import addonHandler
 import ui
 from logHandler import log
+
 from .configuration import cfg, getAddonConfig
 from .model import Connection, FormFactor, SourceKind
-from .sources import AppSource, AudioSource, DeviceSource
+from .sources import AppSource, AudioSource, DeviceSource, OutputDeviceSource
 
 try:
 	addonHandler.initTranslation()
@@ -285,7 +288,7 @@ def getSourceTitle(source: AudioSource) -> str:
 	:param source: the audio source
 	:return: human friendly name of the audio source
 	"""
-	if not isinstance(source, AppSource) and source.default:
+	if isinstance(source, OutputDeviceSource) and source.isDefaultDevice:
 		# Translators: Used as the prefix to default audio device name
 		return "{default}: {title}".format(default=_("Default audio device"), title=source.name)
 	return getSourceName(source)
@@ -359,11 +362,12 @@ def announceUnableToSetDefaultDevice() -> None:
 
 
 def announceDeviceNotAvailable(name: str) -> None:
-	"""Announce that an output device found when NVDA was started is not available anymore.
+	"""Announce that an audio device is not available anymore, e.g. a device found when NVDA was started
+	or selected in the list of audio sources.
 
 	:param name: the name of the device
 	"""
-	# Translators: The message when the output device has been disconnected or disabled since NVDA was started,
+	# Translators: The message when the audio device has been disconnected or disabled,
 	# {name} is the name of the device
 	ui.message(_("{name} is not available").format(name=name))
 

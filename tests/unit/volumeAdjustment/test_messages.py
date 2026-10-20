@@ -113,7 +113,7 @@ class TestTitles(AddonTestCase):
 	def test_default_output_device_has_a_prefix(self):
 		device = makeDevice("output", "{a}", "Speakers")
 		self.assertEqual(messages.getSourceTitle(device), "Speakers")
-		device.default = True
+		device.isDefaultDevice = True
 		self.assertEqual(messages.getSourceTitle(device), "Default audio device: Speakers")
 
 	def test_application_title(self):

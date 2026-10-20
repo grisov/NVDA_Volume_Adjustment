@@ -6,10 +6,12 @@
 # Copyright (C) 2020-2026 Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>
 
 from __future__ import annotations
+
 import json
+from collections.abc import MutableMapping
 from os import path
 from typing import Any, cast
-from collections.abc import MutableMapping
+
 import addonHandler
 import config
 from globalVars import appArgs
@@ -32,7 +34,7 @@ confspec: dict[str, str] = {
 	# or decibels for the sources that provide them (audio devices)
 	"units": 'option("percent", "number", "decibels", default="percent")',
 	"focus": "boolean(default=true)",
-	# Letters of the visible categories of audio sources, see sources.SourceKind
+	# Letters of the visible categories of audio sources, see model.SourceKind
 	"categories": 'string(default="OIPR")',
 	"announceCategories": "boolean(default=true)",
 	# Announce the type, connection and default role of audio devices

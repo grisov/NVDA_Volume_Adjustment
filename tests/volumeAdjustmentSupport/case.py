@@ -34,7 +34,7 @@ class AddonTestCase(unittest.TestCase):
 
 	- self.outputs, self.inputs: the active audio devices, the default output device first;
 	- self.playing, self.recording: the audio sessions of programs on output and input devices;
-	- self.windowsOutputs, self.windowsInputs, self.windows: the devices and default devices of Windows for outputs.py;
+	- self.windowsOutputs, self.windowsInputs, self.windows: the devices and default devices of Windows for switching.py;
 	- support.spoken: the messages announced by the add-on, support.brailled: the same on a braille display;
 	- support.events: sounds, mute changes and delays.
 	"""
@@ -93,7 +93,7 @@ class AddonTestCase(unittest.TestCase):
 			lambda flow: list(self.playing if flow == registryModule.EDataFlow.eRender else self.recording),
 		)
 
-		def getAllDevices(hide: Any = ()) -> list[Any]:
+		def detectDevices(hide: Any = ()) -> list[Any]:
 			devices = [*self.outputs, *self.inputs]
 			if not devices:
 				return []
@@ -101,7 +101,7 @@ class AddonTestCase(unittest.TestCase):
 			# Like the real registry: the default output device is always the first one, even if it is hidden
 			return [devices[0], *(device for device in devices[1:] if device.id not in hidden)]
 
-		self.patch(self.registry, "getAllDevices", getAllDevices)
+		self.patch(self.registry, "detectDevices", detectDevices)
 		self.registry._devices = []
 		self.registry._hide = []
 		self.registry._generation = 0
@@ -131,7 +131,7 @@ class AddonTestCase(unittest.TestCase):
 		}
 		for name, function in replacements.items():
 			self.patch(module("devices"), name, function)
-			self.patch(module("outputs"), name, function)
+			self.patch(module("switching"), name, function)
 		self.patch(module("settings"), "isInputDevice", lambda id: id.startswith("{0.0.1."))
 		self.sources = sources
 
