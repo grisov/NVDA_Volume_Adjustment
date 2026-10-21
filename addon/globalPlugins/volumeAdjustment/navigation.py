@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import os
 import ui
 from api import getFocusObject
 
@@ -53,9 +54,19 @@ class SourceNavigator:
 		self._previous: SourceKey | None = None
 		# Application of the selected or focused process, reused between keypresses
 		self._app: AppSource | None = None
+		# The process in focus: the selection with arrows is kept while the focus stays in this process
+		self._focusedProcessId: int = 0
 
-	def onFocusChanged(self) -> None:
-		"""Follow the application in focus: the selection with arrows is dropped."""
+	def onFocusChanged(self, processId: int) -> None:
+		"""Follow the application in focus: the selection with arrows is dropped when another program gets the focus.
+		The windows of NVDA itself are skipped, e.g. the warning about the volume of NVDA or the add-on settings,
+		so the selection is kept when the focus returns from them to the same program.
+
+		:param processId: the ID of the process in focus, 0 if it is unknown
+		"""
+		if processId == os.getpid() or processId == self._focusedProcessId:
+			return
+		self._focusedProcessId = processId
 		self._selected = None
 		# The name of the application in focus is announced on the next keypress
 		self._previous = None

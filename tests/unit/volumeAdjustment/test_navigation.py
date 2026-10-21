@@ -159,6 +159,7 @@ class TestFocus(NavigationTestCase):
 		options["status"] = False
 		self.focusOn("firefox", 2)
 		self.assertEqual(self.press("next"), ["Zoom"])
+		self.focusOn("notepad", 42)
 		self.focusOn("firefox", 2)
 		self.assertEqual(self.press("prev"), ["nvda"])
 
@@ -166,6 +167,7 @@ class TestFocus(NavigationTestCase):
 		options["status"] = False
 		self.focusOn("notepad", 42)
 		self.assertEqual(self.press("next"), ["nvda"])
+		self.focusOn("explorer", 43)
 		self.focusOn("notepad", 42)
 		self.assertEqual(self.press("prev"), ["obs64"])
 
@@ -183,6 +185,25 @@ class TestFocus(NavigationTestCase):
 		self.press("next")
 		self.focusOn("Zoom", 7)
 		self.assertEqual(self.press("volumeUp"), ["Zoom", "Volume 51%"])
+
+	def test_selection_is_kept_when_the_focus_returns_from_a_window_of_nvda(self):
+		# E.g. the warning about the volume of NVDA or the add-on settings
+		options["status"] = False
+		self.focusOn("firefox", 2)
+		self.press("next")
+		self.focusOn("nvda", os.getpid())
+		self.focusOn("firefox", 2)
+		self.assertEqual(self.press("volumeUp"), ["Volume 51%"])
+		self.assertAlmostEqual(self.zoom.SimpleAudioVolume.level, 0.51)
+
+	def test_selection_is_kept_within_the_same_program(self):
+		options["status"] = False
+		self.focusOn("firefox", 2)
+		self.press("next")
+		# Another tab or window of the same program
+		self.focusOn("firefox", 2)
+		self.assertEqual(self.press("volumeUp"), ["Volume 51%"])
+		self.assertAlmostEqual(self.zoom.SimpleAudioVolume.level, 0.51)
 
 
 class TestSelection(NavigationTestCase):

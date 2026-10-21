@@ -24,6 +24,7 @@
 - The commands that switch NVDA output to a single device are created for the output devices found when NVDA starts, and the first of them is no longer the default device. Custom gestures assigned to the previous commands for single output devices need to be assigned again. (#6)
 - All audio sessions of an application are adjusted and muted together; previously only the first session of the application was changed. (#5)
 - When following the focus, the audio session of the focused process itself is preferred over other processes with the same name.
+- The audio source selected with the arrows stays selected while the focus moves within the same program or to a window of NVDA itself. Previously, e.g. after the warning about the volume of NVDA, the next command adjusted the program in focus instead.
 - The list of audio devices contains only active devices and is updated automatically when devices are connected, disconnected, enabled or disabled. (#7)
 - Detecting audio devices is much faster, so the add-on settings panel no longer freezes for up to several seconds when it is opened or the list of devices is refreshed.
 - The add-on settings list the output devices, the input devices and the processes to hide separately.

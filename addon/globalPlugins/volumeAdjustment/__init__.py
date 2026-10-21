@@ -118,13 +118,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		super().terminate(*args, **kwargs)
 
 	def event_gainFocus(self, obj: NVDAObject, nextHandler: Callable[[], None]) -> None:
-		"""Track the application in focus if the corresponding option is enabled.
+		"""Track the program in focus if the corresponding option is enabled.
 
 		:param obj: the object to track if focused
 		:param nextHandler: next event handler
 		"""
 		if getAddonConfig()["focus"]:
-			self.navigator.onFocusChanged()
+			self.navigator.onFocusChanged(getattr(obj, "processID", 0) or 0)
 		nextHandler()
 
 	# Translators: The name of the method that displayed in the NVDA input gestures dialog
