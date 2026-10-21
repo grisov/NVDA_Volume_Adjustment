@@ -129,5 +129,5 @@ Run the following commands from the root of the repository:
 4. `uv run scons` - build the add-on, the created `.nvda-addon` file is placed in the root of the repository;
 5. `uv run scons pot` - generate the `.pot` file with all translatable strings of the add-on (optional).
 
-[1]: https://addons.nvda-project.org/files/get.php?file=volumeAdjustment
+[1]: https://addonstore.nvaccess.org/?channel=stable&addonId=volumeAdjustment
 [2]: https://github.com/grisov/NVDA_Volume_Adjustment/releases

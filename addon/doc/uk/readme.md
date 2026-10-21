@@ -129,5 +129,5 @@ NVDA+Windows+Пробіл приглушує або вмикає у Windows ус
 4. `uv run scons` - зібрати додаток, створений файл `.nvda-addon` розміщується в корені репозиторію;
 5. `uv run scons pot` - створити файл `.pot` з усіма рядками додатку для перекладу (необов'язково).
 
-[1]: https://addons.nvda-project.org/files/get.php?file=volumeAdjustment
+[1]: https://addonstore.nvaccess.org/?channel=stable&addonId=volumeAdjustment
 [2]: https://github.com/grisov/NVDA_Volume_Adjustment/releases
