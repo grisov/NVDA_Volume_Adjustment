@@ -34,7 +34,8 @@ jobs:
         uv sync
 
     - name: Code checks
-      run: export PREK_SKIP=no-commit-to-branch; uv run prek run --all-files
+      # pyright needs the NVDA source code and the Windows-only packages, so it runs only locally before every commit
+      run: export PREK_SKIP=no-commit-to-branch,pyright; uv run prek run --all-files
 
     - name: building addon
       run: uv run scons && uv run scons pot
