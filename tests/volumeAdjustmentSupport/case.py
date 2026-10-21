@@ -28,6 +28,9 @@ TEST_OPTIONS: dict[str, Any] = {
 	"gestures": False,
 }
 
+# Marks a patched attribute that did not exist before the test
+_MISSING = object()
+
 
 class AddonTestCase(unittest.TestCase):
 	"""Every test gets a new global plugin and an audio world it controls:
@@ -71,11 +74,17 @@ class AddonTestCase(unittest.TestCase):
 	def tearDown(self) -> None:
 		self.plugin.terminate()
 		for target, name, original in reversed(self._patches):
-			setattr(target, name, original)
+			if original is _MISSING:
+				delattr(target, name)
+			else:
+				setattr(target, name, original)
 
 	def patch(self, target: Any, name: str, value: Any) -> None:
-		"""Replace an attribute for this test only."""
-		self._patches.append((target, name, getattr(target, name)))
+		"""Replace an attribute for this test only.
+
+		The attribute may be missing on other platforms, e.g. os.startfile on Linux in CI.
+		"""
+		self._patches.append((target, name, getattr(target, name, _MISSING)))
 		setattr(target, name, value)
 
 	def _installWorld(self) -> None:
