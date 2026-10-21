@@ -1,14 +1,14 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# This file is distributed under the same license as the Volume Adjustment package.
+# FIRST AUTHOR <grisov.nvaccess@mailgw.com>, 2020.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: 'volumeAdjustment' '1.3'\n"
+"Project-Id-Version: 'volumeAdjustment' '2.0.0'\n"
 "Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
-"POT-Creation-Date: 2021-03-08 13:17+0200\n"
-"PO-Revision-Date: 2023-04-19 19:46+0200\n"
-"Last-Translator: Gryshchenko Oleksandr <grisov.nvaccess@mailnull.com>\n"
+"POT-Creation-Date: 2026-10-21 11:06+0200\n"
+"PO-Revision-Date: 2026-10-21 12:26+0200\n"
+"Last-Translator: Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>\n"
 "Language-Team: Ukrainian Language Team\n"
 "Language: uk_UA\n"
 "MIME-Version: 1.0\n"
@@ -16,11 +16,99 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
-"X-Generator: Poedit 3.2.2\n"
+"X-Generator: Poedit 3.10\n"
 
-#. Translators: The current application does not pay audio
-msgid "{app} is not playing any sound."
-msgstr "{app} не відтворює звуку."
+#. Translators: The name of the category of audio sources announced while switching between them
+msgid "Output devices"
+msgstr "Пристрої виводу"
+
+#. Translators: The name of the category of audio sources announced while switching between them
+msgid "Input devices"
+msgstr "Пристрої вводу"
+
+#. Translators: The name of the category of audio sources announced while switching between them
+msgid "Playback apps"
+msgstr "Програми відтворення"
+
+#. Translators: The name of the category of audio sources announced while switching between them
+msgid "Recording apps"
+msgstr "Програми запису"
+
+#. Translators: The type of an audio device announced after its name
+msgid "network device"
+msgstr "мережевий пристрій"
+
+#. Translators: The type of an audio device announced after its name
+msgid "speakers"
+msgstr "динаміки"
+
+#. Translators: The type of an audio device announced after its name, e.g. a line input or output
+msgid "line"
+msgstr "лінійний"
+
+#. Translators: The type of an audio device announced after its name
+msgid "headphones"
+msgstr "навушники"
+
+#. Translators: The type of an audio device announced after its name
+msgid "microphone"
+msgstr "мікрофон"
+
+#. Translators: The type of an audio device announced after its name: headphones with a microphone
+msgid "headset"
+msgstr "гарнітура"
+
+#. Translators: The type of an audio device announced after its name: a telephone handset
+msgid "handset"
+msgstr "телефонна трубка"
+
+#. Translators: The type of an audio device announced after its name: a digital audio output
+msgid "digital output"
+msgstr "цифровий вихід"
+
+#. Translators: The type of an audio device announced after its name: the S/PDIF digital interface
+msgid "S/PDIF"
+msgstr "S/PDIF"
+
+#. Translators: The type of an audio device announced after its name: the speakers of a monitor or TV (HDMI)
+msgid "digital display"
+msgstr "цифровий дисплей"
+
+#. Translators: How an audio device is connected, announced after its name
+msgid "USB"
+msgstr "USB"
+
+#. Translators: How an audio device is connected, announced after its name
+msgid "Bluetooth"
+msgstr "Bluetooth"
+
+#. Translators: How an audio device is connected, announced after its name: a software device,
+#. e.g. a virtual audio cable
+msgid "virtual"
+msgstr "віртуальний"
+
+#. Translators: Announced after the name of an audio device that is the default device of Windows
+msgid "default"
+msgstr "за замовчуванням"
+
+#. Translators: Announced after the name of an audio device that is the default communication device of Windows
+msgid "communication"
+msgstr "для зв'язку"
+
+#. Translators: The message when the category of audio sources is already the only visible one,
+#. e.g. when the user tries to hide it, {category} is its name, e.g. "Recording apps"
+#, python-brace-format
+msgid "{category} is already the only visible category"
+msgstr "{category} - вже єдина видима категорія"
+
+#. Translators: The message when the user tries to hide the only visible category of audio sources,
+#. followed by the message that it is already the only visible category
+msgid "Category cannot be hidden."
+msgstr "Категорію неможливо приховати."
+
+#. Translators: The unit of the volume level in decibels, announced after the number, e.g. "Volume -12.5 dB"
+msgid "dB"
+msgstr "дБ"
 
 #. Translators: The message is announced during volume control
 msgid "Volume"
@@ -30,10 +118,25 @@ msgstr "Гучність"
 msgid "The sound is muted"
 msgstr "Звук приглушено"
 
+#. Translators: The short message shown on a braille display when the sound is muted,
+#. it may be followed by the remaining volume level, e.g. "muted 5%"
+msgid "muted"
+msgstr "приглушено"
+
 #. Translators: Message about the number of the selected audio channel
 #, python-format
 msgid "Channel %d"
 msgstr "Канал %d"
+
+#. Translators: The message when the selected recording application does not record any sound
+#, python-brace-format
+msgid "{app} is not recording any sound."
+msgstr "{app} не записує звуку."
+
+#. Translators: The message when the selected application does not play any sound
+#, python-brace-format
+msgid "{app} is not playing any sound."
+msgstr "{app} не відтворює звуку."
 
 #. Translators: The message when feature currently is not supported
 msgid "Not supported"
@@ -41,7 +144,182 @@ msgstr "Функція не підтримується"
 
 #. Translators: Used as the prefix to default audio device name
 msgid "Default audio device"
-msgstr "Аудіо-пристрій за замовчуванням"
+msgstr "Аудіопристрій за замовчуванням"
+
+#. Translators: The message when a category of audio sources is shown,
+#. {category} is its name, e.g. "Recording apps", {count} is the number of its audio sources now
+#, python-brace-format
+msgid "{category} shown, {count} source"
+msgid_plural "{category} shown, {count} sources"
+msgstr[0] "{category} показано, {count} джерело"
+msgstr[1] "{category} показано, {count} джерела"
+msgstr[2] "{category} показано, {count} джерел"
+
+#. Translators: The message when a category of audio sources is hidden,
+#. {category} is its name, e.g. "Recording apps"
+#, python-brace-format
+msgid "{category} hidden"
+msgstr "{category} приховано"
+
+#. Translators: The message when only one category of audio sources is shown,
+#. {category} is its name, e.g. "Recording apps", {count} is the number of its audio sources now
+#, python-brace-format
+msgid "{category} only, {count} source"
+msgid_plural "{category} only, {count} sources"
+msgstr[0] "{category} - лише ця категорія, {count} джерело"
+msgstr[1] "{category} - лише ця категорія, {count} джерела"
+msgstr[2] "{category} - лише ця категорія, {count} джерел"
+
+#. Translators: The message when the channels of an application cannot be adjusted
+#. because NVDA sound split is enabled and uses them
+msgid "Channels are used by NVDA sound split"
+msgstr "Канали використовуються розділенням звуку NVDA"
+
+#. Translators: The message when Windows does not allow to change its default audio device
+msgid "Unable to set the default device"
+msgstr "Не вдалося встановити пристрій за замовчуванням"
+
+#. Translators: The message when the audio device has been disconnected or disabled,
+#. {name} is the name of the device
+#, python-brace-format
+msgid "{name} is not available"
+msgstr "{name}: пристрій недоступний"
+
+#. Translators: The message when no microphones have been selected for the quick mute in the add-on settings
+msgid "No microphones are selected for the quick mute"
+msgstr "Не вибрано мікрофонів для швидкого приглушення"
+
+#. Translators: The message when none of the microphones selected for the quick mute is connected
+msgid "The microphones selected for the quick mute are not connected"
+msgstr "Мікрофони, вибрані для швидкого приглушення, не підключені"
+
+#. Translators: The title of the dialog which appears when the user enables or disables the default gestures
+msgid "Gestures Configuration Change"
+msgstr "Зміна клавішних команд додатку"
+
+#. Translators: The message displayed when addon gestures has been changed.
+msgid "NVDA add-ons must be reloaded for the new gestures to take effect."
+msgstr ""
+"Щоб нові комбінації клавіш набули чинності - необхідно перезавантажити "
+"додатки NVDA."
+
+#. Translators: The warning is displayed before switching on default addon gestures
+msgid ""
+"Warning! Using the feature to set the maximum volume level may damage your "
+"hearing."
+msgstr ""
+"Увага! Використання функції встановлення максимальної гучності звуку може "
+"призвести до пошкодження слуху."
+
+#. Translators: The button in the dialog which appears when the user changed addon's default gestures
+msgid "Reload &now"
+msgstr "Перезавантажити &зараз"
+
+#. Translators: The button  in the dialog which appears when the user changed addon's default gestures
+msgid "Reload &later"
+msgstr "Перезавантажити &пізніше"
+
+#. Translators: The warning shown before the volume of NVDA itself is lowered or muted
+msgid ""
+"This is the audio session of NVDA itself. Lowering or muting its volume also "
+"lowers or silences NVDA speech, and Windows keeps this volume even after "
+"NVDA is restarted. Do you want to continue?"
+msgstr ""
+"Це аудіосесія самої NVDA. Зменшення або приглушення її гучності також робить "
+"мовлення NVDA тихішим або вимикає його, а Windows зберігає цю гучність "
+"навіть після перезапуску NVDA. Бажаєте продовжити?"
+
+#. Translators: The label of a checkbox in the warning about lowering the volume of NVDA itself
+msgid "&Do not show this warning again"
+msgstr "&Більше не показувати це попередження"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "Report the s&tatus of the sound source while switching"
+msgstr "Повідомляти про с&тан джерела звуку під час перемикання"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "Announce category &names while switching"
+msgstr "Оголошувати &назви категорій під час перемикання"
+
+#. Translators: This is the label for a checkbox in the settings panel: the type, connection and
+#. default role of an audio device are announced after its volume level or name
+msgid "Announce audio device &details"
+msgstr "Оголошувати по&дробиці про аудіопристрій"
+
+#. Translators: The label of the Checkable list in the settings panel
+msgid "&Visible categories of audio sources:"
+msgstr "&Видимі категорії джерел звуку:"
+
+#. Translators: The label of the component in the settings panel
+msgid "Volume level change &step:"
+msgstr "Крок зміни р&івня гучності:"
+
+#. Translators: The label of the choice list of the units of the announced volume level in the settings panel
+msgid "Announce the volume &level in:"
+msgstr "Оголошувати &рівень гучності в:"
+
+#. Translators: An item in the choice list of the units of the announced volume level
+msgid "Percent"
+msgstr "Відсотках"
+
+#. Translators: An item in the choice list of the units of the announced volume level,
+#. the level in percent is announced without the percent sign, e.g. "Volume 29"
+msgid "Percent, number only"
+msgstr "Відсотках, лише число"
+
+#. Translators: An item in the choice list of the units of the announced volume level,
+#. only audio devices provide their volume levels in decibels
+msgid "Decibels, if the source supports it"
+msgstr "Децибелах, якщо джерело їх підтримує"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "Chan&ge the volume of the current application"
+msgstr "Змінювати гучність п&оточної програми"
+
+#. Translators: The label of the Checkable list in the settings panel
+msgid "Hide output d&evices:"
+msgstr "Приховати пристрої в&иводу:"
+
+#. Translators: The label of the Checkable list in the settings panel
+msgid "Hide &input devices:"
+msgstr "Приховати пристрої ввод&у:"
+
+#. Translators: The label of the Checkable list in the settings panel
+msgid "Hide &processes:"
+msgstr "Приховати &процеси:"
+
+#. Translators: This is the label for a choice list in the settings panel.
+msgid "&Mute mode:"
+msgstr "Ре&жим приглушування:"
+
+#. Translators: An item in the choice list of mute modes in the settings panel
+msgid "Complete Mute"
+msgstr "Повне вимкнення звуку"
+
+#. Translators: An item in the choice list of mute modes in the settings panel
+msgid "Volume Down"
+msgstr "Зменшення гучності на встановлене значення"
+
+#. Translators: This is the label for a slider in the settings panel.
+msgid "Decrease the volume &by, %"
+msgstr "Змен&шувати гучність на величину у відсотках"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "&Unmute all muted audio resources at NVDA shutdown"
+msgstr "Вмикати всі приглушені &аудіоресурси при завершенні роботи NVDA"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "&Warn before lowering or muting the volume of NVDA itself"
+msgstr "Поп&ереджати перед зменшенням або приглушенням гучності самої NVDA"
+
+#. Translators: The label of the Checkable list in the settings panel: the input devices
+#. muted and unmuted together by one command
+msgid "Microphones of the &quick mute:"
+msgstr "&Мікрофони швидкого приглушення:"
+
+#. Translators: This is the label for a checkbox in the settings panel.
+msgid "Use default &keyboard shortcuts"
+msgstr "Використовувати комбінації к&лавіш за замовчуванням"
 
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
 msgid "Increase the volume"
@@ -71,25 +349,119 @@ msgstr "Перейти до наступного джерела звуку"
 msgid "Switch to the previous audio source"
 msgstr "Перейти до попереднього джерела звуку"
 
-#. Translators: name for default (Microsoft Sound Mapper) audio output device.
-msgid "Microsoft Sound Mapper"
-msgstr "Microsoft Sound Mapper"
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch to the first audio source of the next category"
+msgstr "Перейти до першого джерела звуку наступної категорії"
 
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
-msgid "Next audio output device"
-msgstr "Наступний пристрій вивода звуку"
+msgid "Switch to the first audio source of the previous category"
+msgstr "Перейти до першого джерела звуку попередньої категорії"
 
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
-msgid "Previous audio output device"
-msgstr "Попередній пристрій вивода звуку"
+msgid "Show or hide output devices"
+msgstr "Показати або приховати пристрої виводу"
 
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
-msgid "Switch the output to the selected audio device"
-msgstr "Перемкнути вивід звуку NVDA на вибраний аудіо-пристрій"
+msgid "Show or hide input devices"
+msgstr "Показати або приховати пристрої вводу"
 
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
-msgid "Switch the output to the device {number} ({name})"
-msgstr "Перемкнути вивід на аудіо-пристрій {number} ({name})"
+msgid "Show or hide applications playing sound"
+msgstr "Показати або приховати програми, що відтворюють звук"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Show or hide applications recording sound"
+msgstr "Показати або приховати програми, що записують звук"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Show only output devices"
+msgstr "Показати лише пристрої виводу"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Show only input devices"
+msgstr "Показати лише пристрої вводу"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Show only applications playing sound"
+msgstr "Показати лише програми, що відтворюють звук"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Show only applications recording sound"
+msgstr "Показати лише програми, що записують звук"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch NVDA output to the next device"
+msgstr "Перемкнути вивід NVDA на наступний пристрій"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch NVDA output to the previous device"
+msgstr "Перемкнути вивід NVDA на попередній пристрій"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Switch NVDA output to the default device"
+msgstr "Перемкнути вивід NVDA на пристрій за замовчуванням"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set the next device as the default output device"
+msgstr "Встановити наступний пристрій як пристрій виводу за замовчуванням"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set the previous device as the default output device"
+msgstr "Встановити попередній пристрій як пристрій виводу за замовчуванням"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set the next device as the default communication device"
+msgstr "Встановити наступний пристрій як пристрій зв'язку за замовчуванням"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Set the previous device as the default communication device"
+msgstr "Встановити попередній пристрій як пристрій зв'язку за замовчуванням"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Mute or unmute the microphones selected for the quick mute"
+msgstr "Приглушити або увімкнути мікрофони, вибрані для швидкого приглушення"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog
+msgid "Open the Sound dialog of Windows"
+msgstr "Відкрити діалог \"Звук\" Windows"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog,
+#. {number} is the number of the output device in the order of Windows, e.g. 1 for F1, {name} is its name
+#, python-brace-format
+msgid "Switch NVDA output to the device {number} ({name})"
+msgstr "Перемкнути вивід NVDA на пристрій {number} ({name})"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog,
+#. {number} is the number of the output device in the order of Windows, e.g. 1 for F1, {name} is its name
+#, python-brace-format
+msgid "Set the device {number} ({name}) as the default output device"
+msgstr ""
+"Встановити пристрій {number} ({name}) як пристрій виводу за замовчуванням"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog,
+#. {number} is the number of the output device in the order of Windows, e.g. 1 for F1, {name} is its name
+#, python-brace-format
+msgid "Set the device {number} ({name}) as the default communication device"
+msgstr ""
+"Встановити пристрій {number} ({name}) як пристрій зв'язку за замовчуванням"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog,
+#. {number} is the number of the input device in the order of Windows, {name} is its name
+#, python-brace-format
+msgid "Set the input device {number} ({name}) as the default input device"
+msgstr ""
+"Встановити пристрій вводу {number} ({name}) як пристрій вводу за "
+"замовчуванням"
+
+#. Translators: The name of the method that displayed in the NVDA input gestures dialog,
+#. {number} is the number of the input device in the order of Windows, {name} is its name
+#, python-brace-format
+msgid ""
+"Set the input device {number} ({name}) as the default communication input "
+"device"
+msgstr ""
+"Встановити пристрій вводу {number} ({name}) як пристрій вводу для зв'язку за "
+"замовчуванням"
 
 #. Translators: The name of the method that displayed in the NVDA input gestures dialog
 msgid "Select next channel"
@@ -120,96 +492,30 @@ msgid "Set the average volume level for all channels"
 msgstr ""
 "Встановити середнє арифметичне значення рівня гучності для всіх каналів"
 
-#. Translators: The title of the dialog which appears when the user enables or disables the default gestures
-msgid "Gestures Configuration Change"
-msgstr "Зміна клавішних команд додатку"
-
-#. Translators: The message displayed when addon gestures has been changed.
-msgid "NVDA add-ons must be reloaded for the new gestures to take effect."
-msgstr ""
-"Щоб нові комбінації клавіш набули чинності - необхідно перезавантажити "
-"додатки NVDA."
-
-#. Translators: The warning is displayed before switching on default addon gestures
-msgid ""
-"Warning! Using the feature to set the maximum volume level may damage your "
-"hearing."
-msgstr ""
-"Увага! Використання функції встановлення максимальної гучності звуку може "
-"призвести до пошкодження слуху."
-
-#. Translators: The label for a button  in the dialog which appears when the user changed addon's default gestures
-msgid "Reload &now"
-msgstr "Перезавантажити &зараз"
-
-#. Translators: The label for a button  in the dialog which appears when the user changed addon's default gestures
-msgid "Reload &later"
-msgstr "Перезавантажити &пізніше"
-
-# Translators: This is the label for a checkbox in the settings panel.
-#. Translators: This is the label for a checkbox in the settings panel.
-msgid "&Report the status of the sound source while switching"
-msgstr "Повідомляти про стан &джерела звуку під час перемикання"
-
-#. Translators: The label of the component in the settings panel
-msgid "Volume level change &step:"
-msgstr "&Крок зміни рівня гучності:"
-
-#. Translators: This is the label for a checkbox in the settings panel.
-msgid "Change the volume of the current &application"
-msgstr "Змінювати &гучність поточної програми"
-
-#. Translators: This is the label for a checkbox in the settings panel.
-msgid "Hide audio sessions with the same &names"
-msgstr "Приховувати аудіо-сесії з &однаковими іменами"
-
-#. Translators: The label of the Checkable list in the settings panel
-msgid "Hide &processes:"
-msgstr "Приховати &процеси:"
-
-#. Translators: This is the label for a checkbox in the settings panel.
-msgid "C&ontrol all available audio devices (experimental)"
-msgstr "Керувати &всіма доступними аудіопристроями (експериментальна функція)"
-
-#. Translators: The label of the Checkable list in the settings panel
-msgid "Hide audio &devices:"
-msgstr "Приховати &аудіопристрої:"
-
-#. Translators: This is the label for a choice list in the settings panel.
-msgid "&Mute mode:"
-msgstr "Ре&жим приглушування:"
-
-#. Translators: An item in the choice list of mute modes in the settings panel
-msgid "Complete Mute"
-msgstr "Повне вимкнення звуку"
-
-#. Translators: An item in the choice list of mute modes in the settings panel
-msgid "Volume Down"
-msgstr "Зменшення гучності на встановлене значення"
-
-#. Translators: This is the label for a slider in the settings panel.
-msgid "Decrease the volume &by, %"
-msgstr "Змен&шувати гучність на величину у відсотках"
-
-#. Translators: This is the label for a checkbox in the settings panel.
-msgid "&Unmute all muted audio resources at NVDA shutdown"
-msgstr "Вмикати всі приглушені аудіо-ресурси при завершенні &роботи NVDA"
-
-#. Translators: This is the label for a checkbox in the settings panel.
-msgid "Use default &keyboard shortcuts"
-msgstr "Використовувати комбінації клавіш за &замовчуванням"
-
-#. Add-on summary, usually the user visible name of the addon.
-#. Translators: Summary for this add-on
-#. to be shown on installation and add-on information found in Add-ons Manager.
+#. Add-on summary/title, usually the user visible name of the add-on
+#. Translators: Summary/title for this add-on
+#. to be shown on installation and add-on information found in add-on store
 msgid "Volume Adjustment"
 msgstr "Регулювання гучності"
 
 #. Add-on description
-#. Translators: Long description to be shown for this add-on on add-on information from add-ons manager
+#. Translators: Long description to be shown for this add-on on add-on information from add-on store
 msgid ""
-"Adjust the volume level of all audio devices installed in the system and "
-"each running program separately using simple keyboard shortcuts."
+"Adjust the volume of every audio device and every running program "
+"separately, switch the default audio devices of Windows and mute the "
+"microphones in all programs at once, using simple keyboard shortcuts."
 msgstr ""
-"Відрегулюйте рівень гучності всіх аудіопристроїв, встановлених в системі, і "
-"кожної запущеної програми окремо за допомогою простих комбінацій клавіш."
+"Регулюйте гучність кожного аудіопристрою та кожної запущеної програми "
+"окремо, перемикайте аудіопристрої Windows за замовчуванням і приглушуйте "
+"мікрофони в усіх програмах одночасно за допомогою простих комбінацій клавіш."
+
+#. Brief changelog for this version
+#. Translators: what's new content for the add-on version to be shown in the add-on store
+msgid ""
+"Four categories of audio sources including microphones and recording apps, "
+"switching of the default output and input devices of Windows, quick mute of "
+"microphones, braille support and much faster response."
+msgstr ""
+"Чотири категорії джерел звуку, зокрема мікрофони та програми запису, "
+"перемикання пристроїв виводу та вводу Windows за замовчуванням, швидке "
+"приглушення мікрофонів, підтримка брайля та набагато швидша реакція."
