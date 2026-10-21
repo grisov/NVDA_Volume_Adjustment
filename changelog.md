@@ -56,3 +56,4 @@
 - Lowering the volume of a muted audio source rewrote the add-on configuration file on every keypress.
 - Unmuting audio sources when NVDA exits ran in a background thread, which could fail.
 - An error on NVDA exit when the add-on settings panel had already been removed.
+- The keyboard shortcut of the "Decrease the volume by" slider in the add-on settings did not work. The slider is now unavailable in the "Complete Mute" mode instead of being hidden.
