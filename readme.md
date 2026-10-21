@@ -32,7 +32,7 @@ All audio sessions of a program are adjusted together, even if the program plays
 
 The last visible category cannot be hidden. The name of a category is announced when you move into it; this can be turned off in the add-on settings.
 
-By default, the volume commands adjust the program in focus. If it does not play any sound, the add-on tells you so and does not change anything. When you select another source with the arrows, it stays selected until the focus moves to another window. If the selected device is disconnected, disabled or hidden, the add-on tells you that it is not available, and the device is adjusted again as soon as it is available.
+By default, the volume commands adjust the program in focus. If it does not play any sound, the add-on tells you so and does not change anything. When you select another source with the arrows, it stays selected until the focus moves to another program; the windows of NVDA itself, such as the add-on settings, do not count. If the selected device is disconnected, disabled or hidden, the add-on tells you that it is not available, and the device is adjusted again as soon as it is available.
 
 When you select a source, its name is announced together with its volume level. A braille display shows them in a short form, for example "Speakers: 30%".
 
