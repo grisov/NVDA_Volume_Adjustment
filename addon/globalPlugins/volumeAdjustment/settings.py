@@ -158,17 +158,16 @@ class VASettingsPanel(SettingsPanel):
 
 		:param sizer: The sizer to which to add the settings controls.
 		"""
-		self.sizer = sizer
 		# BoxSizerHelper works with any window, NVDA annotates its parent as a dialog
 		addonHelper = guiHelper.BoxSizerHelper(self, sizer=sizer)  # pyright: ignore[reportArgumentType]
 		self.reportStatusChk = addonHelper.addItem(
 			# Translators: This is the label for a checkbox in the settings panel.
-			wx.CheckBox(self, label=_("&Report the status of the sound source while switching")),
+			wx.CheckBox(self, label=_("Report the s&tatus of the sound source while switching")),
 		)
 		self.reportStatusChk.SetValue(getAddonConfig()["status"])
 		self.announceCategoriesChk = addonHelper.addItem(
 			# Translators: This is the label for a checkbox in the settings panel.
-			wx.CheckBox(self, label=_("Announce &category names while switching")),
+			wx.CheckBox(self, label=_("Announce category &names while switching")),
 		)
 		self.announceCategoriesChk.SetValue(getAddonConfig()["announceCategories"])
 		self.deviceDetailsChk = addonHelper.addItem(
@@ -215,7 +214,7 @@ class VASettingsPanel(SettingsPanel):
 		self.units.Select(["percent", "number", "decibels"].index(getAddonConfig()["units"]))
 		self.followFocusChk = addonHelper.addItem(
 			# Translators: This is the label for a checkbox in the settings panel.
-			wx.CheckBox(self, label=_("Change the volume of the current &application")),
+			wx.CheckBox(self, label=_("Chan&ge the volume of the current application")),
 		)
 		self.followFocusChk.SetValue(getAddonConfig()["focus"])
 
@@ -223,7 +222,7 @@ class VASettingsPanel(SettingsPanel):
 		self.devs: dict[str, str] = {}
 		self.hideOutputDevices = addonHelper.addLabeledControl(
 			# Translators: The label of the Checkable list in the settings panel
-			_("Hide &output devices:"),
+			_("Hide output d&evices:"),
 			nvdaControls.CustomCheckListBox,
 			choices=[],
 		)
@@ -300,7 +299,9 @@ class VASettingsPanel(SettingsPanel):
 			maxValue=99,
 			size=(250, -1),
 		)
-		self.mutePercentageSlider.Show(show=not getAddonConfig()["muteCompletely"])
+		# Disabled instead of hidden: when a labeled control is shown or hidden, NVDA sets the text of its label
+		# without the "&" sign, so the shortcut of the label stops working
+		self.mutePercentageSlider.Enable(not getAddonConfig()["muteCompletely"])
 		self.unmuteOnExitChk = addonHelper.addItem(
 			# Translators: This is the label for a checkbox in the settings panel.
 			wx.CheckBox(self, label=_("&Unmute all muted audio resources at NVDA shutdown")),
@@ -314,7 +315,7 @@ class VASettingsPanel(SettingsPanel):
 		self.quickMuteDevices = addonHelper.addLabeledControl(
 			# Translators: The label of the Checkable list in the settings panel: the input devices
 			# muted and unmuted together by one command
-			_("Microp&hones of the quick mute:"),
+			_("Microphones of the &quick mute:"),
 			nvdaControls.CustomCheckListBox,
 			choices=[],
 		)
@@ -344,14 +345,12 @@ class VASettingsPanel(SettingsPanel):
 
 	def onMuteModeChoice(self, event: wx.PyEvent) -> None:
 		"""Select the mute mode - completely turn off or partial decrease of the volume level,
-		dynamically controls the showing of the volume mute slider.
+		the slider of the percentage is available only for the decrease.
 
 		:param event: event binder object which processes changing of the wx.Choice
 		"""
 		mode: int = self.muteMode.GetClientData(self.muteMode.GetSelection())
-		self.mutePercentageSlider.Show(show=bool(mode))
-		self.mutePercentageSlider.GetParent().Layout()
-		self.sizer.Fit(self)
+		self.mutePercentageSlider.Enable(bool(mode))
 
 	def onGesturesCheckbox(self, event: wx.PyEvent) -> None:
 		"""Enabling or disabling default keyboard shortcuts: the add-ons are reloaded now or later.
