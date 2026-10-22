@@ -145,13 +145,6 @@ class VASettingsPanel(SettingsPanel):
 
 	title: str = addonSummary
 
-	def __init__(self, parent: wx.Window) -> None:
-		"""Initializing the add-on settings panel object.
-
-		:param parent: parent top level window
-		"""
-		super().__init__(parent)
-
 	@override
 	def makeSettings(self, sizer: wx.BoxSizer) -> None:
 		"""Populate the panel with settings controls.
@@ -454,10 +447,6 @@ class VASettingsPanel(SettingsPanel):
 		index = event.GetInt()
 		self.visibleCategories.Check(index, True)
 		ui.message(getOnlyVisibleCategoryMessage(getCategoryName(list(SourceKind)[index]), hiding=True))
-
-	def postInit(self) -> None:
-		"""Set system focus to the first component in the settings panel."""
-		self.reportStatusChk.SetFocus()
 
 	@override
 	def onSave(self) -> None:
