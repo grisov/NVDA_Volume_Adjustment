@@ -79,8 +79,7 @@ def getDeviceDetails(device: DeviceSource) -> list[str]:
 		Connection.USB: _("USB"),
 		# Translators: How an audio device is connected, announced after its name
 		Connection.BLUETOOTH: _("Bluetooth"),
-		# Translators: How an audio device is connected, announced after its name: a software device,
-		# e.g. a virtual audio cable
+		# Translators: How an audio device is connected: a software device, e.g. a virtual audio cable
 		Connection.VIRTUAL: _("virtual"),
 	}
 	details = [formFactors.get(device.formFactor, ""), connections.get(device.connection, "")]
@@ -101,13 +100,11 @@ def getOnlyVisibleCategoryMessage(category: str, hiding: bool = False) -> str:
 	:param hiding: whether the user tries to hide the category
 	:return: the message to announce
 	"""
-	# Translators: The message when the category of audio sources is already the only visible one,
-	# e.g. when the user tries to hide it, {category} is its name, e.g. "Recording apps"
+	# Translators: {category} is the name of the only visible category, e.g. "Recording apps"
 	message = _("{category} is already the only visible category").format(category=category)
 	if not hiding:
 		return message
-	# Translators: The message when the user tries to hide the only visible category of audio sources,
-	# followed by the message that it is already the only visible category
+	# Translators: The message when the user tries to hide the only visible category of audio sources
 	prefix = _("Category cannot be hidden.")
 	return f"{prefix} {message}"
 
@@ -183,8 +180,7 @@ def formatMuted(source: AudioSource) -> tuple[str, str]:
 	"""
 	# Translators: The message is announced during volume control
 	message: str = _("The sound is muted")
-	# Translators: The short message shown on a braille display when the sound is muted,
-	# it may be followed by the remaining volume level, e.g. "muted 5%"
+	# Translators: The short braille message when the sound is muted, e.g. "muted 5%"
 	brailleText: str = _("muted")
 	volume = source.volume
 	# The level is announced only when the add-on decreased it: a source muted by Windows or another program is silent
@@ -320,8 +316,7 @@ def announceCategoryShown(category: str, count: int) -> None:
 	:param category: the name of the category
 	:param count: the number of its audio sources now
 	"""
-	# Translators: The message when a category of audio sources is shown,
-	# {category} is its name, e.g. "Recording apps", {count} is the number of its audio sources now
+	# Translators: A category of audio sources is shown, {count} is the number of its sources
 	message = ngettext("{category} shown, {count} source", "{category} shown, {count} sources", count)
 	ui.message(message.format(category=category, count=count))
 
@@ -331,8 +326,7 @@ def announceCategoryHidden(category: str) -> None:
 
 	:param category: the name of the category
 	"""
-	# Translators: The message when a category of audio sources is hidden,
-	# {category} is its name, e.g. "Recording apps"
+	# Translators: A category of audio sources is hidden, {category} is its name, e.g. "Recording apps"
 	ui.message(_("{category} hidden").format(category=category))
 
 
@@ -342,16 +336,14 @@ def announceOnlyCategory(category: str, count: int) -> None:
 	:param category: the name of the category
 	:param count: the number of its audio sources now
 	"""
-	# Translators: The message when only one category of audio sources is shown,
-	# {category} is its name, e.g. "Recording apps", {count} is the number of its audio sources now
+	# Translators: Only one category of audio sources is shown, {count} is the number of its sources
 	message = ngettext("{category} only, {count} source", "{category} only, {count} sources", count)
 	ui.message(message.format(category=category, count=count))
 
 
 def announceChannelsUsedBySoundSplit() -> None:
 	"""Announce that the channels of an application cannot be adjusted while NVDA sound split is enabled."""
-	# Translators: The message when the channels of an application cannot be adjusted
-	# because NVDA sound split is enabled and uses them
+	# Translators: The channels of an application cannot be adjusted while NVDA sound split is on
 	ui.message(_("Channels are used by NVDA sound split"))
 
 
@@ -367,8 +359,7 @@ def announceDeviceNotAvailable(name: str) -> None:
 
 	:param name: the name of the device
 	"""
-	# Translators: The message when the audio device has been disconnected or disabled,
-	# {name} is the name of the device
+	# Translators: The audio device {name} has been disconnected or disabled
 	ui.message(_("{name} is not available").format(name=name))
 
 

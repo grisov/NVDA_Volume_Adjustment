@@ -354,21 +354,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		for scriptName in [name for name in vars(self.__class__) if name.startswith("script_")]:
 			if scriptName[len("script_") :].rstrip("0123456789") in DEVICE_SCRIPTS:
 				delattr(self.__class__, scriptName)
-		# Translators: The name of the method that displayed in the NVDA input gestures dialog,
-		# {number} is the number of the output device in the order of Windows, e.g. 1 for F1, {name} is its name
+		# Translators: A command, {number} is the output device number, e.g. 1 for F1, {name} is its name
 		nvdaDescription = _("Switch NVDA output to the device {number} ({name})")
-		# Translators: The name of the method that displayed in the NVDA input gestures dialog,
-		# {number} is the number of the output device in the order of Windows, e.g. 1 for F1, {name} is its name
+		# Translators: A command, {number} is the output device number, e.g. 1 for F1, {name} is its name
 		defaultDescription = _("Set the device {number} ({name}) as the default output device")
-		# Translators: The name of the method that displayed in the NVDA input gestures dialog,
-		# {number} is the number of the output device in the order of Windows, e.g. 1 for F1, {name} is its name
+		# Translators: A command, {number} is the output device number, e.g. 1 for F1, {name} is its name
 		communicationDescription = _("Set the device {number} ({name}) as the default communication device")
-		# Translators: The name of the method that displayed in the NVDA input gestures dialog,
-		# {number} is the number of the input device in the order of Windows, {name} is its name
+		# Translators: A command, {number} is the input device number, {name} is its name
 		defaultInputDescription = _("Set the input device {number} ({name}) as the default input device")
 		communicationInputDescription = _(
-			# Translators: The name of the method that displayed in the NVDA input gestures dialog,
-			# {number} is the number of the input device in the order of Windows, {name} is its name
+			# Translators: A command, {number} is the input device number, {name} is its name
 			"Set the input device {number} ({name}) as the default communication input device",
 		)
 		outputs = devices.getOutputDevices()

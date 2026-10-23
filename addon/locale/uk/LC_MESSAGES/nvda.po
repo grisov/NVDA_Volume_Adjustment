@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: 'volumeAdjustment' '2.0.0'\n"
 "Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
 "POT-Creation-Date: 2026-10-21 11:06+0200\n"
-"PO-Revision-Date: 2026-10-23 14:35+0200\n"
+"PO-Revision-Date: 2026-10-24 01:17+0200\n"
 "Last-Translator: Oleksandr Gryshchenko <grisov.nvaccess@mailgw.com>\n"
 "Language-Team: Ukrainian Language Team\n"
 "Language: uk_UA\n"
@@ -82,8 +82,7 @@ msgstr "USB"
 msgid "Bluetooth"
 msgstr "Bluetooth"
 
-#. Translators: How an audio device is connected, announced after its name: a software device,
-#. e.g. a virtual audio cable
+#. Translators: How an audio device is connected: a software device, e.g. a virtual audio cable
 msgid "virtual"
 msgstr "віртуальний"
 
@@ -95,14 +94,12 @@ msgstr "за замовчуванням"
 msgid "communication"
 msgstr "для зв'язку"
 
-#. Translators: The message when the category of audio sources is already the only visible one,
-#. e.g. when the user tries to hide it, {category} is its name, e.g. "Recording apps"
+#. Translators: {category} is the name of the only visible category, e.g. "Recording apps"
 #, python-brace-format
 msgid "{category} is already the only visible category"
 msgstr "{category} - вже єдина видима категорія"
 
-#. Translators: The message when the user tries to hide the only visible category of audio sources,
-#. followed by the message that it is already the only visible category
+#. Translators: The message when the user tries to hide the only visible category of audio sources
 msgid "Category cannot be hidden."
 msgstr "Категорію неможливо приховати."
 
@@ -118,8 +115,7 @@ msgstr "Гучність"
 msgid "The sound is muted"
 msgstr "Звук приглушено"
 
-#. Translators: The short message shown on a braille display when the sound is muted,
-#. it may be followed by the remaining volume level, e.g. "muted 5%"
+#. Translators: The short braille message when the sound is muted, e.g. "muted 5%"
 msgid "muted"
 msgstr "приглушено"
 
@@ -146,8 +142,7 @@ msgstr "Функція не підтримується"
 msgid "Default audio device"
 msgstr "Аудіопристрій за замовчуванням"
 
-#. Translators: The message when a category of audio sources is shown,
-#. {category} is its name, e.g. "Recording apps", {count} is the number of its audio sources now
+#. Translators: A category of audio sources is shown, {count} is the number of its sources
 #, python-brace-format
 msgid "{category} shown, {count} source"
 msgid_plural "{category} shown, {count} sources"
@@ -155,14 +150,12 @@ msgstr[0] "{category} показано, {count} джерело"
 msgstr[1] "{category} показано, {count} джерела"
 msgstr[2] "{category} показано, {count} джерел"
 
-#. Translators: The message when a category of audio sources is hidden,
-#. {category} is its name, e.g. "Recording apps"
+#. Translators: A category of audio sources is hidden, {category} is its name, e.g. "Recording apps"
 #, python-brace-format
 msgid "{category} hidden"
 msgstr "{category} приховано"
 
-#. Translators: The message when only one category of audio sources is shown,
-#. {category} is its name, e.g. "Recording apps", {count} is the number of its audio sources now
+#. Translators: Only one category of audio sources is shown, {count} is the number of its sources
 #, python-brace-format
 msgid "{category} only, {count} source"
 msgid_plural "{category} only, {count} sources"
@@ -170,8 +163,7 @@ msgstr[0] "{category} - лише ця категорія, {count} джерело
 msgstr[1] "{category} - лише ця категорія, {count} джерела"
 msgstr[2] "{category} - лише ця категорія, {count} джерел"
 
-#. Translators: The message when the channels of an application cannot be adjusted
-#. because NVDA sound split is enabled and uses them
+#. Translators: The channels of an application cannot be adjusted while NVDA sound split is on
 msgid "Channels are used by NVDA sound split"
 msgstr "Канали використовуються розділенням звуку NVDA"
 
@@ -179,8 +171,7 @@ msgstr "Канали використовуються розділенням з�
 msgid "Unable to set the default device"
 msgstr "Не вдалося встановити пристрій за замовчуванням"
 
-#. Translators: The message when the audio device has been disconnected or disabled,
-#. {name} is the name of the device
+#. Translators: The audio device {name} has been disconnected or disabled
 #, python-brace-format
 msgid "{name} is not available"
 msgstr "{name}: пристрій недоступний"
@@ -241,8 +232,7 @@ msgstr "Повідомляти про с&тан джерела звуку під
 msgid "Announce category &names while switching"
 msgstr "Оголошувати &назви категорій під час перемикання"
 
-#. Translators: This is the label for a checkbox in the settings panel: the type, connection and
-#. default role of an audio device are announced after its volume level or name
+#. Translators: A checkbox: announce the type, connection and default role of audio devices
 msgid "Announce audio device &details"
 msgstr "Оголошувати по&дробиці про аудіопристрій"
 
@@ -262,13 +252,11 @@ msgstr "Оголошувати &рівень гучності в:"
 msgid "Percent"
 msgstr "Відсотках"
 
-#. Translators: An item in the choice list of the units of the announced volume level,
-#. the level in percent is announced without the percent sign, e.g. "Volume 29"
+#. Translators: A unit of the announced volume level: percent without its sign, e.g. "Volume 29"
 msgid "Percent, number only"
 msgstr "Відсотках, лише число"
 
-#. Translators: An item in the choice list of the units of the announced volume level,
-#. only audio devices provide their volume levels in decibels
+#. Translators: A unit of the announced volume level, only audio devices provide decibels
 msgid "Decibels, if the source supports it"
 msgstr "Децибелах, якщо джерело їх підтримує"
 
@@ -312,8 +300,7 @@ msgstr "Вмикати всі приглушені &аудіоресурси п�
 msgid "&Warn before lowering or muting the volume of NVDA itself"
 msgstr "Поп&ереджати перед зменшенням або приглушенням гучності самої NVDA"
 
-#. Translators: The label of the Checkable list in the settings panel: the input devices
-#. muted and unmuted together by one command
+#. Translators: A list of the input devices muted and unmuted together by one command
 msgid "Microphones of the &quick mute:"
 msgstr "&Мікрофони швидкого приглушення:"
 
@@ -425,36 +412,31 @@ msgstr "Приглушити або увімкнути мікрофони, ви�
 msgid "Open the Sound dialog of Windows"
 msgstr "Відкрити діалог \"Звук\" Windows"
 
-#. Translators: The name of the method that displayed in the NVDA input gestures dialog,
-#. {number} is the number of the output device in the order of Windows, e.g. 1 for F1, {name} is its name
+#. Translators: A command, {number} is the output device number, e.g. 1 for F1, {name} is its name
 #, python-brace-format
 msgid "Switch NVDA output to the device {number} ({name})"
 msgstr "Перемкнути вивід NVDA на пристрій {number} ({name})"
 
-#. Translators: The name of the method that displayed in the NVDA input gestures dialog,
-#. {number} is the number of the output device in the order of Windows, e.g. 1 for F1, {name} is its name
+#. Translators: A command, {number} is the output device number, e.g. 1 for F1, {name} is its name
 #, python-brace-format
 msgid "Set the device {number} ({name}) as the default output device"
 msgstr ""
 "Встановити пристрій {number} ({name}) як пристрій виводу за замовчуванням"
 
-#. Translators: The name of the method that displayed in the NVDA input gestures dialog,
-#. {number} is the number of the output device in the order of Windows, e.g. 1 for F1, {name} is its name
+#. Translators: A command, {number} is the output device number, e.g. 1 for F1, {name} is its name
 #, python-brace-format
 msgid "Set the device {number} ({name}) as the default communication device"
 msgstr ""
 "Встановити пристрій {number} ({name}) як пристрій зв'язку за замовчуванням"
 
-#. Translators: The name of the method that displayed in the NVDA input gestures dialog,
-#. {number} is the number of the input device in the order of Windows, {name} is its name
+#. Translators: A command, {number} is the input device number, {name} is its name
 #, python-brace-format
 msgid "Set the input device {number} ({name}) as the default input device"
 msgstr ""
 "Встановити пристрій вводу {number} ({name}) як пристрій вводу за "
 "замовчуванням"
 
-#. Translators: The name of the method that displayed in the NVDA input gestures dialog,
-#. {number} is the number of the input device in the order of Windows, {name} is its name
+#. Translators: A command, {number} is the input device number, {name} is its name
 #, python-brace-format
 msgid ""
 "Set the input device {number} ({name}) as the default communication input "

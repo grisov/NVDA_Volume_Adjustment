@@ -164,8 +164,7 @@ class VASettingsPanel(SettingsPanel):
 		)
 		self.announceCategoriesChk.SetValue(getAddonConfig()["announceCategories"])
 		self.deviceDetailsChk = addonHelper.addItem(
-			# Translators: This is the label for a checkbox in the settings panel: the type, connection and
-			# default role of an audio device are announced after its volume level or name
+			# Translators: A checkbox: announce the type, connection and default role of audio devices
 			wx.CheckBox(self, label=_("Announce audio device &details")),
 		)
 		self.deviceDetailsChk.SetValue(getAddonConfig()["deviceDetails"])
@@ -198,11 +197,9 @@ class VASettingsPanel(SettingsPanel):
 		)
 		# Translators: An item in the choice list of the units of the announced volume level
 		self.units.Append(_("Percent"), "percent")
-		# Translators: An item in the choice list of the units of the announced volume level,
-		# the level in percent is announced without the percent sign, e.g. "Volume 29"
+		# Translators: A unit of the announced volume level: percent without its sign, e.g. "Volume 29"
 		self.units.Append(_("Percent, number only"), "number")
-		# Translators: An item in the choice list of the units of the announced volume level,
-		# only audio devices provide their volume levels in decibels
+		# Translators: A unit of the announced volume level, only audio devices provide decibels
 		self.units.Append(_("Decibels, if the source supports it"), "decibels")
 		self.units.Select(["percent", "number", "decibels"].index(getAddonConfig()["units"]))
 		self.followFocusChk = addonHelper.addItem(
@@ -306,8 +303,7 @@ class VASettingsPanel(SettingsPanel):
 		)
 		self.warnNvdaVolumeChk.SetValue(getAddonConfig()["warnNvdaVolume"])
 		self.quickMuteDevices = addonHelper.addLabeledControl(
-			# Translators: The label of the Checkable list in the settings panel: the input devices
-			# muted and unmuted together by one command
+			# Translators: A list of the input devices muted and unmuted together by one command
 			_("Microphones of the &quick mute:"),
 			nvdaControls.CustomCheckListBox,
 			choices=[],
