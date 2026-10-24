@@ -19,7 +19,7 @@ msgstr ""
 #. Translators: The current application does not pay audio
 #: addon\globalPlugins\volumeAdjustment\__init__.py:116
 msgid "{app} is not playing any sound."
-msgstr "Nessun audio nell'applicazione corrente."
+msgstr "{app} non sta riproducendo alcun audio."
 
 #. Translators: The message is announced during volume control
 #: addon\globalPlugins\volumeAdjustment\__init__.py:127
