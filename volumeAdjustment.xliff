@@ -1,0 +1,971 @@
+<?xml version="1.0"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="en">
+<file id="readme.md" original="https://raw.githubusercontent.com/grisov/NVDA_Volume_Adjustment/fc7ce119258456d618b69d7fc566dfefc5b374a8/readme.md">
+<skeleton>
+# $(ID:3dcd4e21-cf4c-4579-913d-99e3176248d1)
+
+* $(ID:551bde24-daca-4b75-b556-328f59fc9531)
+* $(ID:e5d0d927-228f-4e28-99cf-3a24aa5eb12b)
+* $(ID:fed13fa8-c99c-4809-942e-3ace457c1eb2)
+* $(ID:1b9eeb33-0877-4481-a301-03b80fc3ff58)
+
+$(ID:ac92c497-ebac-4155-bbd8-13805e86cf31)
+
+## $(ID:e8247ffc-03e9-4632-8e69-37c0313bff95)
+$(ID:a47ce342-0360-42ef-9b3b-75cb9d75f2ca)
+
+* $(ID:735bcd4d-1003-4903-8c46-08ce92375e10)
+* $(ID:80e85025-6f71-4fb5-8471-81660d92b37c)
+
+$(ID:dca032b0-99dd-48fd-aa2e-3b82d2f1dcc4)
+
+## $(ID:08532efd-9436-4771-b627-ab241f04b040)
+$(ID:d69a52e2-f207-4877-999d-627baec8cce3)
+
+1. $(ID:002e12e2-e757-4f55-9633-d61a33d1188f)
+2. $(ID:2b7bcf98-633c-4640-944c-d47e7e3df2cd)
+3. $(ID:e1f89424-f03c-40c8-a2ad-bdd77238dfa5)
+4. $(ID:b4c4d254-194d-41b6-b71e-85dfb6dea3b1)
+
+$(ID:ecd11e8c-d1e9-4bd6-8699-93177c109174)
+
+* $(ID:4bf44259-44f5-4131-8abc-8cc61855c115)
+* $(ID:f2b6e117-0782-429e-b8d8-ffa65ea3ced2)
+* $(ID:afe88503-b293-4753-80d4-a39e14f22f58)
+* $(ID:00c54c6f-e30a-402c-a68a-2f98a2c420e6)
+
+$(ID:25dfad88-bd26-4161-9f6b-2627539b45eb)
+
+$(ID:b291a34e-41ab-41ee-aea0-6a302a9ec299)
+
+$(ID:5dff3078-b389-474a-8148-3b51c4fe04d3)
+
+## $(ID:a7401c61-a8c9-4849-8eb0-640ba3ebf03e)
+* $(ID:198ae9a2-f367-48f0-8ae5-fa6518d55f6c)
+* $(ID:a9e1e5a7-ae82-4dce-9b4c-f0d3d1c9fb3a)
+* $(ID:0f34cb26-02b7-4907-a989-63a8d82b81cb)
+* $(ID:07368402-6d7f-47b4-b818-49a2846c53fc)
+
+$(ID:32e80345-8c45-485a-854b-a806e3166cab)
+
+## $(ID:477a029f-bd20-4381-8dca-115cfa3360f1)
+* $(ID:987a4007-7723-4153-bfbd-b3cd807b25e7)
+* $(ID:038f99b8-82bb-4283-9b6d-63a10c8e20a8)
+* $(ID:ce556841-74fc-46f6-b062-1c73e200ec45)
+* $(ID:1c13da11-46bc-4c5a-b8f5-115704f2a783)
+
+$(ID:6dd0118a-4297-44e9-b4f1-989388f2511a)
+
+## $(ID:3d7f263e-5f0c-4c0a-bddd-202ea14bd4ff)
+$(ID:04398a8f-76eb-4c0a-9125-27669cf4d66b)
+
+## $(ID:bc1b088e-125a-4aae-b072-e4a8f942d5f7)
+$(ID:79824944-9dfc-4bf0-9115-26a5e6796e92)
+
+* $(ID:1a15cc83-e444-44e5-a8aa-126d9cadac15)
+* $(ID:aea5ad2d-b0ee-45b0-a526-569d29d7dded)
+* $(ID:8c1162cf-5f50-45e3-9f12-96bcab505d9c)
+
+$(ID:a9d71e9e-eeea-4d0b-9fd1-de947b55d806)
+
+* $(ID:1444b333-c633-4b54-909c-6214b652f10e)
+* $(ID:2158edf3-444b-4af7-bae2-50beb0ec0e35)
+
+$(ID:74461e7b-38a0-4642-995e-05dd1842e837)
+
+* $(ID:59c2bf32-499d-4544-bf77-81cf81d02dfd)
+* $(ID:8b1c013b-008f-440a-b2ff-033ffd465ef7)
+
+## $(ID:e46ce933-88cd-4a5f-9625-dddac4fb21f7)
+$(ID:ce5f97ef-3dcb-43ce-94d1-ba20482c5917)
+
+* $(ID:27af080c-0ec4-427c-8f26-9547076e88b1)
+* $(ID:8eb209d6-f328-4304-bee0-60d5cafe4b3b)
+
+$(ID:03d249bf-9445-4bb8-ae3a-e3c967c64c49)
+
+## $(ID:04052116-dd56-46f9-859a-2cf839742ef0)
+$(ID:692569ea-e877-471d-b2be-c418cbec32aa)
+
+$(ID:71332f1b-0cbe-497a-9a01-b7460474d0d8)
+
+## $(ID:56bd3f35-82f0-413a-b921-aa9cb89e5855)
+* $(ID:c03e838c-b05d-4a68-9373-0ac39192e0cb)
+* $(ID:cfc67512-e5f3-49bb-83ff-6b62ed3c0f24)
+* $(ID:0c26e996-b436-4d1f-95b0-0f5b8f9e7530)
+* $(ID:5a3af02b-6956-4e0b-b953-7ad2dc91963e)
+* $(ID:05adba2e-125d-43bc-917d-57bab0d0db53)
+* $(ID:a8b34844-115c-447a-98c4-2b6b19ef0a51)
+* $(ID:cf82afe5-9354-4122-814b-6665c8f0279c)
+* $(ID:4036a3b0-f5bf-494d-ab55-7e6ae6b7baad)
+* $(ID:6dc641d6-cb41-48fe-91e1-52be7dd8774f)
+* $(ID:c95d4d34-40d1-4670-bea4-8fe0daddb0c8)
+* $(ID:4321bf6c-7089-4956-bc64-1c9709c2117f)
+* $(ID:d78dc166-c524-4657-a04c-0a0753ffe7c4)
+* $(ID:38550ac9-1e5e-4214-ada8-f0c911089409)
+
+## $(ID:fb52ab08-3cb3-4d60-9f1c-ab2478c505d7)
+$(ID:6095f43d-c084-4e68-a6a3-26d396ef7eb3)
+
+* $(ID:0ba0312f-bd21-4ba5-bcd3-be9bd6634c65)
+* $(ID:76844943-77b4-489e-b01b-017eb1db1dcd)
+* $(ID:6c1876bb-446c-4866-9841-03155562a088)
+* $(ID:92809794-6d85-40d8-9f39-584ea5bf29f9)
+* $(ID:b89be508-db62-4bb9-9680-8ba313944cc7)
+* $(ID:c0449908-c1ba-417a-8b83-0a034117de23)
+
+## $(ID:71d30b00-73c1-4e0e-b6fe-6b2faeba0a02)
+$(ID:cde5ffa0-eff9-45ac-bd55-246a1ca55fc1)
+
+## $(ID:66079553-37f8-48c3-8692-06d14fa1dff8)
+$(ID:58187746-5fd1-4462-94f6-76c160c8f1f3)
+
+$(ID:db1e376b-e838-46f7-a172-37ca515ebaa1)
+
+* $(ID:93440bcb-8ab1-490d-a629-6f3611e31963)
+* $(ID:9c0ebf3c-0098-49d9-9f87-2d616751836d)
+
+$(ID:da4d9248-9be7-4419-86a7-a362295521ee)
+
+1. $(ID:d2345673-6a0c-47b4-a18b-d57fc74cba10)
+2. $(ID:c404365f-e812-429b-8142-12f3aee5f90b)
+3. $(ID:09324d62-6813-4598-a391-ea2658ef2385)
+4. $(ID:705caf95-7893-45a6-a49e-fe8dd03fc3c7)
+5. $(ID:74cf8d9a-51f8-4952-b21d-dfdb306f38fa)
+
+$(ID:c7de9a53-4ae2-4ddf-b0e1-158bf32852ef)
+$(ID:f10afe4c-90e2-4bc1-8f7f-fcfab0c13e21)
+
+</skeleton>
+<unit id="3dcd4e21-cf4c-4579-913d-99e3176248d1">
+<notes>
+<note appliesTo="source">line: 2</note>
+<note appliesTo="source">prefix: # </note>
+</notes>
+<segment>
+<source>NVDA Volume Adjustment</source>
+</segment>
+</unit>
+<unit id="551bde24-daca-4b75-b556-328f59fc9531">
+<notes>
+<note appliesTo="source">line: 4</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Author: Oleksandr Gryshchenko</source>
+</segment>
+</unit>
+<unit id="e5d0d927-228f-4e28-99cf-3a24aa5eb12b">
+<notes>
+<note appliesTo="source">line: 5</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Version: 2.0</source>
+</segment>
+</unit>
+<unit id="fed13fa8-c99c-4809-942e-3ace457c1eb2">
+<notes>
+<note appliesTo="source">line: 6</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA compatibility: 2026.1 and beyond</source>
+</segment>
+</unit>
+<unit id="1b9eeb33-0877-4481-a301-03b80fc3ff58">
+<notes>
+<note appliesTo="source">line: 7</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Installation: through the NVDA Add-on Store ([stable version][1])</source>
+</segment>
+</unit>
+<unit id="ac92c497-ebac-4155-bbd8-13805e86cf31">
+<notes>
+<note appliesTo="source">line: 9</note>
+</notes>
+<segment>
+<source>Adjust the volume of every audio device and every running program separately, switch the output device of NVDA and the default audio devices of Windows, and mute your microphones in all programs at once - all from the keyboard.</source>
+</segment>
+</unit>
+<unit id="e8247ffc-03e9-4632-8e69-37c0313bff95">
+<notes>
+<note appliesTo="source">line: 11</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Keyboard shortcuts</source>
+</segment>
+</unit>
+<unit id="a47ce342-0360-42ef-9b3b-75cb9d75f2ca">
+<notes>
+<note appliesTo="source">line: 12</note>
+</notes>
+<segment>
+<source>After installation, the add-on has no keyboard shortcuts. You can either:</source>
+</segment>
+</unit>
+<unit id="735bcd4d-1003-4903-8c46-08ce92375e10">
+<notes>
+<note appliesTo="source">line: 14</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>turn on the predefined shortcuts with the "Use default keyboard shortcuts" option in the add-on settings, or</source>
+</segment>
+</unit>
+<unit id="80e85025-6f71-4fb5-8471-81660d92b37c">
+<notes>
+<note appliesTo="source">line: 15</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>assign your own shortcuts to any command in the NVDA "Input gestures" dialog, in the "Volume Adjustment" category.</source>
+</segment>
+</unit>
+<unit id="dca032b0-99dd-48fd-aa2e-3b82d2f1dcc4">
+<notes>
+<note appliesTo="source">line: 17</note>
+</notes>
+<segment>
+<source>This document mentions the predefined shortcuts. All of them start with NVDA+Windows, so they are easy to remember and do not conflict with other commands.</source>
+</segment>
+</unit>
+<unit id="08532efd-9436-4771-b627-ab241f04b040">
+<notes>
+<note appliesTo="source">line: 19</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Audio sources</source>
+</segment>
+</unit>
+<unit id="d69a52e2-f207-4877-999d-627baec8cce3">
+<notes>
+<note appliesTo="source">line: 20</note>
+</notes>
+<segment>
+<source>The add-on works with four categories of audio sources, always in this order:</source>
+</segment>
+</unit>
+<unit id="002e12e2-e757-4f55-9633-d61a33d1188f">
+<notes>
+<note appliesTo="source">line: 22</note>
+<note appliesTo="source">prefix: 1. </note>
+</notes>
+<segment>
+<source>output devices (speakers, headphones);</source>
+</segment>
+</unit>
+<unit id="2b7bcf98-633c-4640-944c-d47e7e3df2cd">
+<notes>
+<note appliesTo="source">line: 23</note>
+<note appliesTo="source">prefix: 2. </note>
+</notes>
+<segment>
+<source>input devices (microphones, line inputs);</source>
+</segment>
+</unit>
+<unit id="e1f89424-f03c-40c8-a2ad-bdd77238dfa5">
+<notes>
+<note appliesTo="source">line: 24</note>
+<note appliesTo="source">prefix: 3. </note>
+</notes>
+<segment>
+<source>playback apps - programs that play sound;</source>
+</segment>
+</unit>
+<unit id="b4c4d254-194d-41b6-b71e-85dfb6dea3b1">
+<notes>
+<note appliesTo="source">line: 25</note>
+<note appliesTo="source">prefix: 4. </note>
+</notes>
+<segment>
+<source>recording apps - programs that record sound.</source>
+</segment>
+</unit>
+<unit id="ecd11e8c-d1e9-4bd6-8699-93177c109174">
+<notes>
+<note appliesTo="source">line: 27</note>
+</notes>
+<segment>
+<source>All audio sessions of a program are adjusted together, even if the program plays on several devices at once. A program that both plays and records, for example a video call, appears in both app categories.</source>
+</segment>
+</unit>
+<unit id="4bf44259-44f5-4131-8abc-8cc61855c115">
+<notes>
+<note appliesTo="source">line: 29</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA+Windows+Right Arrow or Left Arrow - select the next or previous audio source. The list is cyclic.</source>
+</segment>
+</unit>
+<unit id="f2b6e117-0782-429e-b8d8-ffa65ea3ced2">
+<notes>
+<note appliesTo="source">line: 30</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA+Windows+Control+Right Arrow or Left Arrow - jump to the first audio source of the next or previous category.</source>
+</segment>
+</unit>
+<unit id="afe88503-b293-4753-80d4-a39e14f22f58">
+<notes>
+<note appliesTo="source">line: 31</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA+Windows+O, I, P or R - show or hide output devices, input devices, playback apps or recording apps. When a category is shown, the number of its sources is announced.</source>
+</segment>
+</unit>
+<unit id="00c54c6f-e30a-402c-a68a-2f98a2c420e6">
+<notes>
+<note appliesTo="source">line: 32</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA+Windows+Shift+O, I, P or R - show only that category.</source>
+</segment>
+</unit>
+<unit id="25dfad88-bd26-4161-9f6b-2627539b45eb">
+<notes>
+<note appliesTo="source">line: 34</note>
+</notes>
+<segment>
+<source>The last visible category cannot be hidden. The name of a category is announced when you move into it; this can be turned off in the add-on settings.</source>
+</segment>
+</unit>
+<unit id="b291a34e-41ab-41ee-aea0-6a302a9ec299">
+<notes>
+<note appliesTo="source">line: 36</note>
+</notes>
+<segment>
+<source>By default, the volume commands adjust the program in focus. If it does not play any sound, the add-on tells you so and does not change anything. When you select another source with the arrows, it stays selected until the focus moves to another program; the windows of NVDA itself, such as the add-on settings, do not count. If the selected device is disconnected, disabled or hidden, the add-on tells you that it is not available, and the device is adjusted again as soon as it is available.</source>
+</segment>
+</unit>
+<unit id="5dff3078-b389-474a-8148-3b51c4fe04d3">
+<notes>
+<note appliesTo="source">line: 38</note>
+</notes>
+<segment>
+<source>When you select a source, its name is announced together with its volume level. A braille display shows them in a short form, for example "Speakers: 30%".</source>
+</segment>
+</unit>
+<unit id="a7401c61-a8c9-4849-8eb0-640ba3ebf03e">
+<notes>
+<note appliesTo="source">line: 40</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Adjust the volume</source>
+</segment>
+</unit>
+<unit id="198ae9a2-f367-48f0-8ae5-fa6518d55f6c">
+<notes>
+<note appliesTo="source">line: 41</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA+Windows+Up Arrow or Down Arrow - increase or decrease the volume.</source>
+</segment>
+</unit>
+<unit id="a9e1e5a7-ae82-4dce-9b4c-f0d3d1c9fb3a">
+<notes>
+<note appliesTo="source">line: 42</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA+Windows+Home - set the maximum volume. Be careful, a sudden loud sound can damage your hearing.</source>
+</segment>
+</unit>
+<unit id="0f34cb26-02b7-4907-a989-63a8d82b81cb">
+<notes>
+<note appliesTo="source">line: 43</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA+Windows+End - set the minimum volume.</source>
+</segment>
+</unit>
+<unit id="07368402-6d7f-47b4-b818-49a2846c53fc">
+<notes>
+<note appliesTo="source">line: 44</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA+Windows+Escape - mute the source or restore its volume.</source>
+</segment>
+</unit>
+<unit id="32e80345-8c45-485a-854b-a806e3166cab">
+<notes>
+<note appliesTo="source">line: 46</note>
+</notes>
+<segment>
+<source>Lowering the volume to zero mutes the source. Muting can turn the sound off completely or only decrease the volume by a percentage; the mode is chosen in the add-on settings.</source>
+</segment>
+</unit>
+<unit id="477a029f-bd20-4381-8dca-115cfa3360f1">
+<notes>
+<note appliesTo="source">line: 48</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Channels</source>
+</segment>
+</unit>
+<unit id="987a4007-7723-4153-bfbd-b3cd807b25e7">
+<notes>
+<note appliesTo="source">line: 49</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA+Windows+Shift+Right Arrow or Left Arrow - select the next or previous channel of the selected source. Channels are numbered from 1.</source>
+</segment>
+</unit>
+<unit id="038f99b8-82bb-4283-9b6d-63a10c8e20a8">
+<notes>
+<note appliesTo="source">line: 50</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA+Windows+Shift+Up Arrow or Down Arrow - increase or decrease the volume of the selected channel.</source>
+</segment>
+</unit>
+<unit id="ce556841-74fc-46f6-b062-1c73e200ec45">
+<notes>
+<note appliesTo="source">line: 51</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA+Windows+Shift+Home or End - set the maximum or minimum volume of the selected channel.</source>
+</segment>
+</unit>
+<unit id="1c13da11-46bc-4c5a-b8f5-115704f2a783">
+<notes>
+<note appliesTo="source">line: 52</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA+Windows+Shift+Escape - set all channels to their average volume.</source>
+</segment>
+</unit>
+<unit id="6dd0118a-4297-44e9-b4f1-989388f2511a">
+<notes>
+<note appliesTo="source">line: 54</note>
+</notes>
+<segment>
+<source>The channels of programs can be adjusted only while NVDA sound split is turned off, because sound split uses the same channels. Otherwise the add-on tells you that the channels are used by sound split.</source>
+</segment>
+</unit>
+<unit id="3d7f263e-5f0c-4c0a-bddd-202ea14bd4ff">
+<notes>
+<note appliesTo="source">line: 56</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Protecting the volume of NVDA</source>
+</segment>
+</unit>
+<unit id="04398a8f-76eb-4c0a-9125-27669cf4d66b">
+<notes>
+<note appliesTo="source">line: 57</note>
+</notes>
+<segment>
+<source>NVDA itself is also a playback app. Before you lower or mute its volume or one of its channels, the add-on asks for confirmation, because NVDA could become silent and Windows remembers its volume even after NVDA restarts. The warning can be turned off in the dialog itself or in the add-on settings.</source>
+</segment>
+</unit>
+<unit id="bc1b088e-125a-4aae-b072-e4a8f942d5f7">
+<notes>
+<note appliesTo="source">line: 59</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Output devices</source>
+</segment>
+</unit>
+<unit id="79824944-9dfc-4bf0-9115-26a5e6796e92">
+<notes>
+<note appliesTo="source">line: 60</note>
+</notes>
+<segment>
+<source>Three groups of commands use the same keys, F1-F12, PageUp and PageDown:</source>
+</segment>
+</unit>
+<unit id="1a15cc83-e444-44e5-a8aa-126d9cadac15">
+<notes>
+<note appliesTo="source">line: 62</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA+Windows - the output device of NVDA speech and sounds;</source>
+</segment>
+</unit>
+<unit id="aea5ad2d-b0ee-45b0-a526-569d29d7dded">
+<notes>
+<note appliesTo="source">line: 63</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA+Windows+Shift - the default output device of Windows;</source>
+</segment>
+</unit>
+<unit id="8c1162cf-5f50-45e3-9f12-96bcab505d9c">
+<notes>
+<note appliesTo="source">line: 64</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA+Windows+Control - the default communication device of Windows.</source>
+</segment>
+</unit>
+<unit id="a9d71e9e-eeea-4d0b-9fd1-de947b55d806">
+<notes>
+<note appliesTo="source">line: 66</note>
+</notes>
+<segment>
+<source>With each group:</source>
+</segment>
+</unit>
+<unit id="1444b333-c633-4b54-909c-6214b652f10e">
+<notes>
+<note appliesTo="source">line: 68</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>F1-F12 - switch to the 1st to 12th output device. These commands are created for the output devices found when NVDA starts: a device connected later gets its own command after NVDA is restarted. A command for a device that has been disconnected announces that the device is not available.</source>
+</segment>
+</unit>
+<unit id="2158edf3-444b-4af7-bae2-50beb0ec0e35">
+<notes>
+<note appliesTo="source">line: 69</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>PageUp or PageDown - switch to the next or previous output device. These commands always use the devices available at the moment, including the ones connected later.</source>
+</segment>
+</unit>
+<unit id="74461e7b-38a0-4642-995e-05dd1842e837">
+<notes>
+<note appliesTo="source">line: 71</note>
+</notes>
+<segment>
+<source>The commands for every single device are listed in the NVDA "Input gestures" dialog with the device names, so you can assign other shortcuts to them.</source>
+</segment>
+</unit>
+<unit id="59c2bf32-499d-4544-bf77-81cf81d02dfd">
+<notes>
+<note appliesTo="source">line: 73</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA+Windows+D - switch NVDA back to the default output device, so it follows the default device of Windows.</source>
+</segment>
+</unit>
+<unit id="8b1c013b-008f-440a-b2ff-033ffd465ef7">
+<notes>
+<note appliesTo="source">line: 74</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA+Windows+S - open the Sound dialog of Windows.</source>
+</segment>
+</unit>
+<unit id="e46ce933-88cd-4a5f-9625-dddac4fb21f7">
+<notes>
+<note appliesTo="source">line: 76</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Input devices</source>
+</segment>
+</unit>
+<unit id="ce5f97ef-3dcb-43ce-94d1-ba20482c5917">
+<notes>
+<note appliesTo="source">line: 77</note>
+</notes>
+<segment>
+<source>Two groups of commands use the digit keys 1-9 and 0 to switch to the 1st to 10th input device:</source>
+</segment>
+</unit>
+<unit id="27af080c-0ec4-427c-8f26-9547076e88b1">
+<notes>
+<note appliesTo="source">line: 79</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA+Windows+Shift - the default input device of Windows;</source>
+</segment>
+</unit>
+<unit id="8eb209d6-f328-4304-bee0-60d5cafe4b3b">
+<notes>
+<note appliesTo="source">line: 80</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>NVDA+Windows+Control - the default communication input device of Windows.</source>
+</segment>
+</unit>
+<unit id="03d249bf-9445-4bb8-ae3a-e3c967c64c49">
+<notes>
+<note appliesTo="source">line: 82</note>
+</notes>
+<segment>
+<source>These commands are created for the input devices found when NVDA starts: a device connected later gets its own commands after NVDA is restarted. A command for a device that has been disconnected announces that the device is not available. The commands for every single device are listed in the NVDA "Input gestures" dialog with the device names, so you can assign other shortcuts to them.</source>
+</segment>
+</unit>
+<unit id="04052116-dd56-46f9-859a-2cf839742ef0">
+<notes>
+<note appliesTo="source">line: 84</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Quick mute of microphones</source>
+</segment>
+</unit>
+<unit id="692569ea-e877-471d-b2be-c418cbec32aa">
+<notes>
+<note appliesTo="source">line: 85</note>
+</notes>
+<segment>
+<source>NVDA+Windows+Space mutes or unmutes in Windows all microphones selected in the add-on settings, so every program gets silence: video calls, messengers, recorders and others. You do not need to remember a different shortcut in each program.</source>
+</segment>
+</unit>
+<unit id="71332f1b-0cbe-497a-9a01-b7460474d0d8">
+<notes>
+<note appliesTo="source">line: 87</note>
+</notes>
+<segment>
+<source>If any of the selected microphones is on, all of them are muted; otherwise all of them are unmuted. A short sound is played after muting and before unmuting, so the microphones do not record it. The microphones are never unmuted automatically when NVDA exits.</source>
+</segment>
+</unit>
+<unit id="56bd3f35-82f0-413a-b921-aa9cb89e5855">
+<notes>
+<note appliesTo="source">line: 89</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Add-on settings</source>
+</segment>
+</unit>
+<unit id="c03e838c-b05d-4a68-9373-0ac39192e0cb">
+<notes>
+<note appliesTo="source">line: 90</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Report the status of the sound source while switching - announce the volume or the muted state of a source or channel when it is selected.</source>
+</segment>
+</unit>
+<unit id="cfc67512-e5f3-49bb-83ff-6b62ed3c0f24">
+<notes>
+<note appliesTo="source">line: 91</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Announce category names while switching - announce the category when you move into it with the arrows.</source>
+</segment>
+</unit>
+<unit id="0c26e996-b436-4d1f-95b0-0f5b8f9e7530">
+<notes>
+<note appliesTo="source">line: 92</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Announce audio device details - after the volume level or the name of an audio device, announce its type (for example headphones or microphone), its connection (USB, Bluetooth or virtual) and whether it is a default device of Windows.</source>
+</segment>
+</unit>
+<unit id="5a3af02b-6956-4e0b-b953-7ad2dc91963e">
+<notes>
+<note appliesTo="source">line: 93</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Visible categories of audio sources - the categories you switch between, the same as with NVDA+Windows+O, I, P and R.</source>
+</segment>
+</unit>
+<unit id="05adba2e-125d-43bc-917d-57bab0d0db53">
+<notes>
+<note appliesTo="source">line: 94</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Volume level change step, % - how much one keypress changes the volume, from 1 to 20 percent.</source>
+</segment>
+</unit>
+<unit id="a8b34844-115c-447a-98c4-2b6b19ef0a51">
+<notes>
+<note appliesTo="source">line: 95</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Announce the volume level in - percent, percent without the percent sign, or decibels for audio devices. Programs are always announced in percent. Decibel values come from the device and its driver, so they may sometimes look unusual, for example a narrow range or values far below zero.</source>
+</segment>
+</unit>
+<unit id="cf82afe5-9354-4122-814b-6665c8f0279c">
+<notes>
+<note appliesTo="source">line: 96</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Change the volume of the current application - the volume commands adjust the program in focus. When this option is off, they adjust the first source in the list, usually the default output device, until you select another source with the arrows.</source>
+</segment>
+</unit>
+<unit id="4036a3b0-f5bf-494d-ab55-7e6ae6b7baad">
+<notes>
+<note appliesTo="source">line: 97</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Hide output devices, Hide input devices, Hide processes - the items you do not want in the list of audio sources. The "Refresh" button updates the list and keeps the checked items; the "Clear" button unchecks all items and removes the ones that are no longer present.</source>
+</segment>
+</unit>
+<unit id="6dc641d6-cb41-48fe-91e1-52be7dd8774f">
+<notes>
+<note appliesTo="source">line: 98</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Mute mode - "Complete Mute" turns the sound off; "Volume Down" decreases the volume by the percentage set with the "Decrease the volume by, %" slider.</source>
+</segment>
+</unit>
+<unit id="c95d4d34-40d1-4670-bea4-8fe0daddb0c8">
+<notes>
+<note appliesTo="source">line: 99</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Unmute all muted audio resources at NVDA shutdown - restore the volume of the sources muted by the add-on when NVDA exits. Only the programs running and the devices connected at that moment can be restored. The sources muted in Windows and the microphones of the quick mute stay muted.</source>
+</segment>
+</unit>
+<unit id="4321bf6c-7089-4956-bc64-1c9709c2117f">
+<notes>
+<note appliesTo="source">line: 100</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Warn before lowering or muting the volume of NVDA itself - see "Protecting the volume of NVDA".</source>
+</segment>
+</unit>
+<unit id="d78dc166-c524-4657-a04c-0a0753ffe7c4">
+<notes>
+<note appliesTo="source">line: 101</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Microphones of the quick mute - the microphones muted and unmuted with NVDA+Windows+Space.</source>
+</segment>
+</unit>
+<unit id="38550ac9-1e5e-4214-ada8-f0c911089409">
+<notes>
+<note appliesTo="source">line: 102</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Use default keyboard shortcuts - turn the predefined shortcuts on or off. The add-ons need to be reloaded for the change to take effect: you can reload them at once, or choose to reload them later, and then the change takes effect after NVDA is restarted.</source>
+</segment>
+</unit>
+<unit id="fb52ab08-3cb3-4d60-9f1c-ab2478c505d7">
+<notes>
+<note appliesTo="source">line: 104</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Contributions</source>
+</segment>
+</unit>
+<unit id="6095f43d-c084-4e68-a6a3-26d396ef7eb3">
+<notes>
+<note appliesTo="source">line: 105</note>
+</notes>
+<segment>
+<source>We are very grateful to everyone who made the effort to develop, translate and maintain this add-on:</source>
+</segment>
+</unit>
+<unit id="0ba0312f-bd21-4ba5-bcd3-be9bd6634c65">
+<notes>
+<note appliesTo="source">line: 107</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Dang Manh Cuong - Vietnamese translation;</source>
+</segment>
+</unit>
+<unit id="76844943-77b4-489e-b01b-017eb1db1dcd">
+<notes>
+<note appliesTo="source">line: 108</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Cagri Dogan - Turkish translation and testing of pre-releases;</source>
+</segment>
+</unit>
+<unit id="6c1876bb-446c-4866-9841-03155562a088">
+<notes>
+<note appliesTo="source">line: 109</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Christianlm - Italian translation;</source>
+</segment>
+</unit>
+<unit id="92809794-6d85-40d8-9f39-584ea5bf29f9">
+<notes>
+<note appliesTo="source">line: 110</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Cary Rowen - simplified Chinese translation, a lot of good ideas and testing of pre-releases;</source>
+</segment>
+</unit>
+<unit id="b89be508-db62-4bb9-9680-8ba313944cc7">
+<notes>
+<note appliesTo="source">line: 111</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Stefan Banita - Polish translation;</source>
+</segment>
+</unit>
+<unit id="c0449908-c1ba-417a-8b83-0a034117de23">
+<notes>
+<note appliesTo="source">line: 112</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>Wafiqtaher - Arabic translation.</source>
+</segment>
+</unit>
+<unit id="71d30b00-73c1-4e0e-b6fe-6b2faeba0a02">
+<notes>
+<note appliesTo="source">line: 114</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Change log</source>
+</segment>
+</unit>
+<unit id="cde5ffa0-eff9-45ac-bd55-246a1ca55fc1">
+<notes>
+<note appliesTo="source">line: 115</note>
+</notes>
+<segment>
+<source>The history of changes for each version of the add-on is published on the [Releases page][2] of the add-on repository.</source>
+</segment>
+</unit>
+<unit id="66079553-37f8-48c3-8692-06d14fa1dff8">
+<notes>
+<note appliesTo="source">line: 117</note>
+<note appliesTo="source">prefix: ## </note>
+</notes>
+<segment>
+<source>Altering of add-on source code</source>
+</segment>
+</unit>
+<unit id="58187746-5fd1-4462-94f6-76c160c8f1f3">
+<notes>
+<note appliesTo="source">line: 118</note>
+</notes>
+<segment>
+<source>You may clone this repo to make alterations to NVDA Volume Adjustment.</source>
+</segment>
+</unit>
+<unit id="db1e376b-e838-46f7-a172-37ca515ebaa1">
+<notes>
+<note appliesTo="source">line: 120</note>
+</notes>
+<segment>
+<source>Requirements:</source>
+</segment>
+</unit>
+<unit id="93440bcb-8ab1-490d-a629-6f3611e31963">
+<notes>
+<note appliesTo="source">line: 122</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>[uv](https://docs.astral.sh/uv/) - manages Python and all development tools of the add-on;</source>
+</segment>
+</unit>
+<unit id="9c0ebf3c-0098-49d9-9f87-2d616751836d">
+<notes>
+<note appliesTo="source">line: 123</note>
+<note appliesTo="source">prefix: * </note>
+</notes>
+<segment>
+<source>[GNU Gettext tools](https://mlocati.github.io/articles/gettext-iconv-windows.html) (`msgfmt` and `xgettext` in the `PATH`) - compile translations and generate the template of translatable strings.</source>
+</segment>
+</unit>
+<unit id="da4d9248-9be7-4419-86a7-a362295521ee">
+<notes>
+<note appliesTo="source">line: 125</note>
+</notes>
+<segment>
+<source>Run the following commands from the root of the repository:</source>
+</segment>
+</unit>
+<unit id="d2345673-6a0c-47b4-a18b-d57fc74cba10">
+<notes>
+<note appliesTo="source">line: 127</note>
+<note appliesTo="source">prefix: 1. </note>
+</notes>
+<segment>
+<source>`uv sync` - install the development dependencies;</source>
+</segment>
+</unit>
+<unit id="c404365f-e812-429b-8142-12f3aee5f90b">
+<notes>
+<note appliesTo="source">line: 128</note>
+<note appliesTo="source">prefix: 2. </note>
+</notes>
+<segment>
+<source>`uv run prek run --all-files` - run all code checks: linting and formatting with ruff, type checking with pyright and other checks;</source>
+</segment>
+</unit>
+<unit id="09324d62-6813-4598-a391-ea2658ef2385">
+<notes>
+<note appliesTo="source">line: 129</note>
+<note appliesTo="source">prefix: 3. </note>
+</notes>
+<segment>
+<source>`uv run python -m unittest discover -s tests -v` - run the unit tests;</source>
+</segment>
+</unit>
+<unit id="705caf95-7893-45a6-a49e-fe8dd03fc3c7">
+<notes>
+<note appliesTo="source">line: 130</note>
+<note appliesTo="source">prefix: 4. </note>
+</notes>
+<segment>
+<source>`uv run scons` - build the add-on, the created `.nvda-addon` file is placed in the root of the repository;</source>
+</segment>
+</unit>
+<unit id="74cf8d9a-51f8-4952-b21d-dfdb306f38fa">
+<notes>
+<note appliesTo="source">line: 131</note>
+<note appliesTo="source">prefix: 5. </note>
+</notes>
+<segment>
+<source>`uv run scons pot` - generate the `.pot` file with all translatable strings of the add-on (optional).</source>
+</segment>
+</unit>
+<unit id="c7de9a53-4ae2-4ddf-b0e1-158bf32852ef">
+<notes>
+<note appliesTo="source">line: 133</note>
+</notes>
+<segment>
+<source>[1]: https://addonstore.nvaccess.org/?channel=stable&amp;addonId=volumeAdjustment</source>
+</segment>
+</unit>
+<unit id="f10afe4c-90e2-4bc1-8f7f-fcfab0c13e21">
+<notes>
+<note appliesTo="source">line: 134</note>
+</notes>
+<segment>
+<source>[2]: https://github.com/grisov/NVDA_Volume_Adjustment/releases</source>
+</segment>
+</unit>
+</file>
+</xliff>
